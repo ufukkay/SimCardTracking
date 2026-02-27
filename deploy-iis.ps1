@@ -1,4 +1,4 @@
-# SIM Takip Sistemi - IIS Deployment Script (v1.1)
+# SIM Takip Sistemi - IIS Deployment Script (v1.2)
 # Bu script, geliştirme klasöründeki güncel dosyaları IIS sunucusuna aktarır.
 
 $ErrorActionPreference = "Stop"
@@ -16,11 +16,11 @@ if (-not (Test-Path $DestPath)) {
     exit
 }
 
-Write-Host "--- v1.1 Güncellemesi Başlatılıyor ---" -ForegroundColor Cyan
+Write-Host "--- v1.2 Güncellemesi Başlatılıyor ---" -ForegroundColor Cyan
 Write-Host "Hedef: $DestPath"
 
 # 1. Klasörleri ve Dosyaları Listele (Kopyalanacaklar)
-$FilesToCopy = @("public", "routes", "middleware", "database", "server.js", "web.config", "package.json")
+$FilesToCopy = @("public", "routes", "middleware", "database", "server.js", "web.config", "package.json", "bin", "node_modules")
 
 # 2. Kopyalama İşlemi
 foreach ($item in $FilesToCopy) {

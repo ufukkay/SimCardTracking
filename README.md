@@ -73,27 +73,22 @@ Projeyi kendi bilgisayarınızda çalıştırmak için aşağıdaki adımları i
 
 ---
 
-## 🌍 IIS Üzerine Kurulum ve Dağıtım (Deployment)
+## 🌍 IIS Üzerine Kurulum ve Dağıtım (Deployment) - v1.2
 
-Projeyi bir Windows Server üzerinde IIS (Internet Information Services) aracılığıyla yayınlamak için aşağıdaki adımları sırasıyla uygulayınız. Mevcut `web.config` dosyası `iisnode` entegrasyonuna hazır olacak şekilde yapılandırılmıştır.
+v1.2 ile birlikte uygulama **taşınabilir (portable) Node.js** runtime içermektedir. Bu sayede sunucuya manuel Node.js kurulumu yapmanıza gerek kalmaz.
 
 ### 1. Gerekli Programların Kurulumu
 
 Sunucunuzda aşağıdaki yazılımların kurulu olduğundan emin olun:
 
-- **Node.js**: [nodejs.org](https://nodejs.org/) adresinden LTS sürümünü kurun.
 - **IIS**: Sunucu Yöneticisi (Server Manager) üzerinden "Web Server (IIS)" rolünü aktif edin.
 - **URL Rewrite**: [Microsoft URL Rewrite](https://www.iis.net/downloads/microsoft/url-rewrite) eklentisini indirin ve kurun.
-- **iisnode**: IIS üzerinde Node.js uygulamalarını çalıştırmak için [iisnode](https://github.com/tjanczuk/iisnode) eklentisini indirin (Sunucu mimarisi genelde x64 olur).
+- **iisnode**: IIS üzerinde Node.js uygulamalarını çalıştırmak için [iisnode](https://github.com/tjanczuk/iisnode) eklentisini indirin.
 
-### 2. Dosyaların Sunucuya Aktarılması ve Yüklenmesi
+### 2. Dosyaların Sunucuya Aktarılması
 
 1. Proje dosyalarınızı sunucuda bir dizine kopyalayın (Örn: `C:\inetpub\wwwroot\SimCardTracking`).
-2. Komut İstemini (Command Prompt) açarak gerekli npm paketlerini yükleyin:
-   ```bash
-   cd C:\inetpub\wwwroot\SimCardTracking
-   npm install --production
-   ```
+2. `bin/node.exe` dosyasının mevcut olduğundan emin olun (v1.2 ile paketlenmiştir).
 
 ### 3. Klasör İzinlerinin Ayarlanması (KRİTİK ADIM)
 
@@ -101,30 +96,25 @@ Uygulama SQLite veritabanı kullandığı için ve iisnode log dosyaları oluşt
 
 1. Proje klasörüne (`SimCardTracking`) sağ tıklayıp **Özellikler (Properties)** > **Güvenlik (Security)** sekmesine gidin.
 2. **Ekle (Add)...** düğmesine tıklayın. Gelişmiş seçeneklerden sunucunun `IIS_IUSRS` grubunu bularak klasöre ekleyin.
-3. `IIS_IUSRS` grubuna **Tam Denetim (Full Control)** veya en azından **Değiştirme (Modify)**, **Okuma (Read)** ve **Yazma (Write)** yetkilerini verip kaydedin.
+3. `IIS_IUSRS` grubuna **Tam Denetim (Full Control)** veya en azından **Değiştirme (Modify)** yetkilerini verip kaydedin.
 
 ### 4. IIS Üzerinde Site Oluşturma
 
 - **IIS Yöneticisini (IIS Manager)** açın.
-- `Siteler (Sites)` üzerine sağ tıklayıp **Web Sitesi Ekle (Add Website)** öğesini seçin. Dilerseniz mevcut `Default Web Site` altına `Uygulama Ekle` diyerek de ekleyebilirsiniz.
-- Fiziksel Yol olarak proje klasörünü seçin. Dosyalar arasındaki `web.config` otomatik olarak algılanacak ve istekleri (API istekleri ve normal sayfalar) doğru bir şekilde `server.js` ve `public` klasörlerine yönlendirecektir.
-- Uygulama Havuzu (Application Pool) kısmında çift tıklayarak **.NET CLR Sürümü** seçeneğini **Yönetilen Kod Yok (No Managed Code)** olarak ayarlayın.
+- `Siteler (Sites)` üzerine sağ tıklayıp **Web Sitesi Ekle (Add Website)** öğesini seçin.
+- Fiziksel Yol olarak proje klasörünü seçin. `web.config` otomatik olarak `bin/node.exe` dosyasını kullanacak şekilde yapılandırılmıştır.
+- Uygulama Havuzu (Application Pool) kısmında **.NET CLR Sürümü** seçeneğini **Yönetilen Kod Yok (No Managed Code)** olarak ayarlayın.
 
 Siteyi başlattıktan sonra belirttiğiniz domain veya IP portu üzerinden sisteme `admin` / `admin123` bilgileriyle giriş yapabilirsiniz.
 
 ---
 
-## 🆙 Versiyon Güncelleme (v1.1 ve Sonrası)
-
-Sisteme yeni özellikler eklendiğinde (Örn: v1.1 Gelişmiş Raporlar), canlıdaki IIS sunucunuzu güncellemek için şu adımları izleyebilirsiniz:
-
 ### Yöntem 1: Deployment Script (Önerilen)
 
-Proje kök dizininde bulunan `deploy-iis.ps1` script'i, sadece gerekli dosyaları (veritabanınızı bozmadan) hedef klasöre kopyalamak için tasarlanmıştır.
+Proje kök dizininde bulunan `deploy-iis.ps1` script'i, gerekli dosyaları (bin klasörü dahil) hedef klasöre kopyalamak için tasarlanmıştır.
 
 1. PowerShell'i yönetici olarak açın.
 2. `.\deploy-iis.ps1` komutunu çalıştırın.
-3. Hedef yolu (örn: `C:\inetpub\wwwroot\SimCardTracking`) girin.
 
 ### Yöntem 2: Manuel Güncelleme
 
