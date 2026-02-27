@@ -1,4 +1,4 @@
-# SIM Takip Sistemi - IIS Deployment Script (v1.2)
+# SIM Takip Sistemi - IIS Deployment Script
 # Bu script, geliştirme klasöründeki güncel dosyaları IIS sunucusuna aktarır.
 
 $ErrorActionPreference = "Stop"
@@ -16,7 +16,7 @@ if (-not (Test-Path $DestPath)) {
     exit
 }
 
-Write-Host "--- v1.2 Güncellemesi Başlatılıyor ---" -ForegroundColor Cyan
+Write-Host "--- Güncelleme Başlatılıyor ---" -ForegroundColor Cyan
 Write-Host "Hedef: $DestPath"
 
 # 1. Klasörleri ve Dosyaları Listele (Kopyalanacaklar)

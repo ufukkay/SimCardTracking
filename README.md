@@ -73,9 +73,9 @@ Projeyi kendi bilgisayarınızda çalıştırmak için aşağıdaki adımları i
 
 ---
 
-## 🌍 IIS Üzerine Kurulum ve Dağıtım (Deployment) - v1.2
+## 🌍 IIS Üzerine Kurulum ve Dağıtım (Deployment)
 
-v1.2 ile birlikte uygulama **taşınabilir (portable) Node.js** runtime içermektedir. Bu sayede sunucuya manuel Node.js kurulumu yapmanıza gerek kalmaz.
+Uygulama **taşınabilir (portable) Node.js** runtime içermektedir. Bu sayede sunucuya manuel Node.js kurulumu yapmanıza gerek kalmaz.
 
 ### 1. Gerekli Programların Kurulumu
 
