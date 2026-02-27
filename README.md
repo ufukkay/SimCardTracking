@@ -73,55 +73,50 @@ Projeyi kendi bilgisayarınızda çalıştırmak için aşağıdaki adımları i
 
 ---
 
-## 🌍 IIS Üzerine Kurulum ve Dağıtım (Deployment)
+## 🌍 IIS Kurulum ve Güncelleme Rehberi
 
-Uygulama **taşınabilir (portable) Node.js** runtime içermektedir. Bu sayede sunucuya manuel Node.js kurulumu yapmanıza gerek kalmaz.
+Bu bölüm, uygulamayı bir Windows Server üzerinde IIS (Internet Information Services) aracılığıyla nasıl yayına alacağınızı veya mevcut sürümü nasıl güncelleyeceğinizi anlatır. Uygulama **taşınabilir Node.js** içerdiği için sunucuya Node.js kurmanıza gerek yoktur.
 
-### 1. Gerekli Programların Kurulumu
+### 🚩 Ön Hazırlık (Gereksinimler)
 
-Sunucunuzda aşağıdaki yazılımların kurulu olduğundan emin olun:
-
-- **IIS**: Sunucu Yöneticisi (Server Manager) üzerinden "Web Server (IIS)" rolünü aktif edin.
-- **URL Rewrite**: [Microsoft URL Rewrite](https://www.iis.net/downloads/microsoft/url-rewrite) eklentisini indirin ve kurun.
-- **iisnode**: IIS üzerinde Node.js uygulamalarını çalıştırmak için [iisnode](https://github.com/tjanczuk/iisnode) eklentisini indirin.
-
-### 2. Dosyaların Sunucuya Aktarılması
-
-1. Proje dosyalarınızı sunucuda bir dizine kopyalayın (Örn: `C:\inetpub\wwwroot\SimCardTracking`).
-2. `bin/node.exe` dosyasının mevcut olduğundan emin olun (v1.2 ile paketlenmiştir).
-
-### 3. Klasör İzinlerinin Ayarlanması (KRİTİK ADIM)
-
-Uygulama SQLite veritabanı kullandığı için ve iisnode log dosyaları oluşturacağı için, IIS kullanıcısına okuma ve yazma izni verilmesi zorunludur:
-
-1. Proje klasörüne (`SimCardTracking`) sağ tıklayıp **Özellikler (Properties)** > **Güvenlik (Security)** sekmesine gidin.
-2. **Ekle (Add)...** düğmesine tıklayın. Gelişmiş seçeneklerden sunucunun `IIS_IUSRS` grubunu bularak klasöre ekleyin.
-3. `IIS_IUSRS` grubuna **Tam Denetim (Full Control)** veya en azından **Değiştirme (Modify)** yetkilerini verip kaydedin.
-
-### 4. IIS Üzerinde Site Oluşturma
-
-- **IIS Yöneticisini (IIS Manager)** açın.
-- `Siteler (Sites)` üzerine sağ tıklayıp **Web Sitesi Ekle (Add Website)** öğesini seçin.
-- Fiziksel Yol olarak proje klasörünü seçin. `web.config` otomatik olarak `bin/node.exe` dosyasını kullanacak şekilde yapılandırılmıştır.
-- Uygulama Havuzu (Application Pool) kısmında **.NET CLR Sürümü** seçeneğini **Yönetilen Kod Yok (No Managed Code)** olarak ayarlayın.
-
-Siteyi başlattıktan sonra belirttiğiniz domain veya IP portu üzerinden sisteme `admin` / `admin123` bilgileriyle giriş yapabilirsiniz.
+- **IIS**: Sunucu Yöneticisi üzerinden "Web Server (IIS)" rolünü aktif edin.
+- **URL Rewrite & iisnode**: IIS üzerinde Node.js çalıştırabilmek için [URL Rewrite](https://www.iis.net/downloads/microsoft/url-rewrite) ve [iisnode](https://github.com/tjanczuk/iisnode) eklentilerini kurun.
 
 ---
 
-### Yöntem 1: Deployment Script (Önerilen)
+### 📥 Seçenek 1: Sıfırdan (Temiz) Kurulum
 
-Proje kök dizininde bulunan `deploy-iis.ps1` script'i, gerekli dosyaları (bin klasörü dahil) hedef klasöre kopyalamak için tasarlanmıştır.
+Eğer ilk kez kurulum yapıyorsanız veya her şeyi sıfırlamak istiyorsanız:
 
-1. PowerShell'i yönetici olarak açın.
-2. `.\deploy-iis.ps1` komutunu çalıştırın.
+1.  **Klasörü Hazırlayın**: Proje dosyalarını sunucuda bir dizine kopyalayın (Örn: `C:\inetpub\wwwroot\SimCardTracking`).
+2.  **İzinleri Tanımlayın (KRİTİK)**:
+    - Klasöre sağ tıklayın -> **Özellikler** -> **Güvenlik**.
+    - `IIS_IUSRS` grubunu ekleyin ve **Değiştirme (Modify)** yetkisi verin (Veritabanı yazma işlemi için zorunludur).
+3.  **IIS Üzerinde Site Oluşturun**:
+    - IIS Manager'dan yeni bir site ekleyin ve fiziksel yol olarak proje klasörünü seçin.
+    - Uygulama Havuzu (Application Pool) ayarlarından **.NET CLR Version** seçeneğini **No Managed Code** olarak değiştirin.
 
-### Yöntem 2: Manuel Güncelleme
+---
 
-Eğer manuel kopyalamak isterseniz; `public`, `routes`, `middleware`, `database`, `server.js` ve `package.json` dosyalarını hedef klasöre yapıştırın.
-**DİKKAT:** Canlıdaki verilerinizin silinmemesi için `database/simcardtracking.db` dosyasını kopyalarken dikkatli olun (üzerine yazmayın).
+### 🔄 Seçenek 2: Mevcut Sistemi Güncelleme (Update)
+
+Canlıdaki verilerinizi (veritabanını) bozmadan sadece kodları güncellemek için:
+
+1.  **PowerShell'i Yönetici Olarak Açın**: Proje klasörü içinde sağ tıklayıp PowerShell'i başlatın.
+2.  **Script'i Çalıştırın**:
+    ```powershell
+    .\deploy-iis.ps1
+    ```
+3.  **Yolu Girin**: Script size hedef klasörü soracaktır (Örn: `C:\inetpub\wwwroot\SimCardTracking`).
+4.  **İşlem Tamam**: Script; `node_modules`, `bin` ve tüm kodları güncelleyip IIS'i otomatik olarak tetikleyecektir. Veritabanı (`.db`) dosyanız korunur.
+
+---
+
+### ⚠️ Önemli Notlar
+
+- **Veritabanı Yedekleme**: Herhangi bir işlem yapmadan önce `database/simcardtracking.db` dosyasını yedeklemeniz önerilir.
+- **Node_modules**: v1.2 ile birlikte tüm kütüphaneler script tarafından kopyalandığı için sunucuda `npm install` yapmanıza gerek kalmamıştır.
 
 ---
 
 _Ufuk Kaya tarafından geliştirilmiştir._
- 
