@@ -35,6 +35,7 @@ db.exec(`
     operator TEXT NOT NULL,
     status TEXT NOT NULL DEFAULT 'active',
     plate_no TEXT,
+    vehicle_type TEXT,
     notes TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP

@@ -4,6 +4,12 @@ const M2MPage = (() => {
 
   function render() {
     document.getElementById('pageTitle').textContent = 'M2M Hatları';
+    document.getElementById('topbarActions').innerHTML = `
+      <button class="btn btn-primary" onclick="M2MPage.openAdd()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Yeni Ekle
+      </button>
+    `;
     document.getElementById('pageContent').innerHTML = `
       <div class="card">
         <div class="card-header">
@@ -13,6 +19,13 @@ const M2MPage = (() => {
           <input type="text" id="m2mSearch" class="form-control search-input" placeholder="🔍  Plaka, numara veya ICCID ara...">
           <select id="m2mOpFilter" class="form-control" style="width:160px">
             <option value="">Tüm Operatörler</option>
+          </select>
+          <select id="m2mTypeFilter" class="form-control" style="width:160px">
+            <option value="">Tüm Araç Tipleri</option>
+            <option value="Binek">Binek</option>
+            <option value="Çekici">Çekici</option>
+            <option value="Yol Kamerası">Yol Kamerası</option>
+            <option value="IoT Cihazı">IoT Cihazı</option>
           </select>
           <select id="m2mStatusFilter" class="form-control" style="width:140px">
             <option value="">Tüm Durumlar</option>
@@ -33,6 +46,7 @@ const M2MPage = (() => {
                 <th>ICCID</th>
                 <th>Telefon No</th>
                 <th>Operatör</th>
+                <th>Araç Tipi</th>
                 <th>Durum</th>
                 <th>Plaka</th>
                 <th>Notlar</th>
@@ -73,7 +87,17 @@ const M2MPage = (() => {
                   <option value="passive">Pasif</option>
                 </select>
               </div>
-              <div class="form-group col-span-2">
+              <div class="form-group">
+                <label class="form-label">Araç Tipi</label>
+                <select name="vehicle_type" class="form-control">
+                  <option value="">Seçiniz...</option>
+                  <option value="Binek">Binek</option>
+                  <option value="Çekici">Çekici</option>
+                  <option value="Yol Kamerası">Yol Kamerası</option>
+                  <option value="IoT Cihazı">IoT Cihazı</option>
+                </select>
+              </div>
+              <div class="form-group">
                 <label class="form-label">Plaka</label>
                 <input name="plate_no" class="form-control" list="vehiclesList" id="m2mPlateInput" placeholder="Seçin veya yazın..." autocomplete="off">
                 <datalist id="vehiclesList"></datalist>
@@ -103,12 +127,31 @@ const M2MPage = (() => {
 
     // Search and filter events
     let debounceTimer;
-    ['m2mSearch', 'm2mOpFilter', 'm2mStatusFilter'].forEach(id => {
+    ['m2mSearch', 'm2mOpFilter', 'm2mTypeFilter', 'm2mStatusFilter'].forEach(id => {
       document.getElementById(id).addEventListener('input', () => {
         clearTimeout(debounceTimer);
         debounceTimer = setTimeout(() => M2MPage.load(), 350);
       });
     });
+
+    // Auto-fill Araç Tipi when a plate is selected
+    const plateInput = document.getElementById('m2mPlateInput');
+    const typeSelect = document.querySelector('#m2mForm select[name="vehicle_type"]');
+    if (plateInput && typeSelect) {
+      plateInput.addEventListener('input', (e) => {
+        const val = e.target.value;
+        const dl = document.getElementById('vehiclesList');
+        if (!dl) return;
+        const option = Array.from(dl.options).find(opt => opt.value === val);
+        if (option) {
+          // The option text contains the vehicle type after " – "
+          const textMatches = option.textContent.match(/ – (.+)$/);
+          if (textMatches && textMatches[1]) {
+             typeSelect.value = textMatches[1];
+          }
+        }
+      });
+    }
 
     load();
   }
@@ -116,26 +159,44 @@ const M2MPage = (() => {
   async function load() {
     const search = document.getElementById('m2mSearch')?.value || '';
     const operator = document.getElementById('m2mOpFilter')?.value || '';
+    const vehicleType = document.getElementById('m2mTypeFilter')?.value || '';
     const status = document.getElementById('m2mStatusFilter')?.value || '';
     const params = new URLSearchParams();
     if (search) params.append('search', search);
     if (operator) params.append('operator', operator);
+    if (vehicleType) params.append('vehicle_type', vehicleType);
     if (status) params.append('status', status);
     const qs = params.toString() ? '?' + params.toString() : '';
 
     const tbody = document.getElementById('m2mTableBody');
     try {
-      const rows = await API.getM2M(qs);
+      let rows = await API.getM2M(qs);
+      
+      const colDefs = {
+        'iccid': { label: 'ICCID', getVal: r => r.iccid || '—' },
+        'phone_no': { label: 'Telefon No', getVal: r => r.phone_no || '—' },
+        'operator': { label: 'Operatör', getVal: r => r.operator || '—' },
+        'vehicle_type': { label: 'Araç Tipi', getVal: r => r.vehicle_type || '—' },
+        'status': { label: 'Durum', getVal: r => r.status || '—' },
+        'plate_no': { label: 'Plaka', getVal: r => r.plate_no || '—' },
+        'notes': { label: 'Notlar', getVal: r => r.notes || '—' }
+      };
+
+      if (!M2MPage.colFilters) M2MPage.colFilters = {};
+      rows = UI.filterRows(rows, M2MPage.colFilters, colDefs);
+
       if (!rows.length) {
-        tbody.innerHTML = `<tr><td colspan="8">${UI.emptyState('🚗', 'M2M hattı bulunamadı', 'Yeni hat eklemek için butona tıklayın.')}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="9">${UI.emptyState('🚗', 'M2M hattı bulunamadı', 'Yeni hat eklemek için butona tıklayın.')}</td></tr>`;
         return;
       }
+
       tbody.innerHTML = rows.map((r, i) => `
         <tr>
           <td class="td-muted">${i + 1}</td>
           <td class="td-muted" style="font-family:monospace;font-size:12px">${r.iccid || '—'}</td>
           <td>${r.phone_no || '—'}</td>
           <td>${UI.operatorBadge(r.operator)}</td>
+          <td>${r.vehicle_type ? `<span class="badge" style="background:var(--bg-secondary);color:var(--text-main)">${r.vehicle_type}</span>` : '—'}</td>
           <td>${UI.statusBadge(r.status)}</td>
           <td><strong>${r.plate_no || '—'}</strong></td>
           <td class="td-muted" style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.notes || '—'}</td>
@@ -151,6 +212,9 @@ const M2MPage = (() => {
           </td>
         </tr>
       `).join('');
+      
+      UI.setupTableFilters('m2mTableBody', rows, M2MPage.colFilters, colDefs, () => load());
+
     } catch (err) {
       tbody.innerHTML = `<tr><td colspan="8" style="color:var(--danger);padding:20px">${err.message}</td></tr>`;
     }

@@ -4,6 +4,12 @@ const DataPage = (() => {
 
   function render() {
     document.getElementById('pageTitle').textContent = 'Data Hatları';
+    document.getElementById('topbarActions').innerHTML = `
+      <button class="btn btn-primary" onclick="DataPage.openAdd()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Yeni Ekle
+      </button>
+    `;
     document.getElementById('pageContent').innerHTML = `
       <div class="card">
         <div class="card-header">
@@ -122,7 +128,20 @@ const DataPage = (() => {
 
     const tbody = document.getElementById('dataTableBody');
     try {
-      const rows = await API.getData(qs);
+      let rows = await API.getData(qs);
+      
+      const colDefs = {
+        'iccid': { label: 'ICCID', getVal: r => r.iccid || '—' },
+        'phone_no': { label: 'Telefon No', getVal: r => r.phone_no || '—' },
+        'operator': { label: 'Operatör', getVal: r => r.operator || '—' },
+        'status': { label: 'Durum', getVal: r => r.status || '—' },
+        'location': { label: 'Lokasyon', getVal: r => r.location || '—' },
+        'notes': { label: 'Notlar', getVal: r => r.notes || '—' }
+      };
+
+      if (!DataPage.colFilters) DataPage.colFilters = {};
+      rows = UI.filterRows(rows, DataPage.colFilters, colDefs);
+
       if (!rows.length) {
         tbody.innerHTML = `<tr><td colspan="8">${UI.emptyState('🌐', 'Data hattı bulunamadı', 'Yeni hat eklemek için butona tıklayın.')}</td></tr>`;
         return;
@@ -148,6 +167,9 @@ const DataPage = (() => {
           </td>
         </tr>
       `).join('');
+      
+      UI.setupTableFilters('dataTableBody', rows, DataPage.colFilters, colDefs, () => load());
+
     } catch (err) {
       tbody.innerHTML = `<tr><td colspan="8" style="color:var(--danger);padding:20px">${err.message}</td></tr>`;
     }

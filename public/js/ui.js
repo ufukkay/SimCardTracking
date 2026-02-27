@@ -103,5 +103,135 @@ const UI = (() => {
     });
   }
 
-  return { toast, confirm, openModal, closeModal, statusBadge, operatorBadge, emptyState, loading, fillOperatorSelect, formData, setForm };
+  // ─── Excel-like Column Filters (Global) ───
+  // colDef = { 'operator': { label: 'Operatör', getVal: row => row.operator } }
+  // storageObj = object where filters are kept (e.g. M2MPage.colFilters)
+  // onApply = callback to trigger data refresh
+  function setupTableFilters(tableBodyId, currentRows, filterStateObj, colDefs, onApply) {
+    const tbody = document.getElementById(tableBodyId);
+    if (!tbody) return;
+    const ths = tbody.closest('table').querySelectorAll('th');
+
+    ths.forEach(th => {
+      const text = th.textContent.trim().toLowerCase();
+      
+      // Find matching column definition based on th text
+      const colKey = Object.keys(colDefs).find(k => (colDefs[k].label || '').toLowerCase() === text);
+      if (!colKey) return;
+      
+      const colDef = colDefs[colKey];
+      
+      // Cleanup previous injects
+      if (th.querySelector('.th-filter-btn')) {
+         th.querySelector('.th-filter-btn').remove();
+         if (th.querySelector('.col-filter-menu')) th.querySelector('.col-filter-menu').remove();
+      }
+
+      // Unique values from all currently fetched rows
+      let rawValues = currentRows.map(r => colDef.getVal(r));
+      let uniqueVals = [...new Set(rawValues)].filter(v => v !== '—' && v !== '' && v !== null && v !== undefined);
+      uniqueVals.sort();
+
+      const isActive = filterStateObj && filterStateObj[colKey] && filterStateObj[colKey].length > 0;
+      
+      const btn = document.createElement('button');
+      btn.className = `th-filter-btn ${isActive ? 'active' : ''}`;
+      btn.innerHTML = '⋮';
+      btn.title = 'Filtrele';
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        document.querySelectorAll('.col-filter-menu').forEach(m => m !== menu && m.classList.remove('open'));
+        menu.classList.toggle('open');
+      };
+
+      const menu = document.createElement('div');
+      menu.className = 'col-filter-menu';
+      
+      // Search Input
+      const searchInp = document.createElement('input');
+      searchInp.className = 'form-control';
+      searchInp.placeholder = 'Ara...';
+      searchInp.onclick = e => e.stopPropagation();
+      searchInp.onkeyup = (e) => {
+         const q = e.target.value.toLowerCase();
+         menu.querySelectorAll('.col-filter-item').forEach(item => {
+            const txt = item.querySelector('span').innerText.toLowerCase();
+            item.style.display = txt.includes(q) ? 'flex' : 'none';
+         });
+      };
+      
+      // Values List
+      const list = document.createElement('div');
+      list.className = 'col-filter-list';
+      uniqueVals.forEach(val => {
+         const isChecked = isActive && filterStateObj[colKey].includes(val);
+         list.innerHTML += `
+           <label class="col-filter-item" onclick="event.stopPropagation()">
+             <input type="checkbox" value="${val}" ${isChecked ? 'checked' : ''}>
+             <span title="${val}">${val}</span>
+           </label>
+         `;
+      });
+      if (uniqueVals.length === 0) list.innerHTML = '<div style="padding:4px;color:var(--text-muted)">Kayıt yok</div>';
+
+      // Action Buttons
+      const acts = document.createElement('div');
+      acts.className = 'col-filter-actions';
+      
+      const clearBtn = document.createElement('button');
+      clearBtn.className = 'btn btn-ghost btn-sm';
+      clearBtn.innerText = 'Temizle';
+      clearBtn.onclick = (e) => {
+         e.stopPropagation();
+         if (!filterStateObj[colKey]) filterStateObj[colKey] = [];
+         filterStateObj[colKey] = [];
+         menu.classList.remove('open');
+         onApply();
+      };
+      
+      const applyBtn = document.createElement('button');
+      applyBtn.className = 'btn btn-primary btn-sm';
+      applyBtn.innerText = 'Uygula';
+      applyBtn.onclick = (e) => {
+         e.stopPropagation();
+         const checked = Array.from(list.querySelectorAll('input:checked')).map(cb => cb.value);
+         filterStateObj[colKey] = checked;
+         menu.classList.remove('open');
+         onApply();
+      };
+      
+      acts.appendChild(clearBtn);
+      acts.appendChild(applyBtn);
+
+      menu.appendChild(searchInp);
+      menu.appendChild(list);
+      menu.appendChild(acts);
+      
+      th.appendChild(btn);
+      th.appendChild(menu);
+    });
+    
+    // Close menus on outside click
+    document.addEventListener('click', () => {
+       document.querySelectorAll('.col-filter-menu').forEach(m => m.classList.remove('open'));
+    }, { once: true });
+  }
+
+  // Filter local rows using the given state
+  function filterRows(rows, filterStateObj, colDefs) {
+    if (!filterStateObj) return rows;
+    let filtered = rows;
+    Object.keys(filterStateObj).forEach(colKey => {
+      const activeFilters = filterStateObj[colKey];
+      if (activeFilters && activeFilters.length > 0 && colDefs[colKey]) {
+        filtered = filtered.filter(row => {
+          const val = colDefs[colKey].getVal(row);
+          return activeFilters.includes(val);
+        });
+      }
+    });
+    return filtered;
+  }
+
+  return { toast, confirm, openModal, closeModal, statusBadge, operatorBadge, emptyState, loading, fillOperatorSelect, formData, setForm, setupTableFilters, filterRows };
 })();
