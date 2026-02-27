@@ -124,3 +124,4 @@ Eğer manuel kopyalamak isterseniz; `public`, `routes`, `middleware`, `database`
 ---
 
 _Ufuk Kaya tarafından geliştirilmiştir._
+ 

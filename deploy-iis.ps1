@@ -51,3 +51,4 @@ if (Test-Path $configPath) {
 
 Write-Host "`n--- İşlem Başarıyla Tamamlandı! ---" -ForegroundColor Green
 Write-Host "Tarayıcıdan kontrol edebilirsiniz."
+ 
