@@ -1,0 +1,8 @@
+node_modules/
+logs/
+.env
+simcardtracking.db-shm
+simcardtracking.db-wal
+
+# macOS
+.DS_Store
