@@ -233,5 +233,35 @@ const UI = (() => {
     return filtered;
   }
 
-  return { toast, confirm, openModal, closeModal, statusBadge, operatorBadge, emptyState, loading, fillOperatorSelect, formData, setForm, setupTableFilters, filterRows };
+  // ─── Selection Helpers ───
+  function initSelection(tableBodyId, selectAllId, onSelectionChange) {
+    const tbody = document.getElementById(tableBodyId);
+    const selectAll = document.getElementById(selectAllId);
+    if (!tbody || !selectAll) return;
+
+    selectAll.checked = false;
+    
+    selectAll.onchange = () => {
+      const cbs = tbody.querySelectorAll('input[type="checkbox"].row-select');
+      cbs.forEach(cb => cb.checked = selectAll.checked);
+      onSelectionChange(getSelectedIds(tableBodyId));
+    };
+
+    tbody.onchange = (e) => {
+      if (e.target.classList.contains('row-select')) {
+        const cbs = Array.from(tbody.querySelectorAll('input[type="checkbox"].row-select'));
+        selectAll.checked = cbs.every(cb => cb.checked);
+        onSelectionChange(getSelectedIds(tableBodyId));
+      }
+    };
+  }
+
+  function getSelectedIds(tableBodyId) {
+    const tbody = document.getElementById(tableBodyId);
+    if (!tbody) return [];
+    return Array.from(tbody.querySelectorAll('input[type="checkbox"].row-select:checked'))
+                .map(cb => parseInt(cb.value));
+  }
+
+  return { toast, confirm, openModal, closeModal, statusBadge, operatorBadge, emptyState, loading, fillOperatorSelect, formData, setForm, setupTableFilters, filterRows, initSelection, getSelectedIds };
 })();

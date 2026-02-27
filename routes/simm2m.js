@@ -75,4 +75,42 @@ router.delete('/:id', (req, res) => {
   res.json({ message: 'M2M hattı silindi.' });
 });
 
+// POST /api/m2m/bulk-delete
+router.post('/bulk-delete', (req, res) => {
+  const { ids } = req.body;
+  if (!Array.isArray(ids) || ids.length === 0) return res.status(400).json({ message: 'Geçersiz ID listesi.' });
+  
+  const placeholders = ids.map(() => '?').join(',');
+  const result = db.prepare(`DELETE FROM sim_m2m WHERE id IN (${placeholders})`).run(...ids);
+  res.json({ message: `${result.changes} kayıt başarıyla silindi.` });
+});
+
+// POST /api/m2m/bulk-update
+router.post('/bulk-update', (req, res) => {
+  const { ids, data } = req.body;
+  if (!Array.isArray(ids) || ids.length === 0) return res.status(400).json({ message: 'Geçersiz ID listesi.' });
+  if (!data || Object.keys(data).length === 0) return res.status(400).json({ message: 'Güncellenecek veri bulunamadı.' });
+
+  const fields = [];
+  const params = [];
+  
+  // Sadece izin verilen alanların güncellenmesini sağla
+  const allowedFields = ['operator', 'status', 'vehicle_type', 'notes'];
+  Object.keys(data).forEach(key => {
+    if (allowedFields.includes(key) && data[key] !== undefined) {
+      fields.push(`${key} = ?`);
+      params.push(data[key]);
+    }
+  });
+
+  if (fields.length === 0) return res.status(400).json({ message: 'Güncellenecek geçerli alan bulunamadı.' });
+
+  fields.push('updated_at = CURRENT_TIMESTAMP');
+  const placeholders = ids.map(() => '?').join(',');
+  const query = `UPDATE sim_m2m SET ${fields.join(', ')} WHERE id IN (${placeholders})`;
+  const result = db.prepare(query).run(...params, ...ids);
+  
+  res.json({ message: `${result.changes} kayıt başarıyla güncellendi.` });
+});
+
 module.exports = router;

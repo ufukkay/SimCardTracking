@@ -113,6 +113,11 @@ const API = (() => {
     getPersonnel:   (q)    => request('GET',    `/personnel${q||''}`),
     addPersonnel:   (d)    => request('POST',   '/personnel', d),
     updatePersonnel:(id,d) => request('PUT',    `/personnel/${id}`, d),
+    deleteLocation:(id)   => request('DELETE', `/locations/${id}`),
     deletePersonnel:(id)   => request('DELETE', `/personnel/${id}`),
+
+    // Bulk Actions
+    bulkDelete: (type, ids) => request('POST', `/${type}/bulk-delete`, { ids }),
+    bulkUpdate: (type, ids, data) => request('POST', `/${type}/bulk-update`, { ids, data }),
   };
 })();

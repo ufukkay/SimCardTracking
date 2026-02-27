@@ -23,18 +23,22 @@ Write-Host "Hedef: $DestPath"
 $FilesToCopy = @("public", "routes", "middleware", "database", "server.js", "web.config", "package.json", "bin", "node_modules")
 
 # 2. Kopyalama İşlemi
-foreach ($item in $FilesToCopy) {
-    $src = Join-Path $PSScriptRoot $item
-    $dst = Join-Path $DestPath $item
-    
-    if (Test-Path $src) {
-        Write-Host "Kopyalanıyor: $item..."
-        if ($item -eq "database") {
-            # Veritabanı klasöründe .db dosyasını ezmemek için kontrol (Production verisi kaybolmasın)
-            if (-not (Test-Path $dst)) { New-Item -ItemType Directory -Path $dst -Force | Out-Null }
-            Get-ChildItem $src | Where-Object { $_.Extension -ne ".db" -and $_.Extension -ne ".db-wal" -and $_.Extension -ne ".db-shm" } | Copy-Item -Destination $dst -Force -Recurse
-        } else {
-            Copy-Item -Path $src -Destination $DestPath -Force -Recurse
+if ($PSScriptRoot -eq $DestPath) {
+    Write-Host "Zaten hedef klasördesiniz, kopyalama adımı atlanıyor..." -ForegroundColor Yellow
+} else {
+    foreach ($item in $FilesToCopy) {
+        $src = Join-Path $PSScriptRoot $item
+        $dst = Join-Path $DestPath $item
+        
+        if (Test-Path $src) {
+            Write-Host "Kopyalanıyor: $item..."
+            if ($item -eq "database") {
+                # Veritabanı klasöründe .db dosyasını ezmemek için kontrol (Production verisi kaybolmasın)
+                if (-not (Test-Path $dst)) { New-Item -ItemType Directory -Path $dst -Force | Out-Null }
+                Get-ChildItem $src | Where-Object { $_.Extension -ne ".db" -and $_.Extension -ne ".db-wal" -and $_.Extension -ne ".db-shm" } | Copy-Item -Destination $dst -Force -Recurse
+            } else {
+                Copy-Item -Path $src -Destination $DestPath -Force -Recurse
+            }
         }
     }
 }

@@ -14,6 +14,19 @@ const M2MPage = (() => {
       <div class="card">
         <div class="card-header">
           <span class="card-title">M2M Hat Listesi</span>
+          <div id="bulkActionsBar" class="bulk-actions-bar" style="display:none">
+            <span id="selectedCount">0 kayıt seçildi</span>
+            <div class="bulk-buttons">
+              <button class="btn btn-secondary btn-sm" onclick="M2MPage.openBulkEdit()">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                Toplu Düzenle
+              </button>
+              <button class="btn btn-danger btn-sm" onclick="M2MPage.bulkDel()">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                Toplu Sil
+              </button>
+            </div>
+          </div>
         </div>
         <div class="filters">
           <input type="text" id="m2mSearch" class="form-control search-input" placeholder="🔍  Plaka, numara veya ICCID ara...">
@@ -42,6 +55,7 @@ const M2MPage = (() => {
           <table>
             <thead>
               <tr>
+                <th style="width:40px"><input type="checkbox" id="m2mSelectAll"></th>
                 <th>#</th>
                 <th>ICCID</th>
                 <th>Telefon No</th>
@@ -114,6 +128,52 @@ const M2MPage = (() => {
           </div>
         </div>
       </div>
+
+      <!-- Bulk Edit Modal -->
+      <div class="modal-overlay" id="m2mBulkModal">
+        <div class="modal">
+          <div class="modal-header">
+            <span class="modal-title">Toplu M2M Düzenle</span>
+            <button class="modal-close" onclick="UI.closeModal('m2mBulkModal')">×</button>
+          </div>
+          <form class="modal-body" id="m2mBulkForm" onsubmit="M2MPage.saveBulk(event)">
+            <p style="margin-bottom:15px; color:var(--text-muted); font-size:13px"><span id="bulkSelectedCountText">0</span> kayıt güncellenecek. Sadece değiştirmek istediğiniz alanları doldurun.</p>
+            <div class="form-grid">
+              <div class="form-group">
+                <label class="form-label">Operatör</label>
+                <select name="operator" class="form-control" id="m2mBulkOperatorSel"></select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Durum</label>
+                <select name="status" class="form-control">
+                  <option value="">Değiştirme...</option>
+                  <option value="active">Aktif</option>
+                  <option value="spare">Yedek</option>
+                  <option value="passive">Pasif</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Araç Tipi</label>
+                <select name="vehicle_type" class="form-control">
+                  <option value="">Değiştirme...</option>
+                  <option value="Binek">Binek</option>
+                  <option value="Çekici">Çekici</option>
+                  <option value="Yol Kamerası">Yol Kamerası</option>
+                  <option value="IoT Cihazı">IoT Cihazı</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Notlar</label>
+                <input name="notes" class="form-control" placeholder="Tüm seçilenlere bu notu ekle...">
+              </div>
+            </div>
+          </form>
+          <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="UI.closeModal('m2mBulkModal')">İptal</button>
+            <button class="btn btn-primary" onclick="document.getElementById('m2mBulkForm').requestSubmit()" id="m2mBulkSaveBtn">Toplu Güncelle</button>
+          </div>
+        </div>
+      </div>
     `;
 
     // Fill filters, operator select, and vehicle datalist
@@ -121,6 +181,7 @@ const M2MPage = (() => {
       const filterEl = document.getElementById('m2mOpFilter');
       ops.forEach(o => { filterEl.innerHTML += `<option value="${o.name}">${o.name}</option>`; });
       UI.fillOperatorSelect(document.getElementById('m2mOperatorSel'));
+      UI.fillOperatorSelect(document.getElementById('m2mBulkOperatorSel'));
       const dl = document.getElementById('vehiclesList');
       if (dl) dl.innerHTML = vehicles.map(v => `<option value="${v.plate_no}">${v.plate_no}${v.vehicle_type ? ' – ' + v.vehicle_type : ''}</option>`).join('');
     });
@@ -192,6 +253,7 @@ const M2MPage = (() => {
 
       tbody.innerHTML = rows.map((r, i) => `
         <tr>
+          <td style="width:40px"><input type="checkbox" class="row-select" value="${r.id}"></td>
           <td class="td-muted">${i + 1}</td>
           <td class="td-muted" style="font-family:monospace;font-size:12px">${r.iccid || '—'}</td>
           <td>${r.phone_no || '—'}</td>
@@ -214,6 +276,18 @@ const M2MPage = (() => {
       `).join('');
       
       UI.setupTableFilters('m2mTableBody', rows, M2MPage.colFilters, colDefs, () => load());
+      
+      // Selection init
+      UI.initSelection('m2mTableBody', 'm2mSelectAll', (ids) => {
+        const bar = document.getElementById('bulkActionsBar');
+        const countEl = document.getElementById('selectedCount');
+        if (ids.length > 0) {
+          bar.style.display = 'flex';
+          countEl.textContent = `${ids.length} kayıt seçildi`;
+        } else {
+          bar.style.display = 'none';
+        }
+      });
 
     } catch (err) {
       tbody.innerHTML = `<tr><td colspan="8" style="color:var(--danger);padding:20px">${err.message}</td></tr>`;
@@ -269,5 +343,53 @@ const M2MPage = (() => {
     });
   }
 
-  return { render, load, openAdd, openEdit, save, del };
+  function openBulkEdit() {
+    const ids = UI.getSelectedIds('m2mTableBody');
+    document.getElementById('m2mBulkForm').reset();
+    document.getElementById('bulkSelectedCountText').textContent = ids.length;
+    UI.openModal('m2mBulkModal');
+  }
+
+  async function saveBulk(e) {
+    e.preventDefault();
+    const ids = UI.getSelectedIds('m2mTableBody');
+    const formData = UI.formData('m2mBulkForm');
+    
+    // Sadece doldurulan alanları gönder
+    const data = {};
+    Object.keys(formData).forEach(key => {
+      if (formData[key]) data[key] = formData[key];
+    });
+
+    if (Object.keys(data).length === 0) {
+      UI.toast('Güncellenecek herhangi bir alan doldurmadınız.', 'info');
+      return;
+    }
+
+    const saveBtn = document.getElementById('m2mBulkSaveBtn');
+    saveBtn.disabled = true;
+    try {
+      await API.bulkUpdate('m2m', ids, data);
+      UI.toast(`${ids.length} kayıt başarıyla güncellendi.`, 'success');
+      UI.closeModal('m2mBulkModal');
+      load();
+    } catch (err) {
+      UI.toast(err.message, 'error');
+    } finally {
+      saveBtn.disabled = false;
+    }
+  }
+
+  function bulkDel() {
+    const ids = UI.getSelectedIds('m2mTableBody');
+    UI.confirm(`Seçilen ${ids.length} kayıt silinecek. Bu işlem geri alınamaz.`, async () => {
+      try {
+        await API.bulkDelete('m2m', ids);
+        UI.toast(`${ids.length} kayıt silindi.`, 'success');
+        load();
+      } catch (err) { UI.toast(err.message, 'error'); }
+    });
+  }
+
+  return { render, load, openAdd, openEdit, save, del, openBulkEdit, saveBulk, bulkDel };
 })();

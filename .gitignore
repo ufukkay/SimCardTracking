@@ -2,8 +2,9 @@
 # bin/ -> Included for portable node.exe
 logs/
 .env
-simcardtracking.db-shm
-simcardtracking.db-wal
+*.db
+*.db-shm
+*.db-wal
 
 # macOS
 .DS_Store

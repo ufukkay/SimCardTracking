@@ -15,6 +15,19 @@ const VoicePage = (() => {
       <div class="card">
         <div class="card-header">
           <span class="card-title">Ses Hat Listesi</span>
+          <div id="bulkActionsBar" class="bulk-actions-bar" style="display:none">
+            <span id="selectedCount">0 kayıt seçildi</span>
+            <div class="bulk-buttons">
+              <button class="btn btn-secondary btn-sm" onclick="VoicePage.openBulkEdit()">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                Toplu Düzenle
+              </button>
+              <button class="btn btn-danger btn-sm" onclick="VoicePage.bulkDel()">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                Toplu Sil
+              </button>
+            </div>
+          </div>
         </div>
         <div class="filters">
           <input type="text" id="voiceSearch" class="form-control search-input" placeholder="🔍  Personel, departman veya numara ara...">
@@ -36,6 +49,7 @@ const VoicePage = (() => {
           <table>
             <thead>
               <tr>
+                <th style="width:40px"><input type="checkbox" id="voiceSelectAll"></th>
                 <th>#</th>
                 <th>ICCID</th>
                 <th>Telefon No</th>
@@ -106,12 +120,57 @@ const VoicePage = (() => {
           </div>
         </div>
       </div>
+
+      <!-- Bulk Edit Modal -->
+      <div class="modal-overlay" id="voiceBulkModal">
+        <div class="modal">
+          <div class="modal-header">
+            <span class="modal-title">Toplu Ses Düzenle</span>
+            <button class="modal-close" onclick="UI.closeModal('voiceBulkModal')">×</button>
+          </div>
+          <form class="modal-body" id="voiceBulkForm" onsubmit="VoicePage.saveBulk(event)">
+            <p style="margin-bottom:15px; color:var(--text-muted); font-size:13px"><span id="bulkSelectedCountText">0</span> kayıt güncellenecek. Sadece değiştirmek istediğiniz alanları doldurun.</p>
+            <div class="form-grid">
+              <div class="form-group">
+                <label class="form-label">Operatör</label>
+                <select name="operator" class="form-control" id="voiceBulkOperatorSel"></select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Durum</label>
+                <select name="status" class="form-control">
+                  <option value="">Değiştirme...</option>
+                  <option value="active">Aktif</option>
+                  <option value="spare">Yedek</option>
+                  <option value="passive">Pasif</option>
+                </select>
+              </div>
+              <div class="form-group col-span-2">
+                <label class="form-label">Personel</label>
+                <input name="assigned_to" class="form-control" list="personnelList" placeholder="Tüm seçilenlere bu personeli ata...">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Departman</label>
+                <input name="department" class="form-control" placeholder="Yeni departman...">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Notlar</label>
+                <input name="notes" class="form-control" placeholder="Tüm seçilenlere bu notu ekle...">
+              </div>
+            </div>
+          </form>
+          <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="UI.closeModal('voiceBulkModal')">İptal</button>
+            <button class="btn btn-primary" onclick="document.getElementById('voiceBulkForm').requestSubmit()" id="voiceBulkSaveBtn">Toplu Güncelle</button>
+          </div>
+        </div>
+      </div>
     `;
 
     Promise.all([API.getOperators(), API.getPersonnel()]).then(([ops, personnel]) => {
       const filterEl = document.getElementById('voiceOpFilter');
       ops.forEach(o => { filterEl.innerHTML += `<option value="${o.name}">${o.name}</option>`; });
       UI.fillOperatorSelect(document.getElementById('voiceOperatorSel'));
+      UI.fillOperatorSelect(document.getElementById('voiceBulkOperatorSel'));
       personnelCache = personnel;
       const dl = document.getElementById('personnelList');
       if (dl) dl.innerHTML = personnel.map(p => `<option value="${p.first_name} ${p.last_name}" data-dept="${p.department||''}" data-company="${p.company||''}">${p.first_name} ${p.last_name}${p.department ? ' – ' + p.department : ''}${p.company ? ' (' + p.company + ')' : ''}</option>`).join('');
@@ -169,11 +228,12 @@ const VoicePage = (() => {
       rows = UI.filterRows(rows, VoicePage.colFilters, colDefs);
 
       if (!rows.length) {
-        tbody.innerHTML = `<tr><td colspan="9">${UI.emptyState('📞', 'Ses hattı bulunamadı', 'Yeni hat eklemek için butona tıklayın.')}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="10">${UI.emptyState('📞', 'Ses hattı bulunamadı', 'Yeni hat eklemek için butona tıklayın.')}</td></tr>`;
         return;
       }
       tbody.innerHTML = rows.map((r, i) => `
         <tr>
+          <td style="width:40px"><input type="checkbox" class="row-select" value="${r.id}"></td>
           <td class="td-muted">${i + 1}</td>
           <td class="td-muted" style="font-family:monospace;font-size:12px">${r.iccid || '—'}</td>
           <td>${r.phone_no || '—'}</td>
@@ -197,8 +257,19 @@ const VoicePage = (() => {
       
       UI.setupTableFilters('voiceTableBody', rows, VoicePage.colFilters, colDefs, () => load());
 
+      UI.initSelection('voiceTableBody', 'voiceSelectAll', (ids) => {
+        const bar = document.getElementById('bulkActionsBar');
+        const countEl = document.getElementById('selectedCount');
+        if (ids.length > 0) {
+          bar.style.display = 'flex';
+          countEl.textContent = `${ids.length} kayıt seçildi`;
+        } else {
+          bar.style.display = 'none';
+        }
+      });
+
     } catch (err) {
-      tbody.innerHTML = `<tr><td colspan="9" style="color:var(--danger);padding:20px">${err.message}</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="10" style="color:var(--danger);padding:20px">${err.message}</td></tr>`;
     }
   }
 
@@ -240,5 +311,42 @@ const VoicePage = (() => {
     });
   }
 
-  return { render, load, openAdd, openEdit, save, del };
+  function openBulkEdit() {
+    const ids = UI.getSelectedIds('voiceTableBody');
+    document.getElementById('voiceBulkForm').reset();
+    document.getElementById('bulkSelectedCountText').textContent = ids.length;
+    UI.openModal('voiceBulkModal');
+  }
+
+  async function saveBulk(e) {
+    e.preventDefault();
+    const ids = UI.getSelectedIds('voiceTableBody');
+    const formData = UI.formData('voiceBulkForm');
+    const data = {};
+    Object.keys(formData).forEach(key => { if (formData[key]) data[key] = formData[key]; });
+    if (Object.keys(data).length === 0) { UI.toast('Güncellenecek herhangi bir alan doldurmadınız.', 'info'); return; }
+
+    const saveBtn = document.getElementById('voiceBulkSaveBtn');
+    saveBtn.disabled = true;
+    try {
+      await API.bulkUpdate('voice', ids, data);
+      UI.toast(`${ids.length} kayıt başarıyla güncellendi.`, 'success');
+      UI.closeModal('voiceBulkModal');
+      load();
+    } catch (err) { UI.toast(err.message, 'error'); }
+    finally { saveBtn.disabled = false; }
+  }
+
+  function bulkDel() {
+    const ids = UI.getSelectedIds('voiceTableBody');
+    UI.confirm(`Seçilen ${ids.length} kayıt silinecek. Bu işlem geri alınamaz.`, async () => {
+      try {
+        await API.bulkDelete('voice', ids);
+        UI.toast(`${ids.length} kayıt silindi.`, 'success');
+        load();
+      } catch (err) { UI.toast(err.message, 'error'); }
+    });
+  }
+
+  return { render, load, openAdd, openEdit, save, del, openBulkEdit, saveBulk, bulkDel };
 })();

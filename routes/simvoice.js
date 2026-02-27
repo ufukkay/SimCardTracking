@@ -52,4 +52,37 @@ router.delete('/:id', (req, res) => {
   res.json({ message: 'Ses hattı silindi.' });
 });
 
+// POST /api/voice/bulk-delete
+router.post('/bulk-delete', (req, res) => {
+  const { ids } = req.body;
+  if (!Array.isArray(ids) || ids.length === 0) return res.status(400).json({ message: 'Geçersiz ID listesi.' });
+  const placeholders = ids.map(() => '?').join(',');
+  const result = db.prepare(`DELETE FROM sim_voice WHERE id IN (${placeholders})`).run(...ids);
+  res.json({ message: `${result.changes} kayıt başarıyla silindi.` });
+});
+
+// POST /api/voice/bulk-update
+router.post('/bulk-update', (req, res) => {
+  const { ids, data } = req.body;
+  if (!Array.isArray(ids) || ids.length === 0) return res.status(400).json({ message: 'Geçersiz ID listesi.' });
+  if (!data || Object.keys(data).length === 0) return res.status(400).json({ message: 'Güncellenecek veri bulunamadı.' });
+
+  const fields = [];
+  const params = [];
+  const allowedFields = ['operator', 'status', 'assigned_to', 'department', 'assigned_company', 'notes'];
+  Object.keys(data).forEach(key => {
+    if (allowedFields.includes(key) && data[key] !== undefined) {
+      fields.push(`${key} = ?`);
+      params.push(data[key]);
+    }
+  });
+
+  if (fields.length === 0) return res.status(400).json({ message: 'Güncellenecek geçerli alan bulunamadı.' });
+  fields.push('updated_at = CURRENT_TIMESTAMP');
+  const placeholders = ids.map(() => '?').join(',');
+  const query = `UPDATE sim_voice SET ${fields.join(', ')} WHERE id IN (${placeholders})`;
+  const result = db.prepare(query).run(...params, ...ids);
+  res.json({ message: `${result.changes} kayıt başarıyla güncellendi.` });
+});
+
 module.exports = router;
