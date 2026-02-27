@@ -114,4 +114,23 @@ Siteyi başlattıktan sonra belirttiğiniz domain veya IP portu üzerinden siste
 
 ---
 
+## 🆙 Versiyon Güncelleme (v1.1 ve Sonrası)
+
+Sisteme yeni özellikler eklendiğinde (Örn: v1.1 Gelişmiş Raporlar), canlıdaki IIS sunucunuzu güncellemek için şu adımları izleyebilirsiniz:
+
+### Yöntem 1: Deployment Script (Önerilen)
+
+Proje kök dizininde bulunan `deploy-iis.ps1` script'i, sadece gerekli dosyaları (veritabanınızı bozmadan) hedef klasöre kopyalamak için tasarlanmıştır.
+
+1. PowerShell'i yönetici olarak açın.
+2. `.\deploy-iis.ps1` komutunu çalıştırın.
+3. Hedef yolu (örn: `C:\inetpub\wwwroot\SimCardTracking`) girin.
+
+### Yöntem 2: Manuel Güncelleme
+
+Eğer manuel kopyalamak isterseniz; `public`, `routes`, `middleware`, `database`, `server.js` ve `package.json` dosyalarını hedef klasöre yapıştırın.
+**DİKKAT:** Canlıdaki verilerinizin silinmemesi için `database/simcardtracking.db` dosyasını kopyalarken dikkatli olun (üzerine yazmayın).
+
+---
+
 _Ufuk Kaya tarafından geliştirilmiştir._
