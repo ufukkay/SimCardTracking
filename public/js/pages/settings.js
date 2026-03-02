@@ -102,25 +102,110 @@ const SettingsPage = (() => {
         </div>
       </div>
 
-      <!-- M2M AKTAR -->
+      <!-- M2M İŞLEMLERİ -->
       <div class="tab-pane" id="tab-importM2M">
-        <div class="card">
+        <div class="card" style="max-width:800px; margin-bottom:16px;">
+          <div class="card-header"><span class="card-title">📝 Yeni M2M Hattı Ekle</span></div>
+          <form id="settingsM2MForm" onsubmit="SettingsPage.addM2M(event)" style="padding-bottom:16px;">
+            <div class="form-grid">
+              <div class="form-group"><label class="form-label">ICCID</label><input name="iccid" class="form-control" placeholder="SIM kart ICCID numarası"></div>
+              <div class="form-group"><label class="form-label">Telefon Numarası</label><input name="phone_no" class="form-control" placeholder="05XX XXX XX XX"></div>
+              <div class="form-group"><label class="form-label">Operatör *</label><select name="operator" class="form-control settingsOperatorSel" required></select></div>
+              <div class="form-group">
+                <label class="form-label">Durum</label>
+                <select name="status" class="form-control">
+                  <option value="active">Aktif</option>
+                  <option value="spare">Yedek</option>
+                  <option value="passive">Pasif</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Araç Tipi</label>
+                <select name="vehicle_type" class="form-control">
+                  <option value="">Seçiniz...</option>
+                  <option value="Binek">Binek</option>
+                  <option value="Çekici">Çekici</option>
+                  <option value="Yol Kamerası">Yol Kamerası</option>
+                  <option value="IoT Cihazı">IoT Cihazı</option>
+                </select>
+              </div>
+              <div class="form-group"><label class="form-label">Plaka</label><input name="plate_no" class="form-control" list="settingsVehiclesList" placeholder="Seçin veya yazın..." autocomplete="off"></div>
+              <div class="form-group col-span-2"><label class="form-label">Notlar</label><textarea name="notes" class="form-control" placeholder="Ek açıklama..."></textarea></div>
+            </div>
+            <div style="text-align:right; margin-top:12px;"><button type="submit" class="btn btn-primary">Kaydet</button></div>
+          </form>
+        </div>
+        <div class="card" style="max-width:800px">
           <div class="card-header"><span class="card-title">📥 M2M Hatları — Toplu İçeri Aktar</span></div>
           <div id="import-container-m2m"><div class="loading-overlay"><div class="spinner"></div></div></div>
         </div>
       </div>
 
-      <!-- DATA AKTAR -->
+      <!-- DATA İŞLEMLERİ -->
       <div class="tab-pane" id="tab-importData">
-        <div class="card">
+        <div class="card" style="max-width:800px; margin-bottom:16px;">
+          <div class="card-header"><span class="card-title">📝 Yeni Data Hattı Ekle</span></div>
+          <form id="settingsDataForm" onsubmit="SettingsPage.addData(event)" style="padding-bottom:16px;">
+            <div class="form-grid">
+              <div class="form-group"><label class="form-label">ICCID</label><input name="iccid" class="form-control" placeholder="SIM kart ICCID"></div>
+              <div class="form-group"><label class="form-label">Telefon Numarası</label><input name="phone_no" class="form-control" placeholder="05XX XXX XX XX"></div>
+              <div class="form-group"><label class="form-label">Operatör *</label><select name="operator" class="form-control settingsOperatorSel" required></select></div>
+              <div class="form-group">
+                <label class="form-label">Durum</label>
+                <select name="status" class="form-control">
+                  <option value="active">Aktif</option>
+                  <option value="spare">Yedek</option>
+                  <option value="passive">Pasif</option>
+                </select>
+              </div>
+              <div class="form-group col-span-2"><label class="form-label">Lokasyon</label><input name="location" class="form-control" list="settingsLocationsList" placeholder="Seçin veya yazın..." autocomplete="off"></div>
+              <div class="form-group col-span-2"><label class="form-label">Notlar</label><textarea name="notes" class="form-control" placeholder="Ek açıklama..."></textarea></div>
+            </div>
+            <div style="text-align:right; margin-top:12px;"><button type="submit" class="btn btn-primary">Kaydet</button></div>
+          </form>
+        </div>
+        <div class="card" style="max-width:800px">
           <div class="card-header"><span class="card-title">📥 Data Hatları — Toplu İçeri Aktar</span></div>
           <div id="import-container-data"><div class="loading-overlay"><div class="spinner"></div></div></div>
         </div>
       </div>
 
-      <!-- SES AKTAR -->
+      <!-- SES İŞLEMLERİ -->
       <div class="tab-pane" id="tab-importSes">
-        <div class="card">
+        <div class="card" style="max-width:800px; margin-bottom:16px;">
+          <div class="card-header"><span class="card-title">📝 Yeni Ses Hattı Ekle</span></div>
+          <form id="settingsVoiceForm" onsubmit="SettingsPage.addVoice(event)" style="padding-bottom:16px;">
+            <div class="form-grid">
+              <div class="form-group col-span-2">
+                <label class="form-label">Personel (Ad Soyad)</label>
+                <input type="text" id="settingsVoicePersonSearch" class="form-control" list="settingsPersonnelList" placeholder="Personel adını yazın veya seçin..." autocomplete="off">
+              </div>
+              <div class="form-group"><label class="form-label">Departman</label><input name="department" id="settingsVoiceDept" class="form-control"></div>
+              <div class="form-group"><label class="form-label">Şirket</label><input name="company" id="settingsVoiceComp" class="form-control"></div>
+              
+              <div class="form-group"><label class="form-label">ICCID</label><input name="iccid" class="form-control"></div>
+              <div class="form-group"><label class="form-label">Telefon Numarası</label><input name="phone_no" class="form-control"></div>
+              <div class="form-group"><label class="form-label">Operatör *</label><select name="operator" class="form-control settingsOperatorSel" required></select></div>
+              <div class="form-group">
+                <label class="form-label">Durum</label>
+                <select name="status" class="form-control">
+                  <option value="active">Aktif</option>
+                  <option value="spare">Yedek</option>
+                  <option value="passive">Pasif</option>
+                </select>
+              </div>
+              <div class="form-group col-span-2"><label class="form-label">Notlar</label><textarea name="notes" class="form-control"></textarea></div>
+              
+              <input type="hidden" name="first_name" id="settingsVoiceFName">
+              <input type="hidden" name="last_name" id="settingsVoiceLName">
+            </div>
+            <div style="text-align:right; margin-top:12px;"><button type="submit" class="btn btn-primary">Kaydet</button></div>
+          </form>
+          <datalist id="settingsPersonnelList"></datalist>
+          <datalist id="settingsVehiclesList"></datalist>
+          <datalist id="settingsLocationsList"></datalist>
+        </div>
+        <div class="card" style="max-width:800px">
           <div class="card-header"><span class="card-title">📥 Ses Hatları — Toplu İçeri Aktar</span></div>
           <div id="import-container-voice"><div class="loading-overlay"><div class="spinner"></div></div></div>
         </div>
@@ -274,6 +359,7 @@ const SettingsPage = (() => {
     loadLocations();
     loadPersonnel();
     loadOperators();
+    populateLineForms();
     
     // Show update tab for admins
     const currentUser = JSON.parse(localStorage.getItem('simtrack_user') || '{}');
@@ -645,6 +731,65 @@ const SettingsPage = (() => {
   function editIcon() { return `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`; }
   function delIcon()  { return `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>`; }
 
+  /* ════════════ ADD SIM (CENTRALIZED) ════════════ */
+  async function populateLineForms() {
+    try {
+      const [ops, v, l, p] = await Promise.all([API.getOperators(), API.getVehicles(), API.getLocations(), API.getPersonnel()]);
+      // Operators
+      const opHtml = ops.map(o => `<option value="${o.name}">${o.name}</option>`).join('');
+      document.querySelectorAll('.settingsOperatorSel').forEach(el => { el.innerHTML = `<option value="">Seçiniz...</option>` + opHtml; });
+      // Vehicles
+      const vDl = document.getElementById('settingsVehiclesList');
+      if (vDl) vDl.innerHTML = v.map(x => `<option value="${x.plate_no}">${x.plate_no} - ${x.vehicle_type||''}</option>`).join('');
+      // Locations
+      const lDl = document.getElementById('settingsLocationsList');
+      if (lDl) lDl.innerHTML = l.map(x => `<option value="${x.name}">${x.name}</option>`).join('');
+      // Personnel
+      const pDl = document.getElementById('settingsPersonnelList');
+      if (pDl) pDl.innerHTML = p.map(x => `<option value="${x.first_name} ${x.last_name}" data-fname="${x.first_name}" data-lname="${x.last_name}" data-dept="${x.department}" data-comp="${x.company}"></option>`).join('');
+      
+      // Personnel Auto-fill event
+      const perInput = document.getElementById('settingsVoicePersonSearch');
+      if (perInput) {
+        perInput.addEventListener('input', (e) => {
+          const val = e.target.value;
+          const opt = Array.from(document.getElementById('settingsPersonnelList').options).find(o => o.value === val);
+          if (opt) {
+            document.getElementById('settingsVoiceFName').value = opt.getAttribute('data-fname') || '';
+            document.getElementById('settingsVoiceLName').value = opt.getAttribute('data-lname') || '';
+            document.getElementById('settingsVoiceDept').value = opt.getAttribute('data-dept') || '';
+            document.getElementById('settingsVoiceComp').value = opt.getAttribute('data-comp') || '';
+          }
+        });
+      }
+    } catch(err) { console.error('Error populating line forms:', err); }
+  }
+
+  async function addM2M(e) {
+    if(e) e.preventDefault(); const btn = e.target.querySelector('button[type="submit"]'); if(btn) btn.disabled=true;
+    try { await API.addM2M(UI.formData('settingsM2MForm')); UI.toast('M2M Hattı eklendi.','success'); e.target.reset(); }
+    catch(err) { UI.toast(err.message, 'error'); } finally { if(btn) btn.disabled=false; }
+  }
+  async function addData(e) {
+    if(e) e.preventDefault(); const btn = e.target.querySelector('button[type="submit"]'); if(btn) btn.disabled=true;
+    try { await API.addData(UI.formData('settingsDataForm')); UI.toast('Data Hattı eklendi.','success'); e.target.reset(); }
+    catch(err) { UI.toast(err.message, 'error'); } finally { if(btn) btn.disabled=false; }
+  }
+  async function addVoice(e) {
+    if(e) e.preventDefault(); const btn = e.target.querySelector('button[type="submit"]'); if(btn) btn.disabled=true;
+    try {
+      const d = UI.formData('settingsVoiceForm');
+      if (!d.first_name || !d.last_name) {
+        // Fallback split if they just typed a name not in list
+        const parts = document.getElementById('settingsVoicePersonSearch').value.split(' ');
+        d.last_name = parts.pop() || '';
+        d.first_name = parts.join(' ') || '';
+      }
+      await API.addVoice(d); UI.toast('Ses Hattı eklendi.','success');
+      e.target.reset(); document.getElementById('settingsVoicePersonSearch').value='';
+    } catch(err) { UI.toast(err.message, 'error'); } finally { if(btn) btn.disabled=false; }
+  }
+
   return {
     render, switchTab,
     loadUsers, openAddUser, openEditUser, saveUser, deleteUser,
@@ -654,6 +799,7 @@ const SettingsPage = (() => {
     loadPersonnel, openAddPersonnel, openEditPersonnel, savePersonnel, deletePersonnel,
     loadOperators, addOperator, deleteOperator,
     changePassword,
-    checkUpdate, applyUpdate
+    checkUpdate, applyUpdate,
+    addM2M, addData, addVoice
   };
 })();

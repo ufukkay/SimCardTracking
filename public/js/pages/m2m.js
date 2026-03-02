@@ -5,12 +5,7 @@ const M2MPage = (() => {
 
   function render() {
     document.getElementById('pageTitle').textContent = 'M2M Hatları';
-    document.getElementById('topbarActions').innerHTML = window.AppPerms?.canEdit('m2m') ? `
-      <button class="btn btn-primary" onclick="M2MPage.openAdd()">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-        Yeni Ekle
-      </button>
-    ` : '';
+    document.getElementById('topbarActions').innerHTML = '';
     document.getElementById('pageContent').innerHTML = `
       <div class="card">
         <div class="card-header">
@@ -304,12 +299,8 @@ const M2MPage = (() => {
     }
   }
 
-  function openAdd() {
-    editingId = null;
-    document.getElementById('m2mModalTitle').textContent = 'Yeni M2M Hattı';
-    document.getElementById('m2mForm').reset();
-    UI.openModal('m2mModal');
-  }
+  // openAdd function removed since addition is now centralized in settings
+
 
   async function openEdit(id) {
     editingId = id;
@@ -401,5 +392,5 @@ const M2MPage = (() => {
     });
   }
 
-  return { render, load, openAdd, openEdit, save, del, openBulkEdit, saveBulk, bulkDel };
+  return { render, load, openEdit, save, del, openBulkEdit, saveBulk, bulkDel };
 })();

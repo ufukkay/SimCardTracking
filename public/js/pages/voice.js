@@ -5,12 +5,7 @@ const VoicePage = (() => {
 
   function render() {
     document.getElementById('pageTitle').textContent = 'Ses Hatları';
-    document.getElementById('topbarActions').innerHTML = window.AppPerms?.canEdit('voice') ? `
-      <button class="btn btn-primary" onclick="VoicePage.openAdd()">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-        Yeni Ekle
-      </button>
-    ` : '';
+    document.getElementById('topbarActions').innerHTML = '';
     document.getElementById('pageContent').innerHTML = `
       <div class="card">
         <div class="card-header">
@@ -275,12 +270,8 @@ const VoicePage = (() => {
     }
   }
 
-  function openAdd() {
-    editingId = null;
-    document.getElementById('voiceModalTitle').textContent = 'Yeni Ses Hattı';
-    document.getElementById('voiceForm').reset();
-    UI.openModal('voiceModal');
-  }
+  // openAdd function removed since addition is now centralized in settings
+
 
   async function openEdit(id) {
     editingId = id;
@@ -350,5 +341,5 @@ const VoicePage = (() => {
     });
   }
 
-  return { render, load, openAdd, openEdit, save, del, openBulkEdit, saveBulk, bulkDel };
+  return { render, load, openEdit, save, del, openBulkEdit, saveBulk, bulkDel };
 })();
