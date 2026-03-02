@@ -13,6 +13,9 @@ const APP_DIR = path.join(__dirname, '..');
 // Returns current commit hash and whether there's an update available on remote
 router.get('/status', (req, res) => {
   try {
+    // Add safe directory for IIS APPPOOL user to prevent dubious ownership fatal error
+    execSync('git config --global --add safe.directory ' + APP_DIR.replace(/\\/g, '/'), { cwd: APP_DIR });
+    
     // Fetch latest from remote (no checkout)
     execSync('git fetch origin main', { cwd: APP_DIR, timeout: 15000 });
 
@@ -41,6 +44,9 @@ router.get('/status', (req, res) => {
 // Pulls latest code from GitHub (skips DB files via .gitignore), restarts iisnode
 router.post('/apply', (req, res) => {
   try {
+    // Ensure directory is marked as safe before pull
+    execSync('git config --global --add safe.directory ' + APP_DIR.replace(/\\/g, '/'), { cwd: APP_DIR });
+    
     // Pull latest code — .gitignore protects *.db so no data loss
     const pullOutput = execSync('git pull origin main', { cwd: APP_DIR, timeout: 30000 }).toString().trim();
 
