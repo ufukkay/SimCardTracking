@@ -194,7 +194,14 @@ const UI = (() => {
       uniqueVals.sort();
 
       menu.innerHTML = `
-        <input type="text" class="form-control" placeholder="Ara..." onclick="event.stopPropagation()">
+        <div class="col-filter-search">
+          <input type="text" class="form-control" placeholder="Ara..." onclick="event.stopPropagation()">
+        </div>
+        <div class="col-filter-bulk">
+          <button type="button" class="btn-link btn-select-all">Tümünü Seç</button>
+          <span class="divider-v"></span>
+          <button type="button" class="btn-link btn-clear-selection">Temizle</button>
+        </div>
         <div class="col-filter-list">
           ${uniqueVals.map(val => {
             const isChecked = isActive && filterStateObj[colKey].includes(val);
@@ -204,16 +211,17 @@ const UI = (() => {
                 <span title="${val}">${val}</span>
               </label>
             `;
-          }).join('') || '<div style="padding:4px;color:var(--text-muted)">Kayıt yok</div>'}
+          }).join('') || '<div style="padding:10px;text-align:center;color:var(--text-muted)">Kayıt yok</div>'}
         </div>
         <div class="col-filter-actions">
-          <button class="btn btn-ghost btn-sm btn-clear">Temizle</button>
-          <button class="btn btn-primary btn-sm btn-apply">Uygula</button>
+          <button class="btn btn-ghost btn-sm btn-reset">Sıfırla</button>
+          <button class="btn btn-primary btn-sm btn-apply">Tamam</button>
         </div>
       `;
 
-      // Simplified menu event handling
-      menu.querySelector('input').onkeyup = (e) => {
+      // Search logic
+      const searchInput = menu.querySelector('.col-filter-search input');
+      searchInput.onkeyup = (e) => {
         const q = e.target.value.toLowerCase();
         menu.querySelectorAll('.col-filter-item').forEach(item => {
           const txt = item.querySelector('span').innerText.toLowerCase();
@@ -221,13 +229,26 @@ const UI = (() => {
         });
       };
 
-      menu.querySelector('.btn-clear').onclick = (e) => {
+      // Select All / Clear Selection
+      menu.querySelector('.btn-select-all').onclick = (e) => {
+        e.stopPropagation();
+        menu.querySelectorAll('.col-filter-item:not([style*="display: none"]) input[type="checkbox"]').forEach(cb => cb.checked = true);
+      };
+
+      menu.querySelector('.btn-clear-selection').onclick = (e) => {
+        e.stopPropagation();
+        menu.querySelectorAll('.col-filter-item:not([style*="display: none"]) input[type="checkbox"]').forEach(cb => cb.checked = false);
+      };
+
+      // Reset Filter
+      menu.querySelector('.btn-reset').onclick = (e) => {
         e.stopPropagation();
         filterStateObj[colKey] = [];
         menu.classList.remove('open');
         onApply();
       };
 
+      // Apply Filter
       menu.querySelector('.btn-apply').onclick = (e) => {
         e.stopPropagation();
         const checked = Array.from(menu.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value);
