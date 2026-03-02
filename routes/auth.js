@@ -48,9 +48,12 @@ router.get('/me', (req, res) => {
   const token = authHeader.split(' ')[1];
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
-    const user = db.prepare('SELECT id, username, first_name, last_name, company, email, phone, role FROM users WHERE id = ?').get(decoded.id);
+    const user = db.prepare('SELECT id, username, first_name, last_name, company, email, phone, role, permissions FROM users WHERE id = ?').get(decoded.id);
     if (!user) return res.status(404).json({ message: 'Kullanıcı bulunamadı.' });
-    res.json(user);
+    res.json({
+      ...user,
+      permissions: user.permissions ? JSON.parse(user.permissions) : null
+    });
   } catch {
     res.status(401).json({ message: 'Geçersiz token.' });
   }

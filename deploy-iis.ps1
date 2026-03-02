@@ -12,8 +12,15 @@ if (-not $DestPath) {
 }
 
 if (-not (Test-Path $DestPath)) {
-    Write-Host "Hata: Hedef klasör bulunamadı: $DestPath" -ForegroundColor Red
-    exit
+    Write-Host "Hedef klasör bulunamadı: $DestPath" -ForegroundColor Yellow
+    $ans = Read-Host "Klasör oluşturulsun mu? (Y/N)"
+    if ($ans -ieq "Y") {
+        New-Item -ItemType Directory -Path $DestPath -Force | Out-Null
+        Write-Host "Klasör oluşturuldu: $DestPath" -ForegroundColor Green
+    } else {
+        Write-Host "İşlem durduruldu." -ForegroundColor Red
+        exit
+    }
 }
 
 Write-Host "--- Güncelleme Başlatılıyor ---" -ForegroundColor Cyan
@@ -23,7 +30,10 @@ Write-Host "Hedef: $DestPath"
 $FilesToCopy = @("public", "routes", "middleware", "database", "server.js", "web.config", "package.json", "bin", "node_modules")
 
 # 2. Kopyalama İşlemi
-if ($PSScriptRoot -eq $DestPath) {
+$NormalSrc = $PSScriptRoot.TrimEnd('\')
+$NormalDst = $DestPath.TrimEnd('\')
+
+if ($NormalSrc -ieq $NormalDst) {
     Write-Host "Zaten hedef klasördesiniz, kopyalama adımı atlanıyor..." -ForegroundColor Yellow
 } else {
     foreach ($item in $FilesToCopy) {

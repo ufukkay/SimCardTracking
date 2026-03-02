@@ -142,7 +142,7 @@ const SettingsPage = (() => {
 
       <!-- Kullanıcı -->
       <div class="modal-overlay" id="userModal">
-        <div class="modal">
+        <div class="modal" style="max-width:560px">
           <div class="modal-header"><span class="modal-title" id="userModalTitle">Yeni Kullanıcı</span><button class="modal-close" onclick="UI.closeModal('userModal')">×</button></div>
           <form class="modal-body" id="userForm" onsubmit="SettingsPage.saveUser(event)">
             <div class="form-grid">
@@ -152,8 +152,46 @@ const SettingsPage = (() => {
               <div class="form-group"><label class="form-label">Şirket</label><input name="company" class="form-control"></div>
               <div class="form-group"><label class="form-label">E-posta</label><input name="email" type="email" class="form-control"></div>
               <div class="form-group"><label class="form-label">Telefon</label><input name="phone" class="form-control"></div>
-              <div class="form-group"><label class="form-label">Rol</label><select name="role" class="form-control"><option value="user">Kullanıcı</option><option value="admin">Admin</option></select></div>
+              <div class="form-group">
+                <label class="form-label">Rol</label>
+                <select name="role" id="userRoleSelect" class="form-control" onchange="SettingsPage.onRoleChange(this.value)">
+                  <option value="user">Kullanıcı</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </div>
               <div class="form-group" id="passwordField"><label class="form-label">Şifre *</label><input name="password" type="password" id="userPwdInput" class="form-control" minlength="6" placeholder="Boş = değişmez"></div>
+            </div>
+
+            <!-- ─── Modül Yetkileri ─── -->
+            <div id="permissionsPanel" style="margin-top:18px;border-top:1px solid var(--border);padding-top:14px">
+              <div style="font-weight:600;font-size:13px;margin-bottom:10px;color:var(--text-main)">🔐 Modül Yetkileri</div>
+              <table style="width:100%;font-size:13px;border-collapse:collapse">
+                <thead>
+                  <tr>
+                    <th style="text-align:left;padding:6px 4px;color:var(--text-muted);font-weight:500">Modül</th>
+                    <th style="text-align:center;padding:6px 8px;color:var(--text-muted);font-weight:500">👁 Görüntüle</th>
+                    <th style="text-align:center;padding:6px 8px;color:var(--text-muted);font-weight:500">✏️ Düzenle</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr style="border-top:1px solid var(--border)">
+                    <td style="padding:8px 4px">🚗 M2M Hatları</td>
+                    <td style="text-align:center"><input type="checkbox" id="perm_m2m_view" onchange="SettingsPage.onPermViewChange('m2m',this)"></td>
+                    <td style="text-align:center"><input type="checkbox" id="perm_m2m_edit" onchange="SettingsPage.onPermEditChange('m2m',this)"></td>
+                  </tr>
+                  <tr style="border-top:1px solid var(--border)">
+                    <td style="padding:8px 4px">🌐 Data Hatları</td>
+                    <td style="text-align:center"><input type="checkbox" id="perm_data_view" onchange="SettingsPage.onPermViewChange('data',this)"></td>
+                    <td style="text-align:center"><input type="checkbox" id="perm_data_edit" onchange="SettingsPage.onPermEditChange('data',this)"></td>
+                  </tr>
+                  <tr style="border-top:1px solid var(--border)">
+                    <td style="padding:8px 4px">📞 Ses Hatları</td>
+                    <td style="text-align:center"><input type="checkbox" id="perm_voice_view" onchange="SettingsPage.onPermViewChange('voice',this)"></td>
+                    <td style="text-align:center"><input type="checkbox" id="perm_voice_edit" onchange="SettingsPage.onPermEditChange('voice',this)"></td>
+                  </tr>
+                </tbody>
+              </table>
+              <div style="font-size:11px;color:var(--text-muted);margin-top:8px">ℹ️ Admin kullanıcılar tüm modüllere tam erişime sahiptir.</div>
             </div>
           </form>
           <div class="modal-footer"><button class="btn btn-secondary" onclick="UI.closeModal('userModal')">İptal</button><button class="btn btn-primary" id="userSaveBtn" onclick="document.getElementById('userForm').requestSubmit()">Kaydet</button></div>
@@ -259,22 +297,90 @@ const SettingsPage = (() => {
     } catch (err) { if (tbody) tbody.innerHTML = `<tr><td colspan="8" style="color:var(--danger);padding:16px">${err.message}</td></tr>`; }
   }
 
-  function openAddUser() { editingUserId=null; document.getElementById('userModalTitle').textContent='Yeni Kullanıcı'; document.getElementById('userForm').reset(); document.getElementById('usernameField').readOnly=false; document.getElementById('userPwdInput').required=true; UI.openModal('userModal'); }
+  function openAddUser() {
+    editingUserId = null;
+    document.getElementById('userModalTitle').textContent = 'Yeni Kullanıcı';
+    document.getElementById('userForm').reset();
+    document.getElementById('usernameField').readOnly = false;
+    document.getElementById('userPwdInput').required = true;
+    document.getElementById('userRoleSelect').value = 'user';
+    onRoleChange('user');
+    setPermCheckboxes(null);
+    UI.openModal('userModal');
+  }
   async function openEditUser(id) {
     editingUserId = id;
     document.getElementById('userModalTitle').textContent = 'Kullanıcıyı Düzenle';
-    try { const users = await API.getUsers(); UI.setForm('userForm', users.find(u => u.id === id) || {}); document.getElementById('usernameField').readOnly=true; document.getElementById('userPwdInput').required=false; UI.openModal('userModal'); }
-    catch (err) { UI.toast(err.message, 'error'); }
+    try {
+      const users = await API.getUsers();
+      const u = users.find(u => u.id === id) || {};
+      const savedPermissions = u.permissions; // save before stripping
+
+      // Strip permissions from setForm payload (it's an object, not a form field)
+      const { permissions: _p, ...formData } = u;
+      UI.setForm('userForm', formData);
+
+      document.getElementById('usernameField').readOnly = true;
+      document.getElementById('userPwdInput').required = false;
+
+      // Open modal first so DOM elements exist
+      UI.openModal('userModal');
+
+      // Then set role & permissions (after modal is visible/rendered)
+      const role = u.role || 'user';
+      document.getElementById('userRoleSelect').value = role;
+      onRoleChange(role);
+      setPermCheckboxes(savedPermissions);
+    } catch (err) { UI.toast(err.message, 'error'); }
   }
   async function saveUser(e) {
-    e.preventDefault(); const btn = document.getElementById('userSaveBtn'); btn.disabled=true;
-    const data = UI.formData('userForm'); if (!data.password) delete data.password;
+    e.preventDefault(); const btn = document.getElementById('userSaveBtn'); btn.disabled = true;
+    const data = UI.formData('userForm');
+    if (!data.password) delete data.password;
+    // Collect permissions from checkboxes (only for non-admin users)
+    if (data.role !== 'admin') {
+      data.permissions = {
+        m2m:   { view: document.getElementById('perm_m2m_view')?.checked || false,   edit: document.getElementById('perm_m2m_edit')?.checked || false },
+        data:  { view: document.getElementById('perm_data_view')?.checked || false,  edit: document.getElementById('perm_data_edit')?.checked || false },
+        voice: { view: document.getElementById('perm_voice_view')?.checked || false, edit: document.getElementById('perm_voice_edit')?.checked || false },
+      };
+    } else {
+      data.permissions = null;
+    }
     try {
-      if (editingUserId) { await API.updateUser(editingUserId, data); UI.toast('Kullanıcı güncellendi.','success'); }
-      else { await API.addUser(data); UI.toast('Kullanıcı oluşturuldu.','success'); }
+      if (editingUserId) { await API.updateUser(editingUserId, data); UI.toast('Kullanıcı güncellendi.', 'success'); }
+      else { await API.addUser(data); UI.toast('Kullanıcı oluşturuldu.', 'success'); }
       UI.closeModal('userModal'); loadUsers();
-    } catch (err) { UI.toast(err.message,'error'); }
-    finally { btn.disabled=false; }
+    } catch (err) { UI.toast(err.message, 'error'); }
+    finally { btn.disabled = false; }
+  }
+
+  /* ─ Permission helpers ─ */
+  function onRoleChange(role) {
+    const panel = document.getElementById('permissionsPanel');
+    if (panel) panel.style.display = role === 'admin' ? 'none' : 'block';
+  }
+  function setPermCheckboxes(perms) {
+    ['m2m', 'data', 'voice'].forEach(mod => {
+      const v = document.getElementById(`perm_${mod}_view`);
+      const e = document.getElementById(`perm_${mod}_edit`);
+      if (v) v.checked = perms?.[mod]?.view || false;
+      if (e) e.checked = perms?.[mod]?.edit || false;
+    });
+  }
+  function onPermViewChange(mod, cb) {
+    // If unchecking view → also uncheck edit
+    if (!cb.checked) {
+      const editCb = document.getElementById(`perm_${mod}_edit`);
+      if (editCb) editCb.checked = false;
+    }
+  }
+  function onPermEditChange(mod, cb) {
+    // If checking edit → also check view
+    if (cb.checked) {
+      const viewCb = document.getElementById(`perm_${mod}_view`);
+      if (viewCb) viewCb.checked = true;
+    }
   }
   function deleteUser(id, name) {
     UI.confirm(`"${name}" silinecek.`, async () => { try { await API.deleteUser(id); UI.toast('Silindi.','success'); loadUsers(); } catch(e){UI.toast(e.message,'error');} });
@@ -433,6 +539,7 @@ const SettingsPage = (() => {
   return {
     render, switchTab,
     loadUsers, openAddUser, openEditUser, saveUser, deleteUser,
+    onRoleChange, onPermViewChange, onPermEditChange,
     loadVehicles, openAddVehicle, openEditVehicle, saveVehicle, deleteVehicle,
     loadLocations, openAddLocation, openEditLocation, saveLocation, deleteLocation,
     loadPersonnel, openAddPersonnel, openEditPersonnel, savePersonnel, deletePersonnel,

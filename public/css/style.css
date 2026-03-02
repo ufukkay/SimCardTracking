@@ -1054,3 +1054,119 @@ input[type="checkbox"] {
   width: 15px;
   height: 15px;
 }
+
+/* --- Column Sort Button --- */
+.th-sort-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  font-size: 11px;
+  padding: 0 3px;
+  margin-left: 2px;
+  border-radius: 3px;
+  opacity: 0.5;
+  transition: opacity 0.15s, color 0.15s;
+  vertical-align: middle;
+  line-height: 1;
+}
+th:hover .th-sort-btn {
+  opacity: 1;
+}
+.th-sort-btn.active {
+  opacity: 1;
+  color: var(--accent);
+  font-weight: 700;
+}
+.th-sort-btn:hover {
+  background: var(--bg-secondary);
+  opacity: 1;
+}
+
+/* --- Column Filter Button --- */
+.th-filter-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  font-size: 13px;
+  padding: 0 2px;
+  margin-left: 2px;
+  border-radius: 3px;
+  opacity: 0.4;
+  transition: opacity 0.15s, color 0.15s;
+  vertical-align: middle;
+}
+th:hover .th-filter-btn {
+  opacity: 1;
+}
+.th-filter-btn.active {
+  opacity: 1;
+  color: var(--accent);
+}
+.th-filter-btn:hover {
+  background: var(--bg-secondary);
+  opacity: 1;
+}
+
+.col-filter-menu {
+  position: absolute;
+  z-index: 1000;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  min-width: 180px;
+  max-width: 240px;
+  padding: 8px;
+  display: none;
+  flex-direction: column;
+  gap: 6px;
+}
+.col-filter-menu.open {
+  display: flex;
+}
+.col-filter-list {
+  max-height: 180px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.col-filter-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.col-filter-item:hover {
+  background: var(--bg-secondary);
+}
+.col-filter-item span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.col-filter-actions {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+  padding-top: 4px;
+  border-top: 1px solid var(--border);
+}
+
+/* Ensure filter dropdown is positioned relative to th */
+table th {
+  position: relative;
+}

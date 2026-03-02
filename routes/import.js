@@ -19,8 +19,8 @@ router.get("/template/:type", (req, res) => {
       filename: 'M2M_Sablon.xlsx',
       headers: ['ICCID', 'Telefon No', 'Operatör', 'Araç Tipi / Kullanım Amacı', 'Durum', 'Plaka', 'Notlar'],
       example: [
-        ['8990011234567890', '05301234567', 'Vodafone', 'Binek', 'active', '34 ABC 001', 'Araç 1'],
-        ['8990017654321098', '05301234568', 'Turkcell', 'Yol Kamerası', 'spare', '', 'Yedek'],
+        ['8990011234567890', '05301234567', 'Vodafone', 'Binek',       'active', '34 ABC 001', 'Araç 1'],
+        ['8990017654321098', '05301234568', 'Turkcell', 'Yol Kamerası','spare',  '',           'Yedek'],
       ],
       note: 'Durum değerleri: active (Aktif), spare (Yedek), passive (Pasif)\nAraç Tipi / Kullanım Amacı örnekleri: Binek, Çekici, Yol Kamerası, IoT Cihazı, vb. (Cihazın nerede kullanıldığını belirtmek içindir)'
     },
@@ -139,20 +139,32 @@ router.post("/excel/:type", authMiddleware, upload.single("file"), (req, res) =>
     const results = { inserted: 0, errors: [] };
 
     const insertFns = {
-      m2m: (r) =>
-        db
+      m2m: (r) => {
+        const plateNo   = r['Plaka'] || null;
+        const vehicleType = r['Araç Tipi / Kullanım Amacı'] || r['Araç Tipi'] || null;
+        // Auto-sync to vehicles table
+        if (plateNo && plateNo.toString().trim() !== '') {
+          db.prepare(`
+            INSERT INTO vehicles (plate_no, vehicle_type)
+            VALUES (?, ?)
+            ON CONFLICT(plate_no) DO UPDATE SET
+              vehicle_type = COALESCE(excluded.vehicle_type, vehicle_type)
+          `).run(plateNo.toString().trim(), vehicleType);
+        }
+        return db
           .prepare(
             `INSERT INTO sim_m2m (iccid,phone_no,operator,status,plate_no,vehicle_type,notes) VALUES (?,?,?,?,?,?,?)`,
           )
           .run(
-            r["ICCID"] || null,
-            r["Telefon No"] || null,
-            r["Operatör"] || null,
-            r["Durum"] || "active",
-            r["Plaka"] || null,
-            r["Araç Tipi / Kullanım Amacı"] || r["Araç Tipi"] || null,
-            r["Notlar"] || null,
-          ),
+            r['ICCID'] || null,
+            r['Telefon No'] || null,
+            r['Operatör'] || null,
+            r['Durum'] || 'active',
+            plateNo,
+            vehicleType,
+            r['Notlar'] || null,
+          );
+      },
       data: (r) =>
         db
           .prepare(
@@ -217,8 +229,19 @@ router.post("/json/:type", authMiddleware, (req, res) => {
     return res.status(400).json({ message: "Eklenecek satır bulunamadı." });
 
   const insertFns = {
-    m2m: (r) =>
-      db
+    m2m: (r) => {
+      const plateNo     = r.plate_no || null;
+      const vehicleType = r.vehicle_type || null;
+      // Auto-sync to vehicles table
+      if (plateNo && plateNo.toString().trim() !== '') {
+        db.prepare(`
+          INSERT INTO vehicles (plate_no, vehicle_type)
+          VALUES (?, ?)
+          ON CONFLICT(plate_no) DO UPDATE SET
+            vehicle_type = COALESCE(excluded.vehicle_type, vehicle_type)
+        `).run(plateNo.toString().trim(), vehicleType);
+      }
+      return db
         .prepare(
           `INSERT INTO sim_m2m (iccid,phone_no,operator,status,plate_no,vehicle_type,notes) VALUES (?,?,?,?,?,?,?)`,
         )
@@ -226,11 +249,12 @@ router.post("/json/:type", authMiddleware, (req, res) => {
           r.iccid || null,
           r.phone_no || null,
           r.operator || null,
-          r.status || "active",
-          r.plate_no || null,
-          r.vehicle_type || null,
+          r.status || 'active',
+          plateNo,
+          vehicleType,
           r.notes || null,
-        ),
+        );
+    },
     data: (r) =>
       db
         .prepare(

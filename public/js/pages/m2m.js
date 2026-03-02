@@ -1,15 +1,16 @@
 /* ─── M2M HATLAR SAYFASI ─── */
 const M2MPage = (() => {
-  let editingId = null;
+  let editingId   = null;
+  let vehicleList = [];   // cached for auto-fill
 
   function render() {
     document.getElementById('pageTitle').textContent = 'M2M Hatları';
-    document.getElementById('topbarActions').innerHTML = `
+    document.getElementById('topbarActions').innerHTML = window.AppPerms?.canEdit('m2m') ? `
       <button class="btn btn-primary" onclick="M2MPage.openAdd()">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         Yeni Ekle
       </button>
-    `;
+    ` : '';
     document.getElementById('pageContent').innerHTML = `
       <div class="card">
         <div class="card-header">
@@ -178,6 +179,7 @@ const M2MPage = (() => {
 
     // Fill filters, operator select, and vehicle datalist
     Promise.all([API.getOperators(), API.getVehicles()]).then(([ops, vehicles]) => {
+      vehicleList = vehicles;   // cache for auto-fill lookup
       const filterEl = document.getElementById('m2mOpFilter');
       ops.forEach(o => { filterEl.innerHTML += `<option value="${o.name}">${o.name}</option>`; });
       UI.fillOperatorSelect(document.getElementById('m2mOperatorSel'));
@@ -195,21 +197,15 @@ const M2MPage = (() => {
       });
     });
 
-    // Auto-fill Araç Tipi when a plate is selected
+    // Auto-fill Araç Tipi when a plate is selected from the datalist
     const plateInput = document.getElementById('m2mPlateInput');
     const typeSelect = document.querySelector('#m2mForm select[name="vehicle_type"]');
     if (plateInput && typeSelect) {
       plateInput.addEventListener('input', (e) => {
-        const val = e.target.value;
-        const dl = document.getElementById('vehiclesList');
-        if (!dl) return;
-        const option = Array.from(dl.options).find(opt => opt.value === val);
-        if (option) {
-          // The option text contains the vehicle type after " – "
-          const textMatches = option.textContent.match(/ – (.+)$/);
-          if (textMatches && textMatches[1]) {
-             typeSelect.value = textMatches[1];
-          }
+        const val = e.target.value.trim();
+        const match = vehicleList.find(v => v.plate_no === val);
+        if (match && match.vehicle_type) {
+          typeSelect.value = match.vehicle_type;
         }
       });
     }
@@ -245,9 +241,10 @@ const M2MPage = (() => {
 
       if (!M2MPage.colFilters) M2MPage.colFilters = {};
       rows = UI.filterRows(rows, M2MPage.colFilters, colDefs);
+      rows = UI.sortRows(rows, M2MPage.colFilters._sort, colDefs);
 
       if (!rows.length) {
-        tbody.innerHTML = `<tr><td colspan="9">${UI.emptyState('🚗', 'M2M hattı bulunamadı', 'Yeni hat eklemek için butona tıklayın.')}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="10">${UI.emptyState('🚗', 'M2M hattı bulunamadı', 'Yeni hat eklemek için butona tıklayın.')}</td></tr>`;
         return;
       }
 
@@ -264,12 +261,13 @@ const M2MPage = (() => {
           <td class="td-muted" style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.notes || '—'}</td>
           <td>
             <div class="action-buttons">
+              ${window.AppPerms?.canEdit('m2m') ? `
               <button class="btn btn-secondary btn-sm btn-icon" title="Düzenle" onclick="M2MPage.openEdit(${r.id})">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
               </button>
-              <button class="btn btn-danger btn-sm btn-icon" title="Sil" onclick="M2MPage.del(${r.id}, '${r.plate_no || r.phone_no || 'Bu kayıt'}')">
+              <button class="btn btn-danger btn-sm btn-icon" title="Sil" onclick="M2MPage.del(${r.id}, '${r.plate_no || r.phone_no || 'Bu kayıt'}')">  
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
-              </button>
+              </button>` : '<span class="td-muted" style="font-size:11px">—</span>'}
             </div>
           </td>
         </tr>
@@ -290,7 +288,7 @@ const M2MPage = (() => {
       });
 
     } catch (err) {
-      tbody.innerHTML = `<tr><td colspan="8" style="color:var(--danger);padding:20px">${err.message}</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="10" style="color:var(--danger);padding:20px">${err.message}</td></tr>`;
     }
   }
 

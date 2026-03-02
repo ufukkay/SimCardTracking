@@ -7,88 +7,118 @@ const BulkImport = (() => {
 
   const CONFIGS = {
     m2m: {
-      label: 'M2M Hattı',
+      label: "M2M Hattı",
       fields: [
-        { key: 'iccid',    label: 'ICCID',       placeholder: '8990011234...' },
-        { key: 'phone_no', label: 'Telefon No',   placeholder: '053012345...' },
-        { key: 'operator', label: 'Operatör',     type: 'operator' },
-        { key: 'status',   label: 'Durum',        type: 'status' },
-        { key: 'plate_no', label: 'Plaka',        placeholder: '34 ABC 001' },
-        { key: 'notes',    label: 'Notlar',       placeholder: '' },
-      ]
+        { key: "iccid", label: "ICCID", placeholder: "8990011234..." },
+        { key: "phone_no", label: "Telefon No", placeholder: "053012345..." },
+        { key: "operator", label: "Operatör", type: "operator" },
+        {
+          key: "vehicle_type",
+          label: "Araç Tipi / Kullanım Amacı",
+          type: "vehicle_type",
+        },
+        { key: "status", label: "Durum", type: "status" },
+        { key: "plate_no", label: "Plaka", placeholder: "34 ABC 001" },
+        { key: "notes", label: "Notlar", placeholder: "" },
+      ],
     },
     data: {
-      label: 'Data Hattı',
+      label: "Data Hattı",
       fields: [
-        { key: 'iccid',    label: 'ICCID',       placeholder: '8990011234...' },
-        { key: 'phone_no', label: 'Telefon No',   placeholder: '053012345...' },
-        { key: 'operator', label: 'Operatör',     type: 'operator' },
-        { key: 'status',   label: 'Durum',        type: 'status' },
-        { key: 'location', label: 'Lokasyon',     placeholder: 'A Ofisi' },
-        { key: 'notes',    label: 'Notlar',       placeholder: '' },
-      ]
+        { key: "iccid", label: "ICCID", placeholder: "8990011234..." },
+        { key: "phone_no", label: "Telefon No", placeholder: "053012345..." },
+        { key: "operator", label: "Operatör", type: "operator" },
+        { key: "status", label: "Durum", type: "status" },
+        { key: "location", label: "Lokasyon", placeholder: "A Ofisi" },
+        { key: "notes", label: "Notlar", placeholder: "" },
+      ],
     },
     voice: {
-      label: 'Ses Hattı',
+      label: "Ses Hattı",
       fields: [
-        { key: 'iccid',            label: 'ICCID',       placeholder: '8990011234...' },
-        { key: 'phone_no',         label: 'Telefon No',   placeholder: '053012345...' },
-        { key: 'operator',         label: 'Operatör',     type: 'operator' },
-        { key: 'status',           label: 'Durum',        type: 'status' },
-        { key: 'assigned_to',      label: 'Personel',     placeholder: 'Ad Soyad' },
-        { key: 'department',       label: 'Departman',    placeholder: 'IT, Muhasebe...' },
-        { key: 'assigned_company', label: 'Şirket',       placeholder: 'ABC A.Ş.' },
-        { key: 'notes',            label: 'Notlar',       placeholder: '' },
-      ]
-    }
+        { key: "iccid", label: "ICCID", placeholder: "8990011234..." },
+        { key: "phone_no", label: "Telefon No", placeholder: "053012345..." },
+        { key: "operator", label: "Operatör", type: "operator" },
+        { key: "status", label: "Durum", type: "status" },
+        { key: "assigned_to", label: "Personel", placeholder: "Ad Soyad" },
+        {
+          key: "department",
+          label: "Departman",
+          placeholder: "IT, Muhasebe...",
+        },
+        { key: "assigned_company", label: "Şirket", placeholder: "ABC A.Ş." },
+        { key: "notes", label: "Notlar", placeholder: "" },
+      ],
+    },
   };
 
   const STATUS_OPTS = [
-    { v: 'active',  l: 'Aktif' },
-    { v: 'spare',   l: 'Yedek' },
-    { v: 'passive', l: 'Pasif' },
+    { v: "active", l: "Aktif" },
+    { v: "spare", l: "Yedek" },
+    { v: "passive", l: "Pasif" },
   ];
 
   async function getOperatorOptions() {
     try {
       const ops = await API.getOperators();
-      return ops.map(o => `<option value="${o.name}">${o.name}</option>`).join('');
-    } catch { return ''; }
+      return ops
+        .map((o) => `<option value="${o.name}">${o.name}</option>`)
+        .join("");
+    } catch {
+      return "";
+    }
   }
 
+  const VEHICLE_TYPE_OPTS = [
+    { v: '',             l: '—' },
+    { v: 'Binek',        l: 'Binek' },
+    { v: 'Çekici',       l: 'Çekici' },
+    { v: 'Yol Kamerası', l: 'Yol Kamerası' },
+    { v: 'IoT Cihazı',   l: 'IoT Cihazı' },
+  ];
+
   function cellInput(field, rowIdx, opOptions) {
-    if (field.type === 'operator') {
+    if (field.type === "operator") {
       return `<select class="form-control" data-row="${rowIdx}" data-key="${field.key}" style="min-width:100px">
         <option value="">Seç...</option>${opOptions}
       </select>`;
     }
-    if (field.type === 'status') {
+    if (field.type === "status") {
       return `<select class="form-control" data-row="${rowIdx}" data-key="${field.key}">
-        ${STATUS_OPTS.map(o => `<option value="${o.v}">${o.l}</option>`).join('')}
+        ${STATUS_OPTS.map((o) => `<option value="${o.v}">${o.l}</option>`).join("")}
       </select>`;
     }
-    return `<input class="form-control" data-row="${rowIdx}" data-key="${field.key}" placeholder="${field.placeholder || ''}" value="${manualRows[rowIdx]?.[field.key] || ''}">`;
+    if (field.type === "vehicle_type") {
+      const cur = manualRows[rowIdx]?.[field.key] || '';
+      return `<select class="form-control" data-row="${rowIdx}" data-key="${field.key}" style="min-width:130px">
+        ${VEHICLE_TYPE_OPTS.map(o => `<option value="${o.v}" ${cur === o.v ? 'selected' : ''}>${o.l}</option>`).join('')}
+      </select>`;
+    }
+    return `<input class="form-control" data-row="${rowIdx}" data-key="${field.key}" placeholder="${field.placeholder || ""}" value="${manualRows[rowIdx]?.[field.key] || ""}">`;
   }
 
   function renderManualTable(opOptions) {
     const cfg = CONFIGS[currentType];
-    const thead = `<tr><th style="width:30px">#</th>${cfg.fields.map(f => `<th>${f.label}</th>`).join('')}<th></th></tr>`;
-    const tbody = manualRows.map((row, i) =>
-      `<tr>
+    const thead = `<tr><th style="width:30px">#</th>${cfg.fields.map((f) => `<th>${f.label}</th>`).join("")}<th></th></tr>`;
+    const tbody = manualRows
+      .map(
+        (row, i) =>
+          `<tr>
         <td>${i + 1}</td>
-        ${cfg.fields.map(f => `<td>${cellInput(f, i, opOptions)}</td>`).join('')}
+        ${cfg.fields.map((f) => `<td>${cellInput(f, i, opOptions)}</td>`).join("")}
         <td><button class="btn btn-ghost btn-sm btn-icon" onclick="BulkImport.removeRow(${i})" title="Sil">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button></td>
-      </tr>`
-    ).join('');
+      </tr>`,
+      )
+      .join("");
     return `<thead>${thead}</thead><tbody>${tbody}</tbody>`;
   }
 
   function collectManualRows() {
-    const inputs = document.querySelectorAll('#bulkManualTable [data-row]');
+    const inputs = document.querySelectorAll("#bulkManualTable [data-row]");
     const updated = [];
-    inputs.forEach(el => {
+    inputs.forEach((el) => {
       const row = parseInt(el.dataset.row);
       if (!updated[row]) updated[row] = {};
       updated[row][el.dataset.key] = el.value.trim() || null;
@@ -106,11 +136,11 @@ const BulkImport = (() => {
     const opOptions = await getOperatorOptions();
 
     // Inject modal if not present
-    let overlay = document.getElementById('bulkModal');
+    let overlay = document.getElementById("bulkModal");
     if (!overlay) {
-      overlay = document.createElement('div');
-      overlay.id = 'bulkModal';
-      overlay.className = 'modal-overlay';
+      overlay = document.createElement("div");
+      overlay.id = "bulkModal";
+      overlay.className = "modal-overlay";
       document.body.appendChild(overlay);
     }
 
@@ -201,65 +231,88 @@ const BulkImport = (() => {
     `;
 
     // Drag and drop
-    const dz = overlay.querySelector('#importDropZone');
-    dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag-over'); });
-    dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
-    dz.addEventListener('drop', e => {
-      e.preventDefault(); dz.classList.remove('drag-over');
+    const dz = overlay.querySelector("#importDropZone");
+    dz.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      dz.classList.add("drag-over");
+    });
+    dz.addEventListener("dragleave", () => dz.classList.remove("drag-over"));
+    dz.addEventListener("drop", (e) => {
+      e.preventDefault();
+      dz.classList.remove("drag-over");
       const file = e.dataTransfer.files[0];
-      if (file) { document.getElementById('excelFileInput').files = e.dataTransfer.files; onFileSelect(document.getElementById('excelFileInput')); }
+      if (file) {
+        document.getElementById("excelFileInput").files = e.dataTransfer.files;
+        onFileSelect(document.getElementById("excelFileInput"));
+      }
     });
 
-    UI.openModal('bulkModal');
+    UI.openModal("bulkModal");
   }
 
   async function onFileSelect(input) {
     const file = input.files[0];
     if (!file) return;
     const XLSX = window.XLSX;
-    if (!XLSX) return UI.toast('XLSX kütüphanesi yüklenmedi.', 'error');
+    if (!XLSX) return UI.toast("XLSX kütüphanesi yüklenmedi.", "error");
 
     const buffer = await file.arrayBuffer();
-    const wb = XLSX.read(buffer, { type: 'array' });
+    const wb = XLSX.read(buffer, { type: "array" });
     const ws = wb.Sheets[wb.SheetNames[0]];
-    previewRows = XLSX.utils.sheet_to_json(ws, { defval: '' });
+    previewRows = XLSX.utils.sheet_to_json(ws, { defval: "" });
 
-    if (!previewRows.length) { UI.toast('Dosyada veri bulunamadı.', 'error'); return; }
+    if (!previewRows.length) {
+      UI.toast("Dosyada veri bulunamadı.", "error");
+      return;
+    }
 
-    document.getElementById('previewCount').textContent = `(${previewRows.length} satır)`;
-    document.getElementById('importPreviewWrap').style.display = 'block';
-    document.getElementById('importResultWrap').style.display = 'none';
+    document.getElementById("previewCount").textContent =
+      `(${previewRows.length} satır)`;
+    document.getElementById("importPreviewWrap").style.display = "block";
+    document.getElementById("importResultWrap").style.display = "none";
 
     const headers = Object.keys(previewRows[0]);
-    const preview = document.getElementById('importPreview');
+    const preview = document.getElementById("importPreview");
     preview.innerHTML = `<table>
-      <thead><tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr></thead>
-      <tbody>${previewRows.slice(0, 10).map(r => `<tr>${headers.map(h => `<td>${r[h] || ''}</td>`).join('')}</tr>`).join('')}</tbody>
+      <thead><tr>${headers.map((h) => `<th>${h}</th>`).join("")}</tr></thead>
+      <tbody>${previewRows
+        .slice(0, 10)
+        .map(
+          (r) =>
+            `<tr>${headers.map((h) => `<td>${r[h] || ""}</td>`).join("")}</tr>`,
+        )
+        .join("")}</tbody>
     </table>`;
     if (previewRows.length > 10) {
       preview.innerHTML += `<div style="text-align:center;padding:8px;font-size:12px;color:var(--text-muted)">... ve ${previewRows.length - 10} satır daha</div>`;
     }
 
-    document.getElementById('excelImportBtn').disabled = false;
+    document.getElementById("excelImportBtn").disabled = false;
   }
 
   function clearFile() {
     previewRows = [];
-    document.getElementById('excelFileInput').value = '';
-    document.getElementById('importPreviewWrap').style.display = 'none';
-    document.getElementById('excelImportBtn').disabled = true;
+    document.getElementById("excelFileInput").value = "";
+    document.getElementById("importPreviewWrap").style.display = "none";
+    document.getElementById("excelImportBtn").disabled = true;
   }
 
   function switchBulkTab(tabId, btn) {
     // Scope all changes to the nearest common parent of the tabs
-    const tabsEl = btn.closest('.tabs');
+    const tabsEl = btn.closest(".tabs");
     const parent = tabsEl ? tabsEl.parentElement : document;
-    tabsEl?.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    parent?.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
-    btn.classList.add('active');
+    tabsEl
+      ?.querySelectorAll(".tab-btn")
+      .forEach((b) => b.classList.remove("active"));
+    parent
+      ?.querySelectorAll(".tab-pane")
+      .forEach((p) => p.classList.remove("active"));
+    btn.classList.add("active");
     // Support full IDs (st-add-data) and legacy short IDs (manual → bulkTab-manual)
-    const pane = document.getElementById(tabId) || document.getElementById(`bulkTab-${tabId}`);
-    pane?.classList.add('active');
+    const pane =
+      document.getElementById(tabId) ||
+      document.getElementById(`bulkTab-${tabId}`);
+    pane?.classList.add("active");
   }
 
   function setRowCount(n) {
@@ -273,7 +326,7 @@ const BulkImport = (() => {
   function addRows(n) {
     collectManualRows();
     for (let i = 0; i < n; i++) manualRows.push({});
-    document.getElementById('bulkRowCount').value = manualRows.length;
+    document.getElementById("bulkRowCount").value = manualRows.length;
     refreshManualTable();
   }
 
@@ -281,62 +334,67 @@ const BulkImport = (() => {
     collectManualRows();
     manualRows.splice(i, 1);
     if (!manualRows.length) manualRows.push({});
-    document.getElementById('bulkRowCount').value = manualRows.length;
+    document.getElementById("bulkRowCount").value = manualRows.length;
     refreshManualTable();
   }
 
   async function refreshManualTable() {
     const opOptions = await getOperatorOptions();
-    document.getElementById('bulkManualTable').innerHTML = renderManualTable(opOptions);
+    document.getElementById("bulkManualTable").innerHTML =
+      renderManualTable(opOptions);
   }
 
   async function saveManual() {
     collectManualRows();
-    const nonEmpty = manualRows.filter(r => Object.values(r).some(v => v));
-    if (!nonEmpty.length) return UI.toast('En az bir satır doldurun.', 'error');
+    const nonEmpty = manualRows.filter((r) => Object.values(r).some((v) => v));
+    if (!nonEmpty.length) return UI.toast("En az bir satır doldurun.", "error");
 
-    const btn = document.getElementById('bulkManualSaveBtn');
+    const btn = document.getElementById("bulkManualSaveBtn");
     btn.disabled = true;
-    btn.innerHTML = '<div class="spinner" style="width:13px;height:13px;border-width:2px"></div> Kaydediliyor...';
+    btn.innerHTML =
+      '<div class="spinner" style="width:13px;height:13px;border-width:2px"></div> Kaydediliyor...';
     try {
       const result = await API.importJSON(currentType, nonEmpty);
-      UI.toast(`${result.inserted} kayıt eklendi.`, 'success');
+      UI.toast(`${result.inserted} kayıt eklendi.`, "success");
       if (result.errors?.length) {
-        result.errors.forEach(e => UI.toast(e, 'error'));
+        result.errors.forEach((e) => UI.toast(e, "error"));
       }
-      UI.closeModal('bulkModal');
+      UI.closeModal("bulkModal");
       onSuccess?.();
     } catch (err) {
-      UI.toast(err.message, 'error');
+      UI.toast(err.message, "error");
     } finally {
       btn.disabled = false;
-      btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/></svg> Tümünü Kaydet';
+      btn.innerHTML =
+        '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/></svg> Tümünü Kaydet';
     }
   }
 
   async function saveExcel() {
-    const input = document.getElementById('excelFileInput');
-    if (!input.files[0]) return UI.toast('Dosya seçilmedi.', 'error');
+    const input = document.getElementById("excelFileInput");
+    if (!input.files[0]) return UI.toast("Dosya seçilmedi.", "error");
 
-    const btn = document.getElementById('excelImportBtn');
+    const btn = document.getElementById("excelImportBtn");
     btn.disabled = true;
-    btn.innerHTML = '<div class="spinner" style="width:13px;height:13px;border-width:2px"></div> Yükleniyor...';
+    btn.innerHTML =
+      '<div class="spinner" style="width:13px;height:13px;border-width:2px"></div> Yükleniyor...';
     try {
       const result = await API.importExcel(currentType, input.files[0]);
-      const resultWrap = document.getElementById('importResultWrap');
-      resultWrap.style.display = 'block';
+      const resultWrap = document.getElementById("importResultWrap");
+      resultWrap.style.display = "block";
       resultWrap.innerHTML = `
         <div style="padding:12px 14px;background:var(--success-light);border:1px solid #86efac;border-radius:var(--radius-sm)">
           <div style="font-weight:600;color:var(--success);margin-bottom:4px">✓ ${result.inserted} kayıt eklendi.</div>
-          ${result.errors?.length ? `<div style="font-size:12px;color:var(--danger);margin-top:6px">${result.errors.slice(0,5).join('<br>')}</div>` : ''}
+          ${result.errors?.length ? `<div style="font-size:12px;color:var(--danger);margin-top:6px">${result.errors.slice(0, 5).join("<br>")}</div>` : ""}
         </div>`;
-      UI.toast(`${result.inserted} kayıt eklendi.`, 'success');
+      UI.toast(`${result.inserted} kayıt eklendi.`, "success");
       onSuccess?.();
     } catch (err) {
-      UI.toast(err.message, 'error');
+      UI.toast(err.message, "error");
     } finally {
       btn.disabled = false;
-      btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2 2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Yükle ve Aktar';
+      btn.innerHTML =
+        '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2 2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Yükle ve Aktar';
     }
   }
 
@@ -353,31 +411,74 @@ const BulkImport = (() => {
     // Load operators and type-specific master list in parallel
     const opOptions = await getOperatorOptions();
     let masterList = [];
-    if (type === 'm2m') { try { masterList = await API.getVehicles(); } catch(e){} }
-    if (type === 'data') { try { masterList = await API.getLocations(); } catch(e){} }
-    if (type === 'voice') { try { masterList = await API.getPersonnel(); } catch(e){} }
+    if (type === "m2m") {
+      try {
+        masterList = await API.getVehicles();
+      } catch (e) {}
+    }
+    if (type === "data") {
+      try {
+        masterList = await API.getLocations();
+      } catch (e) {}
+    }
+    if (type === "voice") {
+      try {
+        masterList = await API.getPersonnel();
+      } catch (e) {}
+    }
 
     const masterDatalistId = `mdl-${type}`;
-    let masterDatalistHtml = '';
-    if (type === 'm2m') masterDatalistHtml = masterList.map(v => `<option value="${v.plate_no}">${v.plate_no}${v.vehicle_type ? ' – ' + v.vehicle_type : ''}</option>`).join('');
-    if (type === 'data') masterDatalistHtml = masterList.map(l => `<option value="${l.name}">${l.name}${l.address ? ' – ' + l.address : ''}</option>`).join('');
-    if (type === 'voice') masterDatalistHtml = masterList.map(p => `<option value="${p.first_name} ${p.last_name}">${p.first_name} ${p.last_name}${p.department ? ' – ' + p.department : ''}${p.company ? ' (' + p.company + ')' : ''}</option>`).join('');
+    let masterDatalistHtml = "";
+    if (type === "m2m")
+      masterDatalistHtml = masterList
+        .map(
+          (v) =>
+            `<option value="${v.plate_no}">${v.plate_no}${v.vehicle_type ? " – " + v.vehicle_type : ""}</option>`,
+        )
+        .join("");
+    if (type === "data")
+      masterDatalistHtml = masterList
+        .map(
+          (l) =>
+            `<option value="${l.name}">${l.name}${l.address ? " – " + l.address : ""}</option>`,
+        )
+        .join("");
+    if (type === "voice")
+      masterDatalistHtml = masterList
+        .map(
+          (p) =>
+            `<option value="${p.first_name} ${p.last_name}">${p.first_name} ${p.last_name}${p.department ? " – " + p.department : ""}${p.company ? " (" + p.company + ")" : ""}</option>`,
+        )
+        .join("");
 
     // Type-specific extra field(s) for the single-add form
-    let extraFieldHtml = '';
-    if (type === 'm2m') extraFieldHtml = `
-      <div class="form-group col-span-2">
+    let extraFieldHtml = "";
+    if (type === "m2m")
+      extraFieldHtml = `
+      <div class="form-group">
+        <label class="form-label">Araç Tipi</label>
+        <select name="vehicle_type" id="s-m2m-vtype-${type}" class="form-control">
+          <option value="">Seçiniz...</option>
+          <option value="Binek">Binek</option>
+          <option value="Çekici">Çekici</option>
+          <option value="Yol Kamerası">Yol Kamerası</option>
+          <option value="IoT Cihazı">IoT Cihazı</option>
+        </select>
+      </div>
+      <div class="form-group">
         <label class="form-label">Plaka</label>
-        <input name="plate_no" class="form-control" list="${masterDatalistId}" placeholder="Seçin veya yazın..." autocomplete="off">
+        <input name="plate_no" id="s-m2m-plate-${type}" class="form-control" list="${masterDatalistId}" placeholder="Seçin veya yazın..." autocomplete="off">
         <datalist id="${masterDatalistId}">${masterDatalistHtml}</datalist>
       </div>`;
-    if (type === 'data') extraFieldHtml = `
+    if (type === "data")
+      extraFieldHtml = `
       <div class="form-group col-span-2">
         <label class="form-label">Lokasyon</label>
         <input name="location" class="form-control" list="${masterDatalistId}" placeholder="Seçin veya yazın..." autocomplete="off">
         <datalist id="${masterDatalistId}">${masterDatalistHtml}</datalist>
       </div>`;
-    if (type === 'voice') extraFieldHtml = `
+    if (type === "voice")
+      extraFieldHtml = `
       <div class="form-group col-span-2">
         <label class="form-label">Personel Adı Soyadı</label>
         <input name="assigned_to" id="s-voice-person-${type}" class="form-control" list="${masterDatalistId}" placeholder="Seçin veya yazın..." autocomplete="off">
@@ -506,27 +607,57 @@ const BulkImport = (() => {
     // Drag-and-drop for Excel upload
     const dz = document.getElementById(`inline-drop-${type}`);
     if (dz) {
-      dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag-over'); });
-      dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
-      dz.addEventListener('drop', e => {
-        e.preventDefault(); dz.classList.remove('drag-over');
+      dz.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        dz.classList.add("drag-over");
+      });
+      dz.addEventListener("dragleave", () => dz.classList.remove("drag-over"));
+      dz.addEventListener("drop", (e) => {
+        e.preventDefault();
+        dz.classList.remove("drag-over");
         const file = e.dataTransfer.files[0];
-        if (file) { document.getElementById(`inline-file-${type}`).files = e.dataTransfer.files; onFileSelectInline(document.getElementById(`inline-file-${type}`), type); }
+        if (file) {
+          document.getElementById(`inline-file-${type}`).files =
+            e.dataTransfer.files;
+          onFileSelectInline(
+            document.getElementById(`inline-file-${type}`),
+            type,
+          );
+        }
       });
     }
 
     // Personnel auto-fill for voice
-    if (type === 'voice' && masterList.length) {
+    if (type === "voice" && masterList.length) {
       const personInput = document.getElementById(`s-voice-person-${type}`);
       if (personInput) {
-        personInput.addEventListener('input', () => {
+        personInput.addEventListener("input", () => {
           const val = personInput.value.trim();
-          const match = masterList.find(p => `${p.first_name} ${p.last_name}`.toLowerCase() === val.toLowerCase());
+          const match = masterList.find(
+            (p) =>
+              `${p.first_name} ${p.last_name}`.toLowerCase() ===
+              val.toLowerCase(),
+          );
           if (match) {
             const dept = document.getElementById(`s-voice-dept-${type}`);
             const comp = document.getElementById(`s-voice-comp-${type}`);
-            if (dept && !dept.value) dept.value = match.department || '';
-            if (comp && !comp.value) comp.value = match.company || '';
+            if (dept && !dept.value) dept.value = match.department || "";
+            if (comp && !comp.value) comp.value = match.company || "";
+          }
+        });
+      }
+    }
+
+    // Plate → vehicle_type auto-fill for m2m
+    if (type === "m2m" && masterList.length) {
+      const plateInput = document.getElementById(`s-m2m-plate-${type}`);
+      const vtypeSelect = document.getElementById(`s-m2m-vtype-${type}`);
+      if (plateInput && vtypeSelect) {
+        plateInput.addEventListener("input", () => {
+          const val = plateInput.value.trim();
+          const match = masterList.find(v => v.plate_no === val);
+          if (match && match.vehicle_type) {
+            vtypeSelect.value = match.vehicle_type;
           }
         });
       }
@@ -541,19 +672,24 @@ const BulkImport = (() => {
     const form = document.getElementById(`s-add-form-${type}`);
     const data = UI.formData(`s-add-form-${type}`);
     try {
-      if (type === 'm2m') await API.addM2M(data);
-      else if (type === 'data') await API.addData(data);
-      else if (type === 'voice') await API.addVoice(data);
-      UI.toast('Hat eklendi.', 'success');
+      if (type === "m2m") await API.addM2M(data);
+      else if (type === "data") await API.addData(data);
+      else if (type === "voice") await API.addVoice(data);
+      UI.toast("Hat eklendi.", "success");
       form.reset();
       onSuccess?.();
-    } catch (err) { UI.toast(err.message, 'error'); }
-    finally { btn.disabled = false; }
+    } catch (err) {
+      UI.toast(err.message, "error");
+    } finally {
+      btn.disabled = false;
+    }
   }
   function collectInlineRows(type) {
-    const inputs = document.querySelectorAll(`#inline-manual-table-${type} [data-row]`);
+    const inputs = document.querySelectorAll(
+      `#inline-manual-table-${type} [data-row]`,
+    );
     const updated = [];
-    inputs.forEach(el => {
+    inputs.forEach((el) => {
       const row = parseInt(el.dataset.row);
       if (!updated[row]) updated[row] = {};
       updated[row][el.dataset.key] = el.value.trim() || null;
@@ -585,67 +721,112 @@ const BulkImport = (() => {
 
   async function saveManualInline(type) {
     collectInlineRows(type);
-    const nonEmpty = manualRows.filter(r => Object.values(r).some(v => v));
-    if (!nonEmpty.length) return UI.toast('En az bir satır doldurun.', 'error');
+    const nonEmpty = manualRows.filter((r) => Object.values(r).some((v) => v));
+    if (!nonEmpty.length) return UI.toast("En az bir satır doldurun.", "error");
     const btn = document.getElementById(`inline-save-${type}`);
-    btn.disabled = true; btn.innerHTML = '<div class="spinner" style="width:13px;height:13px;border-width:2px"></div> Kaydediliyor...';
+    btn.disabled = true;
+    btn.innerHTML =
+      '<div class="spinner" style="width:13px;height:13px;border-width:2px"></div> Kaydediliyor...';
     try {
       const result = await API.importJSON(type, nonEmpty);
-      UI.toast(`${result.inserted} kayıt eklendi.`, 'success');
-      if (result.errors?.length) result.errors.forEach(e => UI.toast(e, 'error'));
+      UI.toast(`${result.inserted} kayıt eklendi.`, "success");
+      if (result.errors?.length)
+        result.errors.forEach((e) => UI.toast(e, "error"));
       // Reset rows
       manualRows = Array.from({ length: 5 }, () => ({}));
       refreshInlineTable(type);
       onSuccess?.();
-    } catch (err) { UI.toast(err.message, 'error'); }
-    finally { btn.disabled = false; btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/></svg> Tümünü Kaydet'; }
+    } catch (err) {
+      UI.toast(err.message, "error");
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML =
+        '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/></svg> Tümünü Kaydet';
+    }
   }
 
   async function onFileSelectInline(input, type) {
-    const file = input.files[0]; if (!file) return;
+    const file = input.files[0];
+    if (!file) return;
     const XLSX = window.XLSX;
-    if (!XLSX) return UI.toast('XLSX kütüphanesi yüklenmedi.', 'error');
+    if (!XLSX) return UI.toast("XLSX kütüphanesi yüklenmedi.", "error");
     const buffer = await file.arrayBuffer();
-    const wb = XLSX.read(buffer, { type: 'array' });
+    const wb = XLSX.read(buffer, { type: "array" });
     const ws = wb.Sheets[wb.SheetNames[0]];
-    previewRows = XLSX.utils.sheet_to_json(ws, { defval: '' });
-    if (!previewRows.length) { UI.toast('Dosyada veri bulunamadı.', 'error'); return; }
-    document.getElementById(`inline-preview-count-${type}`).textContent = `(${previewRows.length} satır)`;
-    document.getElementById(`inline-preview-wrap-${type}`).style.display = 'block';
-    document.getElementById(`inline-result-${type}`).style.display = 'none';
+    previewRows = XLSX.utils.sheet_to_json(ws, { defval: "" });
+    if (!previewRows.length) {
+      UI.toast("Dosyada veri bulunamadı.", "error");
+      return;
+    }
+    document.getElementById(`inline-preview-count-${type}`).textContent =
+      `(${previewRows.length} satır)`;
+    document.getElementById(`inline-preview-wrap-${type}`).style.display =
+      "block";
+    document.getElementById(`inline-result-${type}`).style.display = "none";
     const headers = Object.keys(previewRows[0]);
     const preview = document.getElementById(`inline-preview-${type}`);
-    preview.innerHTML = `<table><thead><tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr></thead><tbody>${previewRows.slice(0, 10).map(r => `<tr>${headers.map(h => `<td>${r[h]||''}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
-    if (previewRows.length > 10) preview.innerHTML += `<div style="text-align:center;padding:8px;font-size:12px;color:var(--text-muted)">... ve ${previewRows.length - 10} satır daha</div>`;
+    preview.innerHTML = `<table><thead><tr>${headers.map((h) => `<th>${h}</th>`).join("")}</tr></thead><tbody>${previewRows
+      .slice(0, 10)
+      .map(
+        (r) =>
+          `<tr>${headers.map((h) => `<td>${r[h] || ""}</td>`).join("")}</tr>`,
+      )
+      .join("")}</tbody></table>`;
+    if (previewRows.length > 10)
+      preview.innerHTML += `<div style="text-align:center;padding:8px;font-size:12px;color:var(--text-muted)">... ve ${previewRows.length - 10} satır daha</div>`;
     document.getElementById(`inline-excel-btn-${type}`).disabled = false;
   }
 
   function clearFileInline(type) {
     previewRows = [];
-    const fi = document.getElementById(`inline-file-${type}`); if (fi) fi.value = '';
-    document.getElementById(`inline-preview-wrap-${type}`).style.display = 'none';
+    const fi = document.getElementById(`inline-file-${type}`);
+    if (fi) fi.value = "";
+    document.getElementById(`inline-preview-wrap-${type}`).style.display =
+      "none";
     document.getElementById(`inline-excel-btn-${type}`).disabled = true;
   }
 
   async function saveExcelInline(type) {
     const input = document.getElementById(`inline-file-${type}`);
-    if (!input?.files[0]) return UI.toast('Dosya seçilmedi.', 'error');
+    if (!input?.files[0]) return UI.toast("Dosya seçilmedi.", "error");
     const btn = document.getElementById(`inline-excel-btn-${type}`);
-    btn.disabled = true; btn.innerHTML = '<div class="spinner" style="width:13px;height:13px;border-width:2px"></div> Yükleniyor...';
+    btn.disabled = true;
+    btn.innerHTML =
+      '<div class="spinner" style="width:13px;height:13px;border-width:2px"></div> Yükleniyor...';
     try {
       const result = await API.importExcel(type, input.files[0]);
       const resultEl = document.getElementById(`inline-result-${type}`);
-      resultEl.style.display = 'block';
-      resultEl.innerHTML = `<div style="padding:12px 14px;background:var(--success-light);border:1px solid #86efac;border-radius:var(--radius-sm)"><div style="font-weight:600;color:var(--success);margin-bottom:4px">✓ ${result.inserted} kayıt eklendi.</div>${result.errors?.length ? `<div style="font-size:12px;color:var(--danger);margin-top:6px">${result.errors.slice(0,5).join('<br>')}</div>` : ''}</div>`;
-      UI.toast(`${result.inserted} kayıt eklendi.`, 'success');
+      resultEl.style.display = "block";
+      resultEl.innerHTML = `<div style="padding:12px 14px;background:var(--success-light);border:1px solid #86efac;border-radius:var(--radius-sm)"><div style="font-weight:600;color:var(--success);margin-bottom:4px">✓ ${result.inserted} kayıt eklendi.</div>${result.errors?.length ? `<div style="font-size:12px;color:var(--danger);margin-top:6px">${result.errors.slice(0, 5).join("<br>")}</div>` : ""}</div>`;
+      UI.toast(`${result.inserted} kayıt eklendi.`, "success");
       clearFileInline(type);
       onSuccess?.();
-    } catch (err) { UI.toast(err.message, 'error'); }
-    finally { btn.disabled = false; btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Yükle ve Aktar'; }
+    } catch (err) {
+      UI.toast(err.message, "error");
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML =
+        '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Yükle ve Aktar';
+    }
   }
 
   return {
-    open, onFileSelect, clearFile, switchBulkTab, setRowCount, addRows, removeRow, saveManual, saveExcel,
-    renderTab, saveSingle, setRowCountInline, addRowsInline, saveManualInline, onFileSelectInline, clearFileInline, saveExcelInline,
+    open,
+    onFileSelect,
+    clearFile,
+    switchBulkTab,
+    setRowCount,
+    addRows,
+    removeRow,
+    saveManual,
+    saveExcel,
+    renderTab,
+    saveSingle,
+    setRowCountInline,
+    addRowsInline,
+    saveManualInline,
+    onFileSelectInline,
+    clearFileInline,
+    saveExcelInline,
   };
 })();

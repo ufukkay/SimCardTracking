@@ -19,6 +19,7 @@ db.exec(`
     phone TEXT,
     role TEXT NOT NULL DEFAULT 'user',
     password_hash TEXT NOT NULL,
+    permissions TEXT DEFAULT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
 
@@ -94,6 +95,36 @@ db.exec(`
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
 `);
+
+// ─── Performance Indexes ───
+// These prevent full table scans on the most common search / filter columns.
+// CREATE INDEX IF NOT EXISTS → safe to run multiple times (idempotent).
+db.exec(`
+  CREATE INDEX IF NOT EXISTS idx_m2m_plate_no     ON sim_m2m  (plate_no);
+  CREATE INDEX IF NOT EXISTS idx_m2m_phone_no      ON sim_m2m  (phone_no);
+  CREATE INDEX IF NOT EXISTS idx_m2m_iccid         ON sim_m2m  (iccid);
+  CREATE INDEX IF NOT EXISTS idx_m2m_operator      ON sim_m2m  (operator);
+  CREATE INDEX IF NOT EXISTS idx_m2m_status        ON sim_m2m  (status);
+  CREATE INDEX IF NOT EXISTS idx_m2m_vehicle_type  ON sim_m2m  (vehicle_type);
+
+  CREATE INDEX IF NOT EXISTS idx_data_phone_no     ON sim_data (phone_no);
+  CREATE INDEX IF NOT EXISTS idx_data_iccid        ON sim_data (iccid);
+  CREATE INDEX IF NOT EXISTS idx_data_operator     ON sim_data (operator);
+  CREATE INDEX IF NOT EXISTS idx_data_status       ON sim_data (status);
+  CREATE INDEX IF NOT EXISTS idx_data_location     ON sim_data (location);
+
+  CREATE INDEX IF NOT EXISTS idx_voice_phone_no    ON sim_voice (phone_no);
+  CREATE INDEX IF NOT EXISTS idx_voice_iccid       ON sim_voice (iccid);
+  CREATE INDEX IF NOT EXISTS idx_voice_operator    ON sim_voice (operator);
+  CREATE INDEX IF NOT EXISTS idx_voice_status      ON sim_voice (status);
+  CREATE INDEX IF NOT EXISTS idx_voice_assigned_to ON sim_voice (assigned_to);
+
+  CREATE INDEX IF NOT EXISTS idx_vehicles_plate_no ON vehicles  (plate_no);
+`);
+
+// ─── Schema Migrations ───
+// Safely add new columns to existing databases (try/catch = idempotent)
+try { db.exec(`ALTER TABLE users ADD COLUMN permissions TEXT DEFAULT NULL`); } catch (_) {}
 
 // Default operatörler
 const seedOperators = db.prepare(`INSERT OR IGNORE INTO operators (name) VALUES (?)`);

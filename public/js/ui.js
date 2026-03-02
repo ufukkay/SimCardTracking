@@ -103,7 +103,20 @@ const UI = (() => {
     });
   }
 
-  // ─── Excel-like Column Filters (Global) ───
+  // ─── Sort rows client-side ───
+  function sortRows(rows, sortState, colDefs) {
+    if (!sortState || !sortState.col || !sortState.dir) return rows;
+    const colDef = colDefs[sortState.col];
+    if (!colDef) return rows;
+    const dir = sortState.dir === 'asc' ? 1 : -1;
+    return [...rows].sort((a, b) => {
+      const va = (colDef.getVal(a) || '').toString();
+      const vb = (colDef.getVal(b) || '').toString();
+      return dir * va.localeCompare(vb, 'tr', { sensitivity: 'base', numeric: true });
+    });
+  }
+
+  // ─── Excel-like Column Filters + Sorting (Global) ───
   // colDef = { 'operator': { label: 'Operatör', getVal: row => row.operator } }
   // storageObj = object where filters are kept (e.g. M2MPage.colFilters)
   // onApply = callback to trigger data refresh
@@ -113,7 +126,7 @@ const UI = (() => {
     const ths = tbody.closest('table').querySelectorAll('th');
 
     ths.forEach(th => {
-      const text = th.textContent.trim().toLowerCase();
+      const text = th.textContent.trim().replace(/[↕↑↓]/g, '').trim().toLowerCase();
       
       // Find matching column definition based on th text
       const colKey = Object.keys(colDefs).find(k => (colDefs[k].label || '').toLowerCase() === text);
@@ -126,6 +139,30 @@ const UI = (() => {
          th.querySelector('.th-filter-btn').remove();
          if (th.querySelector('.col-filter-menu')) th.querySelector('.col-filter-menu').remove();
       }
+      if (th.querySelector('.th-sort-btn')) th.querySelector('.th-sort-btn').remove();
+
+      // ── Sort button ──
+      const sortState = filterStateObj._sort || {};
+      const isSortedAsc  = sortState.col === colKey && sortState.dir === 'asc';
+      const isSortedDesc = sortState.col === colKey && sortState.dir === 'desc';
+      const sortIcon = isSortedAsc ? '↑' : isSortedDesc ? '↓' : '↕';
+
+      const sortBtn = document.createElement('button');
+      sortBtn.className = `th-sort-btn${(isSortedAsc || isSortedDesc) ? ' active' : ''}`;
+      sortBtn.textContent = sortIcon;
+      sortBtn.title = 'Sırala';
+      sortBtn.onclick = (e) => {
+        e.stopPropagation();
+        if (!filterStateObj._sort) filterStateObj._sort = {};
+        if (filterStateObj._sort.col !== colKey) {
+          filterStateObj._sort = { col: colKey, dir: 'asc' };
+        } else if (filterStateObj._sort.dir === 'asc') {
+          filterStateObj._sort.dir = 'desc';
+        } else {
+          filterStateObj._sort = {};
+        }
+        onApply();
+      };
 
       // Unique values from all currently fetched rows
       let rawValues = currentRows.map(r => colDef.getVal(r));
@@ -207,6 +244,7 @@ const UI = (() => {
       menu.appendChild(list);
       menu.appendChild(acts);
       
+      th.appendChild(sortBtn);
       th.appendChild(btn);
       th.appendChild(menu);
     });
@@ -263,5 +301,5 @@ const UI = (() => {
                 .map(cb => parseInt(cb.value));
   }
 
-  return { toast, confirm, openModal, closeModal, statusBadge, operatorBadge, emptyState, loading, fillOperatorSelect, formData, setForm, setupTableFilters, filterRows, initSelection, getSelectedIds };
+  return { toast, confirm, openModal, closeModal, statusBadge, operatorBadge, emptyState, loading, fillOperatorSelect, formData, setForm, sortRows, setupTableFilters, filterRows, initSelection, getSelectedIds };
 })();

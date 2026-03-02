@@ -1,12 +1,12 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../database/db');
-const { authMiddleware } = require('../middleware/auth');
+const { authMiddleware, canView, canEdit } = require('../middleware/auth');
 
 router.use(authMiddleware);
 
 // GET /api/data
-router.get('/', (req, res) => {
+router.get('/', canView('data'), (req, res) => {
   let query = 'SELECT * FROM sim_data WHERE 1=1';
   const params = [];
   if (req.query.operator) { query += ' AND operator = ?'; params.push(req.query.operator); }
@@ -16,13 +16,13 @@ router.get('/', (req, res) => {
   res.json(db.prepare(query).all(...params));
 });
 
-router.get('/:id', (req, res) => {
+router.get('/:id', canView('data'), (req, res) => {
   const row = db.prepare('SELECT * FROM sim_data WHERE id = ?').get(req.params.id);
   if (!row) return res.status(404).json({ message: 'Kayıt bulunamadı.' });
   res.json(row);
 });
 
-router.post('/', (req, res) => {
+router.post('/', canEdit('data'), (req, res) => {
   const { iccid, phone_no, operator, status, location, notes } = req.body;
   if (!operator) return res.status(400).json({ message: 'Operatör zorunludur.' });
   const result = db.prepare(`
@@ -32,7 +32,7 @@ router.post('/', (req, res) => {
   res.status(201).json({ id: result.lastInsertRowid, message: 'Data hattı eklendi.' });
 });
 
-router.put('/:id', (req, res) => {
+router.put('/:id', canEdit('data'), (req, res) => {
   const { iccid, phone_no, operator, status, location, notes } = req.body;
   const result = db.prepare(`
     UPDATE sim_data SET iccid=?, phone_no=?, operator=?, status=?, location=?, notes=?,
@@ -42,14 +42,14 @@ router.put('/:id', (req, res) => {
   res.json({ message: 'Data hattı güncellendi.' });
 });
 
-router.delete('/:id', (req, res) => {
+router.delete('/:id', canEdit('data'), (req, res) => {
   const result = db.prepare('DELETE FROM sim_data WHERE id = ?').run(req.params.id);
   if (result.changes === 0) return res.status(404).json({ message: 'Kayıt bulunamadı.' });
   res.json({ message: 'Data hattı silindi.' });
 });
 
 // POST /api/data/bulk-delete
-router.post('/bulk-delete', (req, res) => {
+router.post('/bulk-delete', canEdit('data'), (req, res) => {
   const { ids } = req.body;
   if (!Array.isArray(ids) || ids.length === 0) return res.status(400).json({ message: 'Geçersiz ID listesi.' });
   const placeholders = ids.map(() => '?').join(',');
@@ -58,7 +58,7 @@ router.post('/bulk-delete', (req, res) => {
 });
 
 // POST /api/data/bulk-update
-router.post('/bulk-update', (req, res) => {
+router.post('/bulk-update', canEdit('data'), (req, res) => {
   const { ids, data } = req.body;
   if (!Array.isArray(ids) || ids.length === 0) return res.status(400).json({ message: 'Geçersiz ID listesi.' });
   if (!data || Object.keys(data).length === 0) return res.status(400).json({ message: 'Güncellenecek veri bulunamadı.' });

@@ -8,13 +8,14 @@ router.use(authMiddleware);
 
 // GET /api/users
 router.get('/', adminOnly, (req, res) => {
-  const users = db.prepare('SELECT id, username, first_name, last_name, company, email, phone, role, created_at FROM users ORDER BY created_at DESC').all();
-  res.json(users);
+  const users = db.prepare('SELECT id, username, first_name, last_name, company, email, phone, role, permissions, created_at FROM users ORDER BY created_at DESC').all();
+  // Parse permissions JSON for each user
+  res.json(users.map(u => ({ ...u, permissions: u.permissions ? JSON.parse(u.permissions) : null })));
 });
 
 // POST /api/users
 router.post('/', adminOnly, (req, res) => {
-  const { username, first_name, last_name, company, email, phone, role, password } = req.body;
+  const { username, first_name, last_name, company, email, phone, role, password, permissions } = req.body;
   if (!username || !password || !first_name || !last_name)
     return res.status(400).json({ message: 'Kullanıcı adı, ad, soyad ve şifre zorunludur.' });
 
@@ -22,23 +23,25 @@ router.post('/', adminOnly, (req, res) => {
   if (existing) return res.status(409).json({ message: 'Bu kullanıcı adı zaten kullanılıyor.' });
 
   const hash = bcrypt.hashSync(password, 10);
+  const permsJson = (role === 'admin' || !permissions) ? null : JSON.stringify(permissions);
   const result = db.prepare(`
-    INSERT INTO users (username, first_name, last_name, company, email, phone, role, password_hash)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(username, first_name, last_name, company, email, phone, role || 'user', hash);
+    INSERT INTO users (username, first_name, last_name, company, email, phone, role, password_hash, permissions)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(username, first_name, last_name, company, email, phone, role || 'user', hash, permsJson);
   res.status(201).json({ id: result.lastInsertRowid, message: 'Kullanıcı oluşturuldu.' });
 });
 
 // PUT /api/users/:id
 router.put('/:id', adminOnly, (req, res) => {
-  const { first_name, last_name, company, email, phone, role, password } = req.body;
+  const { first_name, last_name, company, email, phone, role, password, permissions } = req.body;
   if (password) {
     const hash = bcrypt.hashSync(password, 10);
     db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(hash, req.params.id);
   }
+  const permsJson = (role === 'admin' || !permissions) ? null : JSON.stringify(permissions);
   const result = db.prepare(`
-    UPDATE users SET first_name=?, last_name=?, company=?, email=?, phone=?, role=? WHERE id=?
-  `).run(first_name, last_name, company, email, phone, role, req.params.id);
+    UPDATE users SET first_name=?, last_name=?, company=?, email=?, phone=?, role=?, permissions=? WHERE id=?
+  `).run(first_name, last_name, company, email, phone, role, permsJson, req.params.id);
   if (result.changes === 0) return res.status(404).json({ message: 'Kullanıcı bulunamadı.' });
   res.json({ message: 'Kullanıcı güncellendi.' });
 });
