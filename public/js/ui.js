@@ -127,30 +127,44 @@ const UI = (() => {
 
     ths.forEach(th => {
       const text = th.textContent.trim().replace(/[↕↑↓]/g, '').trim().toLowerCase();
-      
-      // Find matching column definition based on th text
       const colKey = Object.keys(colDefs).find(k => (colDefs[k].label || '').toLowerCase() === text);
       if (!colKey) return;
       
       const colDef = colDefs[colKey];
       
-      // Cleanup previous injects
-      if (th.querySelector('.th-filter-btn')) {
-         th.querySelector('.th-filter-btn').remove();
-         if (th.querySelector('.col-filter-menu')) th.querySelector('.col-filter-menu').remove();
-      }
-      if (th.querySelector('.th-sort-btn')) th.querySelector('.th-sort-btn').remove();
+      // Cleanup / Re-init buttons only if they don't exist
+      let sortBtn = th.querySelector('.th-sort-btn');
+      let filterBtn = th.querySelector('.th-filter-btn');
+      let menu = th.querySelector('.col-filter-menu');
 
-      // ── Sort button ──
+      if (!sortBtn) {
+        sortBtn = document.createElement('button');
+        sortBtn.className = 'th-sort-btn';
+        sortBtn.title = 'Sırala';
+        th.appendChild(sortBtn);
+      }
+
+      if (!filterBtn) {
+        filterBtn = document.createElement('button');
+        filterBtn.className = 'th-filter-btn';
+        filterBtn.innerHTML = '⋮';
+        filterBtn.title = 'Filtrele';
+        th.appendChild(filterBtn);
+      }
+
+      if (!menu) {
+        menu = document.createElement('div');
+        menu.className = 'col-filter-menu';
+        th.appendChild(menu);
+      }
+
+      // ── Sort logic ──
       const sortState = filterStateObj._sort || {};
       const isSortedAsc  = sortState.col === colKey && sortState.dir === 'asc';
       const isSortedDesc = sortState.col === colKey && sortState.dir === 'desc';
-      const sortIcon = isSortedAsc ? '↑' : isSortedDesc ? '↓' : '↕';
-
-      const sortBtn = document.createElement('button');
+      sortBtn.textContent = isSortedAsc ? '↑' : isSortedDesc ? '↓' : '↕';
       sortBtn.className = `th-sort-btn${(isSortedAsc || isSortedDesc) ? ' active' : ''}`;
-      sortBtn.textContent = sortIcon;
-      sortBtn.title = 'Sırala';
+      
       sortBtn.onclick = (e) => {
         e.stopPropagation();
         if (!filterStateObj._sort) filterStateObj._sort = {};
@@ -164,95 +178,71 @@ const UI = (() => {
         onApply();
       };
 
-      // Unique values from all currently fetched rows
-      let rawValues = currentRows.map(r => colDef.getVal(r));
-      let uniqueVals = [...new Set(rawValues)].filter(v => v !== '—' && v !== '' && v !== null && v !== undefined);
-      uniqueVals.sort();
-
+      // ── Filter logic ──
       const isActive = filterStateObj && filterStateObj[colKey] && filterStateObj[colKey].length > 0;
-      
-      const btn = document.createElement('button');
-      btn.className = `th-filter-btn ${isActive ? 'active' : ''}`;
-      btn.innerHTML = '⋮';
-      btn.title = 'Filtrele';
-      btn.onclick = (e) => {
+      filterBtn.className = `th-filter-btn ${isActive ? 'active' : ''}`;
+      filterBtn.onclick = (e) => {
         e.stopPropagation();
         document.querySelectorAll('.col-filter-menu').forEach(m => m !== menu && m.classList.remove('open'));
         menu.classList.toggle('open');
       };
 
-      const menu = document.createElement('div');
-      menu.className = 'col-filter-menu';
-      
-      // Search Input
-      const searchInp = document.createElement('input');
-      searchInp.className = 'form-control';
-      searchInp.placeholder = 'Ara...';
-      searchInp.onclick = e => e.stopPropagation();
-      searchInp.onkeyup = (e) => {
-         const q = e.target.value.toLowerCase();
-         menu.querySelectorAll('.col-filter-item').forEach(item => {
-            const txt = item.querySelector('span').innerText.toLowerCase();
-            item.style.display = txt.includes(q) ? 'flex' : 'none';
-         });
-      };
-      
-      // Values List
-      const list = document.createElement('div');
-      list.className = 'col-filter-list';
-      uniqueVals.forEach(val => {
-         const isChecked = isActive && filterStateObj[colKey].includes(val);
-         list.innerHTML += `
-           <label class="col-filter-item" onclick="event.stopPropagation()">
-             <input type="checkbox" value="${val}" ${isChecked ? 'checked' : ''}>
-             <span title="${val}">${val}</span>
-           </label>
-         `;
-      });
-      if (uniqueVals.length === 0) list.innerHTML = '<div style="padding:4px;color:var(--text-muted)">Kayıt yok</div>';
+      // Only rebuild menu content if it's being opened or data changed significanly
+      // For now, let's keep it simple but ensure uniqueVals are calculated efficiently
+      let rawValues = currentRows.map(r => colDef.getVal(r));
+      let uniqueVals = [...new Set(rawValues)].filter(v => v !== '—' && v !== '' && v !== null && v !== undefined);
+      uniqueVals.sort();
 
-      // Action Buttons
-      const acts = document.createElement('div');
-      acts.className = 'col-filter-actions';
-      
-      const clearBtn = document.createElement('button');
-      clearBtn.className = 'btn btn-ghost btn-sm';
-      clearBtn.innerText = 'Temizle';
-      clearBtn.onclick = (e) => {
-         e.stopPropagation();
-         if (!filterStateObj[colKey]) filterStateObj[colKey] = [];
-         filterStateObj[colKey] = [];
-         menu.classList.remove('open');
-         onApply();
-      };
-      
-      const applyBtn = document.createElement('button');
-      applyBtn.className = 'btn btn-primary btn-sm';
-      applyBtn.innerText = 'Uygula';
-      applyBtn.onclick = (e) => {
-         e.stopPropagation();
-         const checked = Array.from(list.querySelectorAll('input:checked')).map(cb => cb.value);
-         filterStateObj[colKey] = checked;
-         menu.classList.remove('open');
-         onApply();
-      };
-      
-      acts.appendChild(clearBtn);
-      acts.appendChild(applyBtn);
+      menu.innerHTML = `
+        <input type="text" class="form-control" placeholder="Ara..." onclick="event.stopPropagation()">
+        <div class="col-filter-list">
+          ${uniqueVals.map(val => {
+            const isChecked = isActive && filterStateObj[colKey].includes(val);
+            return `
+              <label class="col-filter-item" onclick="event.stopPropagation()">
+                <input type="checkbox" value="${val}" ${isChecked ? 'checked' : ''}>
+                <span title="${val}">${val}</span>
+              </label>
+            `;
+          }).join('') || '<div style="padding:4px;color:var(--text-muted)">Kayıt yok</div>'}
+        </div>
+        <div class="col-filter-actions">
+          <button class="btn btn-ghost btn-sm btn-clear">Temizle</button>
+          <button class="btn btn-primary btn-sm btn-apply">Uygula</button>
+        </div>
+      `;
 
-      menu.appendChild(searchInp);
-      menu.appendChild(list);
-      menu.appendChild(acts);
-      
-      th.appendChild(sortBtn);
-      th.appendChild(btn);
-      th.appendChild(menu);
+      // Simplified menu event handling
+      menu.querySelector('input').onkeyup = (e) => {
+        const q = e.target.value.toLowerCase();
+        menu.querySelectorAll('.col-filter-item').forEach(item => {
+          const txt = item.querySelector('span').innerText.toLowerCase();
+          item.style.display = txt.includes(q) ? 'flex' : 'none';
+        });
+      };
+
+      menu.querySelector('.btn-clear').onclick = (e) => {
+        e.stopPropagation();
+        filterStateObj[colKey] = [];
+        menu.classList.remove('open');
+        onApply();
+      };
+
+      menu.querySelector('.btn-apply').onclick = (e) => {
+        e.stopPropagation();
+        const checked = Array.from(menu.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value);
+        filterStateObj[colKey] = checked;
+        menu.classList.remove('open');
+        onApply();
+      };
     });
     
-    // Close menus on outside click
-    document.addEventListener('click', () => {
-       document.querySelectorAll('.col-filter-menu').forEach(m => m.classList.remove('open'));
-    }, { once: true });
+    // Close menus on outside click - using a more robust way
+    const closeOnOutside = () => {
+       document.querySelectorAll('.col-filter-menu.open').forEach(m => m.classList.remove('open'));
+    };
+    document.removeEventListener('click', closeOnOutside);
+    document.addEventListener('click', closeOnOutside);
   }
 
   // Filter local rows using the given state

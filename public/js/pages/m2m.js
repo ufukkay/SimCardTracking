@@ -177,37 +177,49 @@ const M2MPage = (() => {
       </div>
     `;
 
-    // Fill filters, operator select, and vehicle datalist
-    Promise.all([API.getOperators(), API.getVehicles()]).then(([ops, vehicles]) => {
-      vehicleList = vehicles;   // cache for auto-fill lookup
+    // Fill filters, operator select, and vehicle datalist efficiently
+    if (!vehicleList.length) {
+      Promise.all([API.getOperators(), API.getVehicles()]).then(([ops, vehicles]) => {
+        vehicleList = vehicles;
+        renderStaticElements(ops, vehicles);
+      });
+    } else {
+      API.getOperators().then(ops => renderStaticElements(ops, vehicleList));
+    }
+
+    function renderStaticElements(ops, vehicles) {
       const filterEl = document.getElementById('m2mOpFilter');
-      ops.forEach(o => { filterEl.innerHTML += `<option value="${o.name}">${o.name}</option>`; });
+      if (filterEl) {
+        filterEl.innerHTML = '<option value="">Tüm Operatörler</option>' + 
+          ops.map(o => `<option value="${o.name}">${o.name}</option>`).join('');
+      }
       UI.fillOperatorSelect(document.getElementById('m2mOperatorSel'));
       UI.fillOperatorSelect(document.getElementById('m2mBulkOperatorSel'));
       const dl = document.getElementById('vehiclesList');
       if (dl) dl.innerHTML = vehicles.map(v => `<option value="${v.plate_no}">${v.plate_no}${v.vehicle_type ? ' – ' + v.vehicle_type : ''}</option>`).join('');
-    });
+    }
 
-    // Search and filter events
+    // Search and filter events with improved debounce
     let debounceTimer;
     ['m2mSearch', 'm2mOpFilter', 'm2mTypeFilter', 'm2mStatusFilter'].forEach(id => {
-      document.getElementById(id).addEventListener('input', () => {
-        clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(() => M2MPage.load(), 350);
-      });
+      const el = document.getElementById(id);
+      if (el) {
+        el.oninput = () => {
+          clearTimeout(debounceTimer);
+          debounceTimer = setTimeout(() => M2MPage.load(), 250);
+        };
+      }
     });
 
-    // Auto-fill Araç Tipi when a plate is selected from the datalist
+    // Auto-fill Araç Tipi when a plate is selected
     const plateInput = document.getElementById('m2mPlateInput');
     const typeSelect = document.querySelector('#m2mForm select[name="vehicle_type"]');
     if (plateInput && typeSelect) {
-      plateInput.addEventListener('input', (e) => {
+      plateInput.oninput = (e) => {
         const val = e.target.value.trim();
         const match = vehicleList.find(v => v.plate_no === val);
-        if (match && match.vehicle_type) {
-          typeSelect.value = match.vehicle_type;
-        }
-      });
+        if (match && match.vehicle_type) typeSelect.value = match.vehicle_type;
+      };
     }
 
     load();

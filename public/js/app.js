@@ -78,8 +78,11 @@
   };
 
   // ─── Navigate ─────────────────────────────────────────────────────────────
-  function navigate(page) {
+  let currentPage = null;
+  function navigate(page, push = true) {
     if (!pages[page]) page = 'm2m';
+    if (currentPage === page) return; // Don't re-render if already on this page
+    currentPage = page;
 
     // Update active nav
     document.querySelectorAll('.nav-item').forEach(el => {
@@ -88,7 +91,7 @@
 
     document.getElementById('topbarActions').innerHTML = '';
     pages[page].render();
-    history.pushState({ page }, '', `#${page}`);
+    if (push) history.pushState({ page }, '', `#${page}`);
   }
 
   // ─── Nav click events ─────────────────────────────────────────────────────
@@ -109,11 +112,11 @@
 
   // ─── Back/Forward ─────────────────────────────────────────────────────────
   window.addEventListener('popstate', (e) => {
-    const page = e.state?.page || 'm2m';
-    navigate(page);
+    const page = e.state?.page || window.location.hash.replace('#', '') || 'm2m';
+    navigate(page, false); // Don't pushState again
   });
 
   // ─── Initial page ─────────────────────────────────────────────────────────
   const hash = window.location.hash.replace('#', '');
-  navigate(hash || 'm2m');
+  navigate(hash || 'm2m', false);
 })();
