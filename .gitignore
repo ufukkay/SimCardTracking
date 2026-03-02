@@ -1,5 +1,5 @@
-# node_modules/ -> Removed for self-contained deployment
-# bin/ -> Included for portable node.exe
+node_modules/
+bin/
 logs/
 .env
 *.db
