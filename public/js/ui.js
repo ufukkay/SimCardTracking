@@ -147,21 +147,10 @@ const UI = (() => {
       const btnGroup = document.createElement('div');
       btnGroup.className = 'th-btn-group';
 
-      const sortBtn = document.createElement('button');
-      sortBtn.type = 'button';
-      sortBtn.className = 'th-sort-btn';
-      sortBtn.title = 'Sırala'; // Added title here
-      btnGroup.appendChild(sortBtn);
-
-      let filterBtn; // Declare filterBtn here
-      let menu;      // Declare menu here
+      let filterBtn;
+      let menu;
 
       if (colDef.filterable !== false) {
-        const divider = document.createElement('span');
-        divider.className = 'th-divider';
-        divider.textContent = '|';
-        btnGroup.appendChild(divider);
-
         filterBtn = document.createElement('button');
         filterBtn.type = 'button';
         filterBtn.className = 'th-filter-btn';
@@ -169,12 +158,21 @@ const UI = (() => {
         filterBtn.title = 'Filtrele';
         btnGroup.appendChild(filterBtn);
 
+        const divider = document.createElement('span');
+        divider.className = 'th-divider';
+        divider.textContent = '|';
+        btnGroup.appendChild(divider);
+
         menu = document.createElement('div');
         menu.className = 'col-filter-menu';
         th.appendChild(menu);
-        
-        // Setup filter menu content here... (reusing existing menu logic)
       }
+
+      const sortBtn = document.createElement('button');
+      sortBtn.type = 'button';
+      sortBtn.className = 'th-sort-btn';
+      sortBtn.title = 'Sırala';
+      btnGroup.appendChild(sortBtn);
 
       headerWrap.appendChild(btnGroup);
       th.appendChild(headerWrap);

@@ -249,6 +249,20 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
+.th-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px; /* Reduced gap slightly to save space */
+  width: 100%;
+  flex-wrap: nowrap; /* Prevent icons from wrapping */
+}
+.th-label {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap; /* Force single line */
+}
 
 /* ─── STAT CARDS (Sheets Grid Style) ─── */
 .stat-grid {
