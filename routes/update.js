@@ -1,7 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const { execSync, exec } = require('child_process');
+const { execSync } = require('child_process');
 const path = require('path');
+const os = require('os');
 const { authMiddleware, adminOnly } = require('../middleware/auth');
 
 router.use(authMiddleware);
@@ -9,25 +10,38 @@ router.use(adminOnly);
 
 const APP_DIR = path.join(__dirname, '..');
 
+// ─── Git Config Environment ──────────────────────────────────────────────────
+// IIS APPPOOL accounts often lack a proper HOME/USERPROFILE directory.
+// We set up a temporary environment to prevent "dubious ownership" and 
+// global gitconfig writing errors.
+const gitEnv = { 
+  ...process.env, 
+  HOME: os.tmpdir(), 
+  USERPROFILE: os.tmpdir() 
+};
+
+// Ensure this directory is considered safe by Git
+try {
+  execSync('git config --global --add safe.directory ' + APP_DIR.replace(/\\/g, '/'), { cwd: APP_DIR, env: gitEnv });
+} catch (e) {
+  console.log('Safe directory setup skipped (expected in dev, non-fatal):', e.message);
+}
+
 // ─── GET /api/admin/update/status ────────────────────────────────────────────
 // Returns current commit hash and whether there's an update available on remote
 router.get('/status', (req, res) => {
   try {
-    // We must pass -c safe.directory="*" to every git command because the IIS APPPOOL user
-    // doesn't have a home directory to store --global configs
-    const gitCmd = 'git -c safe.directory="*"';
-    
     // Fetch latest from remote (no checkout)
-    execSync(`${gitCmd} fetch origin main`, { cwd: APP_DIR, timeout: 15000 });
+    execSync('git fetch origin main', { cwd: APP_DIR, timeout: 15000, env: gitEnv });
 
-    const current = execSync(`${gitCmd} rev-parse HEAD`, { cwd: APP_DIR }).toString().trim();
-    const remote  = execSync(`${gitCmd} rev-parse origin/main`, { cwd: APP_DIR }).toString().trim();
+    const current = execSync('git rev-parse HEAD', { cwd: APP_DIR, env: gitEnv }).toString().trim();
+    const remote  = execSync('git rev-parse origin/main', { cwd: APP_DIR, env: gitEnv }).toString().trim();
     const currentShort = current.substring(0, 7);
     const remoteShort  = remote.substring(0, 7);
 
     // Latest commit message on remote
-    const remoteMsg = execSync(`${gitCmd} log origin/main -1 --pretty=format:"%s"`, { cwd: APP_DIR }).toString().trim();
-    const remoteDate = execSync(`${gitCmd} log origin/main -1 --pretty=format:"%cr"`, { cwd: APP_DIR }).toString().trim();
+    const remoteMsg = execSync('git log origin/main -1 --pretty=format:"%s"', { cwd: APP_DIR, env: gitEnv }).toString().trim();
+    const remoteDate = execSync('git log origin/main -1 --pretty=format:"%cr"', { cwd: APP_DIR, env: gitEnv }).toString().trim();
 
     res.json({
       upToDate: current === remote,
@@ -45,10 +59,8 @@ router.get('/status', (req, res) => {
 // Pulls latest code from GitHub (skips DB files via .gitignore), restarts iisnode
 router.post('/apply', (req, res) => {
   try {
-    const gitCmd = 'git -c safe.directory="*"';
-    
     // Pull latest code — .gitignore protects *.db so no data loss
-    const pullOutput = execSync(`${gitCmd} pull origin main`, { cwd: APP_DIR, timeout: 30000 }).toString().trim();
+    const pullOutput = execSync('git pull origin main', { cwd: APP_DIR, timeout: 45000, env: gitEnv }).toString().trim();
 
     // Touch web.config to trigger iisnode recycle (IIS deployment)
     const webConfigPath = path.join(APP_DIR, 'web.config');
