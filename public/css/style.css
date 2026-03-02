@@ -307,6 +307,32 @@ thead th {
   white-space: nowrap;
   position: relative;
 }
+.th-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+}
+.th-label {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.th-btn-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+.th-divider {
+  display: inline-block;
+  color: var(--border);
+  font-weight: 300;
+  font-size: 10px;
+  margin: 0 2px;
+  pointer-events: none;
+}
 .th-filter-btn, .th-sort-btn {
   background: transparent !important;
   border: none !important;

@@ -133,30 +133,51 @@ const UI = (() => {
       const colDef = colDefs[colKey];
       
       // Cleanup / Re-init buttons only if they don't exist
-      let sortBtn = th.querySelector('.th-sort-btn');
-      let filterBtn = th.querySelector('.th-filter-btn');
-      let menu = th.querySelector('.col-filter-menu');
+      // Clear and rebuild TH content for better alignment
+      th.innerHTML = '';
+      
+      const headerWrap = document.createElement('div');
+      headerWrap.className = 'th-content';
+      
+      const label = document.createElement('span');
+      label.className = 'th-label';
+      label.textContent = colDef.label;
+      headerWrap.appendChild(label);
 
-      if (!sortBtn) {
-        sortBtn = document.createElement('button');
-        sortBtn.className = 'th-sort-btn';
-        sortBtn.title = 'Sırala';
-        th.appendChild(sortBtn);
-      }
+      const btnGroup = document.createElement('div');
+      btnGroup.className = 'th-btn-group';
 
-      if (!filterBtn) {
+      const sortBtn = document.createElement('button');
+      sortBtn.type = 'button';
+      sortBtn.className = 'th-sort-btn';
+      sortBtn.title = 'Sırala'; // Added title here
+      btnGroup.appendChild(sortBtn);
+
+      let filterBtn; // Declare filterBtn here
+      let menu;      // Declare menu here
+
+      if (colDef.filterable !== false) {
+        const divider = document.createElement('span');
+        divider.className = 'th-divider';
+        divider.textContent = '|';
+        btnGroup.appendChild(divider);
+
         filterBtn = document.createElement('button');
+        filterBtn.type = 'button';
         filterBtn.className = 'th-filter-btn';
         filterBtn.innerHTML = '⋮';
         filterBtn.title = 'Filtrele';
-        th.appendChild(filterBtn);
-      }
+        btnGroup.appendChild(filterBtn);
 
-      if (!menu) {
         menu = document.createElement('div');
         menu.className = 'col-filter-menu';
         th.appendChild(menu);
+        
+        // Setup filter menu content here... (reusing existing menu logic)
       }
+
+      headerWrap.appendChild(btnGroup);
+      th.appendChild(headerWrap);
 
       // ── Sort logic ──
       const sortState = filterStateObj._sort || {};
