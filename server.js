@@ -22,6 +22,8 @@ app.use("/api/import", require("./routes/import"));
 app.use("/api/vehicles", require("./routes/vehicles"));
 app.use("/api/locations", require("./routes/locations"));
 app.use("/api/personnel", require("./routes/personnel"));
+app.use("/api/admin/update", require("./routes/update"));
+
 
 // SPA fallback — login veya index
 app.get("*", (req, res) => {

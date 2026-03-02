@@ -62,6 +62,10 @@ const API = (() => {
     deleteUser: (id)   => request('DELETE', `/users/${id}`),
     changeMyPassword: (d) => request('PUT', '/users/me/password', d),
 
+    // Admin Update
+    checkUpdate:  () => request('GET',  '/admin/update/status'),
+    applyUpdate:  () => request('POST', '/admin/update/apply'),
+
     // Operators
     getOperators:  ()    => request('GET',    '/operators'),
     addOperator:   (d)   => request('POST',   '/operators', d),

@@ -19,6 +19,7 @@ const SettingsPage = (() => {
         <button class="tab-btn" onclick="SettingsPage.switchTab('importData',this)">📥 Data Aktar</button>
         <button class="tab-btn" onclick="SettingsPage.switchTab('importSes',this)">📥 Ses Aktar</button>
         <button class="tab-btn" onclick="SettingsPage.switchTab('profile',this)">🔐 Şifre Değiştir</button>
+        <button class="tab-btn" id="updateTabBtn" onclick="SettingsPage.switchTab('update',this)" style="display:none">🔄 Güncelleme</button>
       </div>
 
       <!-- KULLANICILAR -->
@@ -125,7 +126,32 @@ const SettingsPage = (() => {
         </div>
       </div>
 
-      <!-- ŞİFRE -->
+      <!-- GÜNCELLEME (admin only) -->
+      <div class="tab-pane" id="tab-update">
+        <div class="card" style="max-width:560px">
+          <div class="card-header"><span class="card-title">🔄 Uygulama Güncellemesi</span></div>
+          <div style="padding:6px 0 20px;display:flex;flex-direction:column;gap:18px">
+            <div id="updateStatusBox" style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:16px 18px;font-size:13px">
+              <div style="color:var(--text-muted)">GitHub bağlantısı kontrol ediliyor...</div>
+            </div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap">
+              <button class="btn btn-secondary" id="checkUpdateBtn" onclick="SettingsPage.checkUpdate()">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.26"/></svg>
+                Güncelleme Kontrol Et
+              </button>
+              <button class="btn btn-primary" id="applyUpdateBtn" onclick="SettingsPage.applyUpdate()" style="display:none">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="8 17 12 21 16 17"/><line x1="12" y1="3" x2="12" y2="21"/></svg>
+                Güncellemeyi Uygula
+              </button>
+            </div>
+            <div style="font-size:11px;color:var(--text-muted);line-height:1.6">
+              ℹ️ Güncelleme uygulandığında uygulama otomatik olarak yeniden başlatılır.<br>
+              Veritabanı dosyaları <strong>korunur</strong> — hiçbir veri kaybolmaz.
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div class="tab-pane" id="tab-profile">
         <div class="card" style="max-width:460px">
           <div class="card-header"><span class="card-title">Şifre Değiştir</span></div>
@@ -248,7 +274,13 @@ const SettingsPage = (() => {
     loadLocations();
     loadPersonnel();
     loadOperators();
-    // Import tabs rendered lazily on first switch
+    
+    // Show update tab for admins
+    const currentUser = JSON.parse(localStorage.getItem('simtrack_user') || '{}');
+    if (currentUser.role === 'admin') {
+      const btn = document.getElementById('updateTabBtn');
+      if (btn) btn.style.display = 'inline-block';
+    }
   }
 
   function switchTab(tab, btn) {
@@ -265,6 +297,9 @@ const SettingsPage = (() => {
     }
     if (tab === 'importSes' && document.getElementById('import-container-voice')?.querySelector('.spinner')) {
       BulkImport.renderTab('voice', 'import-container-voice', null);
+    }
+    if (tab === 'update') {
+      SettingsPage.checkUpdate();
     }
   }
 
@@ -532,6 +567,80 @@ const SettingsPage = (() => {
     catch(e){UI.toast(e.message,'error');}
   }
 
+  /* ════════════ UPDATE ════════════ */
+  async function checkUpdate() {
+    const box = document.getElementById('updateStatusBox');
+    const btn = document.getElementById('checkUpdateBtn');
+    const applyBtn = document.getElementById('applyUpdateBtn');
+    if (!box) return;
+    btn.disabled = true;
+    box.innerHTML = `<div style="color:var(--text-muted)">⏳ GitHub kontrol ediliyor...</div>`;
+    try {
+      const s = await API.checkUpdate();
+      if (s.upToDate) {
+        box.innerHTML = `
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="font-size:22px">✅</span>
+            <div>
+              <strong>Uygulama güncel!</strong><br>
+              <span style="color:var(--text-muted);font-size:12px">Mevcut sürüm: <code>${s.currentCommit}</code></span>
+            </div>
+          </div>`;
+        if (applyBtn) applyBtn.style.display = 'none';
+      } else {
+        box.innerHTML = `
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+            <span style="font-size:22px">🆕</span>
+            <div>
+              <strong>Güncelleme mevcut!</strong><br>
+              <span style="color:var(--text-muted);font-size:12px">Mevcut: <code>${s.currentCommit}</code> → Yeni: <code>${s.remoteCommit}</code></span>
+            </div>
+          </div>
+          <div style="background:var(--bg-primary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 14px;font-size:12px">
+            <strong>Son değişiklik:</strong> ${s.latestMessage}<br>
+            <span style="color:var(--text-muted)">${s.latestDate}</span>
+          </div>`;
+        if (applyBtn) applyBtn.style.display = 'inline-flex';
+      }
+    } catch (err) {
+      box.innerHTML = `<div style="color:var(--danger)">❌ Hata: ${err.message}</div>`;
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  async function applyUpdate() {
+    const box = document.getElementById('updateStatusBox');
+    const applyBtn = document.getElementById('applyUpdateBtn');
+    const checkBtn = document.getElementById('checkUpdateBtn');
+    if (!box) return;
+    if (!confirm('Güncelleme uygulanacak ve uygulama otomatik yeniden başlatılacak. Devam edilsin mi?')) return;
+    applyBtn.disabled = true;
+    checkBtn.disabled = true;
+    box.innerHTML = `<div style="color:var(--text-muted)">⏳ Güncelleme indiriliyor (git pull)...</div>`;
+    try {
+      const r = await API.applyUpdate();
+      box.innerHTML = `
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+          <span style="font-size:22px">🎉</span>
+          <div><strong>${r.message}</strong></div>
+        </div>
+        <div style="background:var(--bg-primary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 14px;font-size:11px;color:var(--text-muted);white-space:pre-wrap;font-family:monospace">${r.detail}</div>
+        <div id="reloadCountdown" style="margin-top:10px;font-size:12px;color:var(--text-muted)">Sayfa 5 saniye içinde yenileniyor...</div>`;
+      let t = 5;
+      const iv = setInterval(() => {
+        t--;
+        const el = document.getElementById('reloadCountdown');
+        if (el) el.textContent = `Sayfa ${t} saniye içinde yenileniyor...`;
+        if (t <= 0) { clearInterval(iv); window.location.reload(); }
+      }, 1000);
+    } catch (err) {
+      box.innerHTML = `<div style="color:var(--danger)">❌ Güncelleme başarısız: ${err.message}</div>`;
+      applyBtn.disabled = false;
+      checkBtn.disabled = false;
+    }
+  }
+
   /* ── Icon helpers ── */
   function editIcon() { return `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`; }
   function delIcon()  { return `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>`; }
@@ -544,6 +653,7 @@ const SettingsPage = (() => {
     loadLocations, openAddLocation, openEditLocation, saveLocation, deleteLocation,
     loadPersonnel, openAddPersonnel, openEditPersonnel, savePersonnel, deletePersonnel,
     loadOperators, addOperator, deleteOperator,
-    changePassword
+    changePassword,
+    checkUpdate, applyUpdate
   };
 })();
