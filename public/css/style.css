@@ -422,11 +422,6 @@ tbody tr.selected {
   color: var(--accent-hover);
   text-decoration: underline;
 }
-.divider-v {
-  width: 1px;
-  height: 10px;
-  background: var(--border);
-}
 .col-filter-list {
   max-height: 180px;
   overflow-y: auto;

@@ -158,11 +158,6 @@ const UI = (() => {
         filterBtn.title = 'Filtrele';
         btnGroup.appendChild(filterBtn);
 
-        const divider = document.createElement('span');
-        divider.className = 'th-divider';
-        divider.textContent = '|';
-        btnGroup.appendChild(divider);
-
         menu = document.createElement('div');
         menu.className = 'col-filter-menu';
         th.appendChild(menu);
@@ -218,7 +213,6 @@ const UI = (() => {
         </div>
         <div class="col-filter-bulk">
           <button type="button" class="btn-link btn-select-all">Tümünü Seç</button>
-          <span class="divider-v"></span>
           <button type="button" class="btn-link btn-clear-selection">Temizle</button>
         </div>
         <div class="col-filter-list">
