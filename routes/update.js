@@ -13,20 +13,21 @@ const APP_DIR = path.join(__dirname, '..');
 // Returns current commit hash and whether there's an update available on remote
 router.get('/status', (req, res) => {
   try {
-    // Add safe directory for IIS APPPOOL user to prevent dubious ownership fatal error
-    execSync('git config --global --add safe.directory ' + APP_DIR.replace(/\\/g, '/'), { cwd: APP_DIR });
+    // We must pass -c safe.directory="*" to every git command because the IIS APPPOOL user
+    // doesn't have a home directory to store --global configs
+    const gitCmd = 'git -c safe.directory="*"';
     
     // Fetch latest from remote (no checkout)
-    execSync('git fetch origin main', { cwd: APP_DIR, timeout: 15000 });
+    execSync(`${gitCmd} fetch origin main`, { cwd: APP_DIR, timeout: 15000 });
 
-    const current = execSync('git rev-parse HEAD', { cwd: APP_DIR }).toString().trim();
-    const remote  = execSync('git rev-parse origin/main', { cwd: APP_DIR }).toString().trim();
+    const current = execSync(`${gitCmd} rev-parse HEAD`, { cwd: APP_DIR }).toString().trim();
+    const remote  = execSync(`${gitCmd} rev-parse origin/main`, { cwd: APP_DIR }).toString().trim();
     const currentShort = current.substring(0, 7);
     const remoteShort  = remote.substring(0, 7);
 
     // Latest commit message on remote
-    const remoteMsg = execSync('git log origin/main -1 --pretty=format:"%s"', { cwd: APP_DIR }).toString().trim();
-    const remoteDate = execSync('git log origin/main -1 --pretty=format:"%cr"', { cwd: APP_DIR }).toString().trim();
+    const remoteMsg = execSync(`${gitCmd} log origin/main -1 --pretty=format:"%s"`, { cwd: APP_DIR }).toString().trim();
+    const remoteDate = execSync(`${gitCmd} log origin/main -1 --pretty=format:"%cr"`, { cwd: APP_DIR }).toString().trim();
 
     res.json({
       upToDate: current === remote,
@@ -44,11 +45,10 @@ router.get('/status', (req, res) => {
 // Pulls latest code from GitHub (skips DB files via .gitignore), restarts iisnode
 router.post('/apply', (req, res) => {
   try {
-    // Ensure directory is marked as safe before pull
-    execSync('git config --global --add safe.directory ' + APP_DIR.replace(/\\/g, '/'), { cwd: APP_DIR });
+    const gitCmd = 'git -c safe.directory="*"';
     
     // Pull latest code — .gitignore protects *.db so no data loss
-    const pullOutput = execSync('git pull origin main', { cwd: APP_DIR, timeout: 30000 }).toString().trim();
+    const pullOutput = execSync(`${gitCmd} pull origin main`, { cwd: APP_DIR, timeout: 30000 }).toString().trim();
 
     // Touch web.config to trigger iisnode recycle (IIS deployment)
     const webConfigPath = path.join(APP_DIR, 'web.config');
