@@ -307,7 +307,7 @@ thead th {
   white-space: nowrap;
   position: relative;
 }
-.th-filter-btn {
+.th-filter-btn, .th-sort-btn {
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
@@ -323,10 +323,10 @@ thead th {
   align-items: center;
   justify-content: center;
 }
-.th-filter-btn:hover {
+.th-filter-btn:hover, .th-sort-btn:hover {
   color: var(--accent);
 }
-.th-filter-btn.active {
+.th-filter-btn.active, .th-sort-btn.active {
   color: var(--accent);
 }
 
