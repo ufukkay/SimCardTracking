@@ -10,6 +10,9 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 
+// Health check for debugging
+app.use("/api/health", (req, res) => res.json({ status: "ok", message: "Server is running" }));
+
 // Routes
 app.use("/api/auth", require("./routes/auth"));
 app.use("/api/m2m", require("./routes/simm2m"));
@@ -32,6 +35,12 @@ app.get("*", (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`SIM Kart Takip Sistemi çalışıyor: http://localhost:${PORT}`);
+});
+
+// Error handler
+app.use((err, req, res, next) => {
+  console.error('SERVER_ERROR:', err);
+  res.status(500).json({ message: 'Sunucu hatası', error: err.message });
 });
 
 module.exports = app;
