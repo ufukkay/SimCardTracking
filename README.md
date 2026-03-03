@@ -1,122 +1,136 @@
 <div align="center">
-  <h1>📱 Sim Kart Takip Sistemi</h1>
-  <p>Şirket içi M2M, Data ve Ses hatlarının kolay, hızlı ve güvenilir bir şekilde takip edilmesini sağlayan modern web uygulaması.</p>
+  <h1>📡 SIM Card Tracking System</h1>
+  <p><strong>Multi-Language SIM Inventory Management Solution</strong></p>
+  
+  [Türkçe](#-türkçe) | [English](#-english) | [Deutsch](#-deutsch) | [Français](#-français) | [Español](#-español) | [Italiano](#-italiano) | [Português](#-português) | [Русский](#-русский) | [中文](#-中文) | [العربية](#-العربية)
 </div>
 
-<br />
+---
 
-## 🎯 Projenin Amacı
+## 🇹🇷 Türkçe
 
-Sim Kart Takip Sistemi, şirketlerin envanterlerinde bulunan **M2M (Makineler Arası İletişim)**, **Data** ve **Ses** hatlarının tek bir merkezden yönetilmesini sağlamak amacıyla geliştirilmiştir.
+### Proje Hakkında
 
-Bu sistem sayesinde:
+Şirket içi M2M, Data ve Ses hatlarının takibi için geliştirilmiş modern, hızlı ve güvenilir bir web uygulamasıdır.
 
-- Hangi hat (SIM kart) kime, hangi departmana veya hangi araca tahsis edilmiş kolayca görülebilir.
-- ICCID, telefon numarası, operatör bilgisi (Turkcell, Vodafone vb.) ve aktif/pasif durumları listelenebilir, filtrelenebilir.
-- Yeni hat kayıtları eklenebilir, mevcut kayıtlar tam ekran modern pencerelerde (modal) düzenlenebilir veya silinebilir.
-- Admin veya standart kullanıcı rolleri sayesinde sisteme güvenli (JWT destekli) giriş yapılabilir.
+- **Merkezi Yönetim**: Tüm SIM envanterini tek noktadan yönetin.
+- **Dinamik Filtreleme**: ICCID, operatör ve personel bazlı anlık arama.
+- **Gelişmiş Arayüz**: Google Sheets tarzı minimal ve kullanıcı dostu tasarım.
+
+### Hızlı Kurulum
+
+```bash
+git clone https://github.com/ufukkay/SimCardTracking.git
+cd SimCardTracking
+npm install
+npm start
+```
+
+Varsayılan: `admin` / `admin123`
 
 ---
 
-## 💻 Kullanılan Teknolojiler
+## 🇺🇸 English
 
-Proje, modern ve yüksek performanslı araçlar kullanılarak hem geliştirici hem de son kullanıcı dostu olacak şekilde tasarlanmıştır:
+### About Project
 
-### Backend (Sunucu Tarafı)
+A modern, fast, and reliable web application designed for tracking internal M2M, Data, and Voice lines.
 
-- **Node.js**: Asenkron yapısı ile hızlı ve ölçeklenebilir uygulama altyapısı.
-- **Express.js**: Backend REST API yönlendirmelerini ve HTTP isteklerini yönetmek için kullanılan framework.
-- **SQLite (better-sqlite3)**: Kurulum gerektirmeyen, hafif, sunucusuz (serverless) çalışan, performans için WAL (Write-Ahead Logging) aktif edilmiş veritabanı.
-- **Bcrypt & JWT**: Kullanıcı parolalarını güvenli şekilde şifreleyerek veritabanında saklar ve Token bazlı (JSON Web Token) oturum yönetimi sunar.
+- **Centralized Management**: Manage your entire SIM inventory from one place.
+- **Dynamic Filtering**: Instant search by ICCID, operator, and personnel.
+- **Advanced UI**: Google Sheets style minimal and user-friendly design.
 
-### Frontend (İstemci Tarafı)
+### Quick Start
 
-- **HTML5 & CSS3**: Yenilikçi, responsive (mobil uyumlu) ve sade bir arayüz.
-- **Vanilla JavaScript (ES6)**: Herhangi bir ağır framework (React/Vue/Angular) kullanılmadan, saf JavaScript modülleri ile yüksek performans ve hızlı sayfa geçişleri.
-- Modern CSS (Flexbox, Grid, Custom Variables) teknikleri sayesinde estetik ve tam ekran `Modal` (pencere) yönetimleri.
+```bash
+git clone https://github.com/ufukkay/SimCardTracking.git
+cd SimCardTracking
+npm install
+npm start
+```
 
----
-
-## 📸 Ekran Görüntüleri
-
-|                                           Giriş Ekranı                                            |                                          Hat Yönetimi Paneli                                          |
-| :-----------------------------------------------------------------------------------------------: | :---------------------------------------------------------------------------------------------------: |
-| <img src="https://via.placeholder.com/600x350?text=Giriş+Ekranı" alt="Giriş Ekranı" width="100%"> | <img src="https://via.placeholder.com/600x350?text=Panel+Görünümü" alt="Panel Görünümü" width="100%"> |
-
-_(Not: Görseller temsilidir, projeyi çalıştırdığınızda gerçek ekranları görebilirsiniz.)_
+Default: `admin` / `admin123`
 
 ---
 
-## 🚀 Yerel Ortamda Kurulum (Local Development)
+## 🇩🇪 Deutsch
 
-Projeyi kendi bilgisayarınızda çalıştırmak için aşağıdaki adımları izleyin:
+### Über das Projekt
 
-1. Depoyu klonlayın:
-   ```bash
-   git clone https://github.com/ufukkay/SimCardTracking.git
-   ```
-2. Proje dizinine girin:
-   ```bash
-   cd SimCardTracking
-   ```
-3. Gerekli kütüphaneleri yükleyin:
-   ```bash
-   npm install
-   ```
-4. Uygulamayı başlatın:
-   ```bash
-   npm start
-   ```
-5. Tarayıcınızı açın ve `http://localhost:3000` adresine gidin.
-   - **Varsayılan Kullanıcı:** `admin`
-   - **Varsayılan Şifre:** `admin123`
+Eine moderne, schnelle und zuverlässige Webanwendung zur Verfolgung interner M2M-, Daten- und Sprachleitungen.
+
+- **Zentrale Verwaltung**: Verwalten Sie Ihren gesamten SIM-Bestand an einem Ort.
+- **Dynamische Filterung**: Sofortige Suche nach ICCID, Betreiber und Personal.
+- **Benutzeroberfläche**: Minimalistisches Design im Google Sheets-Stil.
 
 ---
 
-## 🌍 IIS Kurulum ve Güncelleme Rehberi
+## 🇫🇷 Français
 
-Bu bölüm, uygulamayı bir Windows Server üzerinde IIS (Internet Information Services) aracılığıyla nasıl yayına alacağınızı veya mevcut sürümü nasıl güncelleyeceğinizi anlatır. Uygulama **taşınabilir Node.js** içerdiği için sunucuya Node.js kurmanıza gerek yoktur.
+### À propos du projet
 
-### 🚩 Ön Hazırlık (Gereksinimler)
+Une application web moderne, rapide et fiable conçue pour le suivi des lignes M2M, Data et Voix internes.
 
-- **IIS**: Sunucu Yöneticisi üzerinden "Web Server (IIS)" rolünü aktif edin.
-- **URL Rewrite & iisnode**: IIS üzerinde Node.js çalıştırabilmek için [URL Rewrite](https://www.iis.net/downloads/microsoft/url-rewrite) ve [iisnode](https://github.com/tjanczuk/iisnode) eklentilerini kurun.
-
----
-
-### 📥 Seçenek 1: Sıfırdan (Temiz) Kurulum
-
-Eğer ilk kez kurulum yapıyorsanız veya her şeyi sıfırlamak istiyorsanız:
-
-1.  **Klasörü Hazırlayın**: Proje dosyalarını sunucuda bir dizine kopyalayın (Örn: `C:\inetpub\wwwroot\SimCardTracking`).
-2.  **İzinleri Tanımlayın (KRİTİK)**:
-    - Klasöre sağ tıklayın -> **Özellikler** -> **Güvenlik**.
-    - `IIS_IUSRS` grubunu ekleyin ve **Değiştirme (Modify)** yetkisi verin (Veritabanı yazma işlemi için zorunludur).
-3.  **IIS Üzerinde Site Oluşturun**:
-    - IIS Manager'dan yeni bir site ekleyin ve fiziksel yol olarak proje klasörünü seçin.
-    - Uygulama Havuzu (Application Pool) ayarlarından **.NET CLR Version** seçeneğini **No Managed Code** olarak değiştirin.
+- **Gestion centralisée**: Gérez tout votre inventaire SIM à partir d'un seul endroit.
+- **Filtrage dynamique**: Recherche instantanée par ICCID, opérateur et personnel.
 
 ---
 
-### 🔄 Seçenek 2: Mevcut Sistemi Güncelleme (Update)
+## 🇪🇸 Español
 
-Canlıdaki verilerinizi (veritabanını) bozmadan sadece kodları güncellemek için:
+### Sobre el proyecto
 
-1.  **PowerShell'i Yönetici Olarak Açın**: Proje klasörü içinde sağ tıklayıp PowerShell'i başlatın.
-2.  **Script'i Çalıştırın**:
-    ```powershell
-    .\deploy-iis.ps1
-    ```
-3.  **Yolu Girin**: Script size hedef klasörü soracaktır (Örn: `C:\inetpub\wwwroot\SimCardTracking`).
-4.  **İşlem Tamam**: Script; `node_modules`, `bin` ve tüm kodları güncelleyip IIS'i otomatik olarak tetikleyecektir. Veritabanı (`.db`) dosyanız korunur.
+Una aplicación web moderna, rápida y fiable diseñada para el seguimiento de líneas internas de M2M, Datos y Voz.
+
+- **Gestión centralizada**: Gestione todo su inventario de SIM desde un solo lugar.
+- **Filtrado dinámico**: Búsqueda instantánea por ICCID, operador y personal.
 
 ---
 
-### ⚠️ Önemli Notlar
+## 🇮🇹 Italiano
 
-- **Veritabanı Yedekleme**: Herhangi bir işlem yapmadan önce `database/simcardtracking.db` dosyasını yedeklemeniz önerilir.
-- **Node_modules**: v1.2 ile birlikte tüm kütüphaneler script tarafından kopyalandığı için sunucuda `npm install` yapmanıza gerek kalmamıştır.
+### Informazioni sul progetto
+
+Un'applicazione web moderna, veloce e affidabile progettata per il monitoraggio delle linee interne M2M, Dati e Voce.
+
+- **Gestione centralizzata**: Gestisci l'intero inventario SIM da un unico posto.
 
 ---
 
-_Ufuk Kaya tarafından geliştirilmiştir._
+## 🇵🇹 Português
+
+### Sobre o projeto
+
+Uma aplicação web moderna, rápida e fiável concebida para o rastreio de linhas internas de M2M, Dados e Voz.
+
+---
+
+## 🇷🇺 Русский
+
+### О проекте
+
+Современное, быстрое и надежное веб-приложение, предназначенное для отслеживания внутренних линий M2M, передачи данных и голоса.
+
+---
+
+## 中文 (Chinese)
+
+### 关于项目
+
+一个现代、快速、可靠的 Web 应用程序，专为跟踪内部 M2M、数据和语音线路而设计。
+
+---
+
+## العربية (Arabic)
+
+### عن المشروع
+
+تطبيق ويب حديث وسريع وموثوق مصمم لتتبع خطوط M2M والبيانات والصوت الداخلية.
+
+---
+
+## 🚀 Deployment (IIS)
+
+Refer to the [original documentation](file:///c:/Users/ufuk.kaya/Desktop/Projeler/SimCardTracking/README.md) for detailed IIS setup and `deploy-iis.ps1` usage.
+
+_Developed by Ufuk Kaya_
