@@ -1,0 +1,37 @@
+[
+  {
+    "version": "v1.4.1",
+    "date": "03.03.2026",
+    "status": "completed",
+    "title": "Ayarlar Sayfası Redesign & UI Optimizasyonu",
+    "changes": [
+      "M2M, Data ve Ses aktarım ekranları 'Hat Aktar' sekmesinde birleştirildi.",
+      "Tüm formlar 3 sütunlu geniş yerleşime geçirildi, ekran kullanımı %100'e çıkarıldı.",
+      "Alt sekmelerde (sub-tabs) yazı rengi ve görünürlük sorunları giderildi.",
+      "Sekme geçişlerindeki form duplikasyonu (üst üste binme) hatası çözüldü.",
+      "Ses hatları için Şirket ve Personel alanları tüm sistemlere entegre edildi."
+    ]
+  },
+  {
+    "version": "v1.4.0",
+    "date": "02.03.2026",
+    "status": "completed",
+    "title": "SIM Paket (Tarife) Entegrasyonu",
+    "changes": [
+      "SIM kartları için paket/tarife tanımlama özelliği eklendi.",
+      "Operatöre göre dinamik paket filtreleme sistemi kuruldu.",
+      "Tüm tablolara paket sütunu eklendi ve düzenleme ekranları güncellendi."
+    ]
+  },
+  {
+    "version": "v1.5.0",
+    "date": "Gelecek Planı",
+    "status": "planned",
+    "title": "Gelişmiş Raporlama ve Bildirimler",
+    "changes": [
+      "Paket bitim sürelerine göre otomatik e-posta bildirim sistemi.",
+      "Excel çıktılarında özelleştirilebilir sütun yapısı.",
+      "Dashboard üzerinde görsel kullanım grafikleri (Chart.js)."
+    ]
+  }
+]

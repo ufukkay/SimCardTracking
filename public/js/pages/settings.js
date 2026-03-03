@@ -181,6 +181,13 @@ const SettingsPage = (() => {
             </div>
           </div>
         </div>
+
+        <div class="card" style="max-width:560px">
+          <div class="card-header"><span class="card-title">📜 Güncelleme Geçmişi & Planlar</span></div>
+          <div id="changelogContainer" class="changelog-container" style="padding:10px 0">
+            <div class="loading-overlay" style="position:static;height:100px"><div class="spinner"></div></div>
+          </div>
+        </div>
       </div>
 
       <div class="tab-pane" id="tab-profile">
@@ -364,6 +371,10 @@ const SettingsPage = (() => {
           BulkImport.renderTab(subType, containerId, null);
         }
       }
+    }
+
+    if (tab === 'update') {
+      loadChangelog();
     }
     
     if (tab === 'update') {
@@ -873,8 +884,43 @@ const SettingsPage = (() => {
     }
   }
 
+  async function loadChangelog() {
+    const container = document.getElementById('changelogContainer');
+    if (!container) return;
+
+    try {
+      const resp = await fetch('/changelog.json');
+      const data = await resp.json();
+
+      let html = '';
+      data.forEach(item => {
+        const changesHtml = item.changes.map(c => `<li>${c}</li>`).join('');
+        const statusBadge = item.status === 'completed' ? 
+          '<span class="badge badge-success" style="font-size:10px">Tamamlandı</span>' : 
+          '<span class="badge badge-info" style="font-size:10px">Planlandı</span>';
+
+        html += `
+          <div class="changelog-item ${item.status}">
+            <div class="changelog-header">
+              <span class="changelog-version">${item.version}</span>
+              ${statusBadge}
+              <span class="changelog-date">${item.date}</span>
+            </div>
+            <span class="changelog-title">${item.title}</span>
+            <ul class="changelog-list">
+              ${changesHtml}
+            </ul>
+          </div>
+        `;
+      });
+      container.innerHTML = html;
+    } catch (err) {
+      container.innerHTML = `<div style="color:var(--danger);font-size:12px">Hata: Güncelleme geçmişi yüklenemedi.</div>`;
+    }
+  }
+
   return {
-    render, switchTab, switchImportType,
+    render, switchTab, switchImportType, loadChangelog,
     loadUsers, openAddUser, openEditUser, saveUser, deleteUser,
     onRoleChange, onPermViewChange, onPermEditChange,
     loadVehicles, openAddVehicle, openEditVehicle, saveVehicle, deleteVehicle,
