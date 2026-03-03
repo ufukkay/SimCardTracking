@@ -16,9 +16,7 @@ const SettingsPage = (() => {
         <button class="tab-btn" onclick="SettingsPage.switchTab('personnelTab',this)">👤 Personeller</button>
         <button class="tab-btn" onclick="SettingsPage.switchTab('operators',this)">📡 Operatörler</button>
         <button class="tab-btn" onclick="SettingsPage.switchTab('packages',this)">📦 Paketler</button>
-        <button class="tab-btn" onclick="SettingsPage.switchTab('importM2M',this)">📥 M2M Aktar</button>
-        <button class="tab-btn" onclick="SettingsPage.switchTab('importData',this)">📥 Data Aktar</button>
-        <button class="tab-btn" onclick="SettingsPage.switchTab('importSes',this)">📥 Ses Aktar</button>
+        <button class="tab-btn" onclick="SettingsPage.switchTab('importAll',this)">📲 Hat Aktar</button>
         <button class="tab-btn" onclick="SettingsPage.switchTab('profile',this)">🔐 Şifre Değiştir</button>
         <button class="tab-btn" id="updateTabBtn" onclick="SettingsPage.switchTab('update',this)" style="display:none">🔄 Güncelleme</button>
       </div>
@@ -134,112 +132,28 @@ const SettingsPage = (() => {
         </div>
       </div>
 
-      <!-- M2M İŞLEMLERİ -->
-      <div class="tab-pane" id="tab-importM2M">
-        <div class="card" style="max-width:800px; margin-bottom:16px;">
-          <div class="card-header"><span class="card-title">📝 Yeni M2M Hattı Ekle</span></div>
-          <form id="settingsM2MForm" onsubmit="SettingsPage.addM2M(event)" style="padding-bottom:16px;">
-            <div class="form-grid">
-              <div class="form-group"><label class="form-label">ICCID</label><input name="iccid" class="form-control" placeholder="SIM kart ICCID numarası"></div>
-              <div class="form-group"><label class="form-label">Telefon Numarası</label><input name="phone_no" class="form-control" placeholder="05XX XXX XX XX"></div>
-              <div class="form-group"><label class="form-label">Operatör *</label><select name="operator" id="m2mOpSel" class="form-control settingsOperatorSel" required onchange="SettingsPage.onOperatorChange(this.value, 'm2m', 'm2mPkgSel')"></select></div>
-              <div class="form-group"><label class="form-label">Paket Seç (İsteğe Bağlı)</label><select name="package_id" id="m2mPkgSel" class="form-control settingsPackageSel"><option value="">Seçiniz...</option></select></div>
-              <div class="form-group">
-                <label class="form-label">Durum</label>
-                <select name="status" class="form-control">
-                  <option value="active">Aktif</option>
-                  <option value="spare">Yedek</option>
-                  <option value="passive">Pasif</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label class="form-label">Araç Tipi</label>
-                <select name="vehicle_type" class="form-control">
-                  <option value="">Seçiniz...</option>
-                  <option value="Binek">Binek</option>
-                  <option value="Çekici">Çekici</option>
-                  <option value="Yol Kamerası">Yol Kamerası</option>
-                  <option value="IoT Cihazı">IoT Cihazı</option>
-                </select>
-              </div>
-              <div class="form-group"><label class="form-label">Plaka</label><input name="plate_no" class="form-control" list="settingsVehiclesList" placeholder="Seçin veya yazın..." autocomplete="off"></div>
-              <div class="form-group col-span-2"><label class="form-label">Notlar</label><textarea name="notes" class="form-control" placeholder="Ek açıklama..."></textarea></div>
-            </div>
-            <div style="text-align:right; margin-top:12px;"><button type="submit" class="btn btn-primary">Kaydet</button></div>
-          </form>
-        </div>
-        <div class="card" style="max-width:800px">
-          <div class="card-header"><span class="card-title">📥 M2M Hatları — Toplu İçeri Aktar</span></div>
-          <div id="import-container-m2m"><div class="loading-overlay"><div class="spinner"></div></div></div>
-        </div>
-      </div>
+      <!-- HAT AKTARIMI SİSTEMİ (UNIFIED) -->
+      <div class="tab-pane" id="tab-importAll">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">📲 Hat Aktarımı</span>
+          </div>
+          
+          <div class="sub-tabs" style="display:flex; gap:10px; margin-bottom:20px; border-bottom:1px solid var(--border-light); padding-bottom:10px;">
+            <button class="btn sub-tab-btn active" style="background:var(--accent-light); color:var(--accent); font-weight:600; border-color:var(--accent)" onclick="SettingsPage.switchImportType('m2m', this)">🚗 M2M Hatları</button>
+            <button class="btn btn-ghost sub-tab-btn" onclick="SettingsPage.switchImportType('data', this)">🌐 Data Hatları</button>
+            <button class="btn btn-ghost sub-tab-btn" onclick="SettingsPage.switchImportType('voice', this)">📞 Ses Hatları</button>
+          </div>
 
-      <!-- DATA İŞLEMLERİ -->
-      <div class="tab-pane" id="tab-importData">
-        <div class="card" style="max-width:800px; margin-bottom:16px;">
-          <div class="card-header"><span class="card-title">📝 Yeni Data Hattı Ekle</span></div>
-          <form id="settingsDataForm" onsubmit="SettingsPage.addData(event)" style="padding-bottom:16px;">
-            <div class="form-grid">
-              <div class="form-group"><label class="form-label">ICCID</label><input name="iccid" class="form-control" placeholder="SIM kart ICCID"></div>
-              <div class="form-group"><label class="form-label">Telefon Numarası</label><input name="phone_no" class="form-control" placeholder="05XX XXX XX XX"></div>
-              <div class="form-group"><label class="form-label">Operatör *</label><select name="operator" id="dataOpSel" class="form-control settingsOperatorSel" required onchange="SettingsPage.onOperatorChange(this.value, 'data', 'dataPkgSel')"></select></div>
-              <div class="form-group"><label class="form-label">Paket Seç (İsteğe Bağlı)</label><select name="package_id" id="dataPkgSel" class="form-control settingsPackageSel"><option value="">Seçiniz...</option></select></div>
-              <div class="form-group">
-                <label class="form-label">Durum</label>
-                <select name="status" class="form-control">
-                  <option value="active">Aktif</option>
-                  <option value="spare">Yedek</option>
-                  <option value="passive">Pasif</option>
-                </select>
-              </div>
-              <div class="form-group col-span-2"><label class="form-label">Lokasyon</label><input name="location" class="form-control" list="settingsLocationsList" placeholder="Seçin veya yazın..." autocomplete="off"></div>
-              <div class="form-group col-span-2"><label class="form-label">Notlar</label><textarea name="notes" class="form-control" placeholder="Ek açıklama..."></textarea></div>
-            </div>
-            <div style="text-align:right; margin-top:12px;"><button type="submit" class="btn btn-primary">Kaydet</button></div>
-          </form>
-        </div>
-        <div class="card" style="max-width:800px">
-          <div class="card-header"><span class="card-title">📥 Data Hatları — Toplu İçeri Aktar</span></div>
-          <div id="import-container-data"><div class="loading-overlay"><div class="spinner"></div></div></div>
-        </div>
-      </div>
-
-      <!-- SES İŞLEMLERİ -->
-      <div class="tab-pane" id="tab-importSes">
-        <div class="card" style="max-width:800px; margin-bottom:16px;">
-          <div class="card-header"><span class="card-title">📝 Yeni Ses Hattı Ekle</span></div>
-          <form id="settingsVoiceForm" onsubmit="SettingsPage.addVoice(event)" style="padding-bottom:16px;">
-            <div class="form-grid">
-              <div class="form-group col-span-2">
-                <label class="form-label">Personel Adı Soyadı</label>
-                <input type="text" name="assigned_to" id="settingsVoicePersonSearch" class="form-control" list="settingsPersonnelList" placeholder="Personel adını yazın veya seçin..." autocomplete="off">
-                <datalist id="settingsPersonnelList"></datalist>
-              </div>
-              <div class="form-group"><label class="form-label">Departman</label><input name="department" id="settingsVoiceDept" class="form-control"></div>
-              <div class="form-group"><label class="form-label">Şirket</label><input name="assigned_company" id="settingsVoiceComp" class="form-control"></div>
-              
-              <div class="form-group"><label class="form-label">ICCID</label><input name="iccid" class="form-control"></div>
-              <div class="form-group"><label class="form-label">Telefon Numarası</label><input name="phone_no" class="form-control"></div>
-              <div class="form-group"><label class="form-label">Operatör *</label><select name="operator" id="voiceOpSel" class="form-control settingsOperatorSel" required onchange="SettingsPage.onOperatorChange(this.value, 'voice', 'voicePkgSel')"></select></div>
-              <div class="form-group"><label class="form-label">Paket Seç (İsteğe Bağlı)</label><select name="package_id" id="voicePkgSel" class="form-control settingsPackageSel"><option value="">Seçiniz...</option></select></div>
-              <div class="form-group">
-                <label class="form-label">Durum</label>
-                <select name="status" class="form-control">
-                  <option value="active">Aktif</option>
-                  <option value="spare">Yedek</option>
-                  <option value="passive">Pasif</option>
-                </select>
-              </div>
-              <div class="form-group col-span-2"><label class="form-label">Notlar</label><textarea name="notes" class="form-control"></textarea></div>
-            </div>
-            <div style="text-align:right; margin-top:12px;"><button type="submit" class="btn btn-primary">Kaydet</button></div>
-          </form>
-          <datalist id="settingsVehiclesList"></datalist>
-          <datalist id="settingsLocationsList"></datalist>
-        </div>
-        <div class="card" style="max-width:800px">
-          <div class="card-header"><span class="card-title">📥 Ses Hatları — Toplu İçeri Aktar</span></div>
-          <div id="import-container-voice"><div class="loading-overlay"><div class="spinner"></div></div></div>
+          <div id="import-type-pane-m2m" class="import-type-pane active">
+            <div id="import-container-m2m"><div class="loading-overlay"><div class="spinner"></div></div></div>
+          </div>
+          <div id="import-type-pane-data" class="import-type-pane" style="display:none">
+            <div id="import-container-data"><div class="loading-overlay"><div class="spinner"></div></div></div>
+          </div>
+          <div id="import-type-pane-voice" class="import-type-pane" style="display:none">
+            <div id="import-container-voice"><div class="loading-overlay"><div class="spinner"></div></div></div>
+          </div>
         </div>
       </div>
 
@@ -422,7 +336,6 @@ const SettingsPage = (() => {
     loadPersonnel();
     loadOperators();
     loadPackages();
-    populateLineForms();
     
     // Show update tab for admins
     const currentUser = JSON.parse(localStorage.getItem('simtrack_user') || '{}');
@@ -437,21 +350,71 @@ const SettingsPage = (() => {
     document.querySelectorAll('#pageContent .tab-pane').forEach(p => p.classList.remove('active'));
     btn.classList.add('active');
     document.getElementById(`tab-${tab}`).classList.add('active');
+    
     // Lazy-render import tabs
-    if (tab === 'importM2M' && document.getElementById('import-container-m2m')?.querySelector('.spinner')) {
-      BulkImport.renderTab('m2m', 'import-container-m2m', null);
+    if (tab === 'importAll') {
+      const activeSubBtn = document.querySelector('.sub-tab-btn.active');
+      if (activeSubBtn) {
+        // Trigger the active sub-tab's logic if it hasn't been rendered
+        const subType = activeSubBtn.textContent.toLowerCase().includes('m2m') ? 'm2m' : 
+                        activeSubBtn.textContent.toLowerCase().includes('data') ? 'data' : 'voice';
+        const containerId = subType === 'voice' ? 'import-container-voice' : `import-container-${subType}`;
+        const container = document.getElementById(containerId);
+        if (container && container.querySelector('.spinner')) {
+          BulkImport.renderTab(subType, containerId, null);
+        }
+      }
     }
-    if (tab === 'importData' && document.getElementById('import-container-data')?.querySelector('.spinner')) {
-      BulkImport.renderTab('data', 'import-container-data', null);
-    }
-    if (tab === 'importSes' && document.getElementById('import-container-voice')?.querySelector('.spinner')) {
-      BulkImport.renderTab('voice', 'import-container-voice', null);
-    }
+    
     if (tab === 'update') {
       SettingsPage.checkUpdate();
     }
     if (tab === 'packages') {
       loadPackages();
+    }
+  }
+
+  function switchImportType(type, btn) {
+    document.querySelectorAll('.sub-tab-btn').forEach(b => {
+      b.classList.remove('active');
+      b.classList.add('btn-ghost');
+      b.style.background = '';
+      b.style.color = '';
+      b.style.borderColor = '';
+      b.style.fontWeight = '';
+    });
+    
+    btn.classList.remove('btn-ghost');
+    btn.classList.add('active');
+    btn.style.background = 'var(--accent-light)';
+    btn.style.color = 'var(--accent)';
+    btn.style.borderColor = 'var(--accent)';
+    btn.style.fontWeight = '600';
+
+    // Toggle panes
+    document.querySelectorAll('.import-type-pane').forEach(p => {
+      p.style.display = 'none';
+      p.classList.remove('active');
+    });
+    const paneId = `import-type-pane-${type}`;
+    const targetPane = document.getElementById(paneId);
+    if (targetPane) {
+      targetPane.style.display = 'block';
+      targetPane.classList.add('active');
+    }
+    
+    // Within the pane, find the currently active bulk-tab (e.g. st-add-m2m)
+    // and ensure IT has the 'active' class too (in case user switched sub-tabs)
+    const activeBulkTab = targetPane?.querySelector('.tab-pane.active');
+    if (!activeBulkTab) {
+      // Default to the first one (usually 'Yeni Ekle')
+      targetPane?.querySelector('.tab-pane')?.classList.add('active');
+    }
+    
+    const containerId = type === 'voice' ? 'import-container-voice' : `import-container-${type}`;
+    const container = document.getElementById(containerId);
+    if (container && container.querySelector('.spinner')) {
+      BulkImport.renderTab(type, containerId, null);
     }
   }
 
@@ -860,59 +823,6 @@ const SettingsPage = (() => {
   function editIcon() { return `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`; }
   function delIcon()  { return `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>`; }
 
-  /* ════════════ ADD SIM (CENTRALIZED) ════════════ */
-  async function populateLineForms() {
-    try {
-      const [ops, v, l, p] = await Promise.all([API.getOperators(), API.getVehicles(), API.getLocations(), API.getPersonnel()]);
-      // Operators
-      const opHtml = ops.map(o => `<option value="${o.name}">${o.name}</option>`).join('');
-      document.querySelectorAll('.settingsOperatorSel').forEach(el => { el.innerHTML = `<option value="">Seçiniz...</option>` + opHtml; });
-      // Vehicles
-      const vDl = document.getElementById('settingsVehiclesList');
-      if (vDl) vDl.innerHTML = v.map(x => `<option value="${x.plate_no}">${x.plate_no} - ${x.vehicle_type||''}</option>`).join('');
-      // Locations
-      const lDl = document.getElementById('settingsLocationsList');
-      if (lDl) lDl.innerHTML = l.map(x => `<option value="${x.name}">${x.name}</option>`).join('');
-      // Personnel
-      const pDl = document.getElementById('settingsPersonnelList');
-      if (pDl) pDl.innerHTML = p.map(x => `<option value="${x.first_name} ${x.last_name}" data-fname="${x.first_name}" data-lname="${x.last_name}" data-dept="${x.department}" data-comp="${x.company}"></option>`).join('');
-      
-      // Personnel Auto-fill event
-      const perInput = document.getElementById('settingsVoicePersonSearch');
-      if (perInput) {
-        perInput.addEventListener('input', (e) => {
-          const val = e.target.value;
-          const opt = Array.from(document.getElementById('settingsPersonnelList').options).find(o => o.value === val);
-          if (opt) {
-            document.getElementById('settingsVoiceFName').value = opt.getAttribute('data-fname') || '';
-            document.getElementById('settingsVoiceLName').value = opt.getAttribute('data-lname') || '';
-            document.getElementById('settingsVoiceDept').value = opt.getAttribute('data-dept') || '';
-            document.getElementById('settingsVoiceComp').value = opt.getAttribute('data-comp') || '';
-          }
-        });
-      }
-    } catch(err) { console.error('Error populating line forms:', err); }
-  }
-
-  async function addM2M(e) {
-    if(e) e.preventDefault(); const btn = e.target.querySelector('button[type="submit"]'); if(btn) btn.disabled=true;
-    try { await API.addM2M(UI.formData('settingsM2MForm')); UI.toast('M2M Hattı eklendi.','success'); e.target.reset(); }
-    catch(err) { UI.toast(err.message, 'error'); } finally { if(btn) btn.disabled=false; }
-  }
-  async function addData(e) {
-    if(e) e.preventDefault(); const btn = e.target.querySelector('button[type="submit"]'); if(btn) btn.disabled=true;
-    try { await API.addData(UI.formData('settingsDataForm')); UI.toast('Data Hattı eklendi.','success'); e.target.reset(); }
-    catch(err) { UI.toast(err.message, 'error'); } finally { if(btn) btn.disabled=false; }
-  }
-  async function addVoice(e) {
-    if(e) e.preventDefault(); const btn = e.target.querySelector('button[type="submit"]'); if(btn) btn.disabled=true;
-    try {
-      const d = UI.formData('settingsVoiceForm');
-      // assigned_to alanı zaten form'dan geliyor
-      await API.addVoice(d); UI.toast('Ses Hattı eklendi.','success');
-      e.target.reset(); document.getElementById('settingsVoicePersonSearch').value='';
-    } catch(err) { UI.toast(err.message, 'error'); } finally { if(btn) btn.disabled=false; }
-  }
 
   /* ════════════ DYNAMIC PACKAGE DROPDOWN ════════════ */
   let _pkgsCache = null;
@@ -964,7 +874,7 @@ const SettingsPage = (() => {
   }
 
   return {
-    render, switchTab,
+    render, switchTab, switchImportType,
     loadUsers, openAddUser, openEditUser, saveUser, deleteUser,
     onRoleChange, onPermViewChange, onPermEditChange,
     loadVehicles, openAddVehicle, openEditVehicle, saveVehicle, deleteVehicle,
@@ -974,7 +884,6 @@ const SettingsPage = (() => {
     loadPackages, openPackageModal, savePackage, deletePackage,
     onOperatorChange,
     changePassword,
-    checkUpdate, applyUpdate,
-    addM2M, addData, addVoice
+    checkUpdate, applyUpdate
   };
 })();

@@ -298,14 +298,14 @@ const BulkImport = (() => {
   }
 
   function switchBulkTab(tabId, btn) {
-    // Scope all changes to the nearest common parent of the tabs
+    // Scope all changes to the nearest common parent of the tabs to avoid clashing with main page tabs
     const tabsEl = btn.closest(".tabs");
     const parent = tabsEl ? tabsEl.parentElement : document;
     tabsEl
-      ?.querySelectorAll(".tab-btn")
+      ?.querySelectorAll(":scope > .tab-btn")
       .forEach((b) => b.classList.remove("active"));
     parent
-      ?.querySelectorAll(".tab-pane")
+      ?.querySelectorAll(":scope > .tab-pane")
       .forEach((p) => p.classList.remove("active"));
     btn.classList.add("active");
     // Support full IDs (st-add-data) and legacy short IDs (manual → bulkTab-manual)
@@ -484,7 +484,9 @@ const BulkImport = (() => {
         <input name="assigned_to" id="s-voice-person-${type}" class="form-control" list="${masterDatalistId}" placeholder="Seçin veya yazın..." autocomplete="off">
         <datalist id="${masterDatalistId}">${masterDatalistHtml}</datalist>
         <div style="font-size:11px;color:var(--text-muted);margin-top:4px">Seçince departman ve şirket otomatik dolar</div>
-      </div>
+      </div>`;
+    if (type === "voice")
+      extraFieldHtml += `
       <div class="form-group">
         <label class="form-label">Departman</label>
         <input name="department" id="s-voice-dept-${type}" class="form-control" placeholder="IT, Muhasebe...">
@@ -504,8 +506,8 @@ const BulkImport = (() => {
 
         <!-- YENİ EKLE -->
         <div class="tab-pane active" id="st-add-${type}">
-          <form id="s-add-form-${type}" onsubmit="BulkImport.saveSingle(event,'${type}')" style="max-width:640px">
-            <div class="form-grid">
+          <form id="s-add-form-${type}" onsubmit="BulkImport.saveSingle(event,'${type}')">
+            <div class="form-grid-3">
               <div class="form-group">
                 <label class="form-label">ICCID</label>
                 <input name="iccid" class="form-control" placeholder="SIM kart ICCID">
@@ -527,9 +529,9 @@ const BulkImport = (() => {
                 </select>
               </div>
               ${extraFieldHtml}
-              <div class="form-group col-span-2">
+              <div class="form-group col-span-3">
                 <label class="form-label">Notlar</label>
-                <textarea name="notes" class="form-control" placeholder="Ek açıklama..."></textarea>
+                <textarea name="notes" class="form-control" placeholder="Ek açıklama..." style="min-height:60px"></textarea>
               </div>
             </div>
             <div style="display:flex;justify-content:flex-end;margin-top:4px">

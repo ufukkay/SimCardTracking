@@ -162,6 +162,10 @@ const VoicePage = (() => {
                 <input name="department" class="form-control" placeholder="Yeni departman...">
               </div>
               <div class="form-group">
+                <label class="form-label">Şirket</label>
+                <input name="assigned_company" class="form-control" placeholder="Yeni şirket...">
+              </div>
+              <div class="form-group col-span-2">
                 <label class="form-label">Notlar</label>
                 <input name="notes" class="form-control" placeholder="Tüm seçilenlere bu notu ekle...">
               </div>
