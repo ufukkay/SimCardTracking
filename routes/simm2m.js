@@ -7,17 +7,22 @@ router.use(authMiddleware);
 
 // GET /api/m2m
 router.get('/', canView('m2m'), (req, res) => {
-  let query = 'SELECT * FROM sim_m2m WHERE 1=1';
+  let query = `
+    SELECT sim_m2m.*, p.name as package_name 
+    FROM sim_m2m 
+    LEFT JOIN packages p ON sim_m2m.package_id = p.id 
+    WHERE 1=1
+  `;
   const params = [];
-  if (req.query.operator)     { query += ' AND operator = ?';    params.push(req.query.operator); }
-  if (req.query.status)       { query += ' AND status = ?';      params.push(req.query.status); }
-  if (req.query.vehicle_type) { query += ' AND vehicle_type = ?'; params.push(req.query.vehicle_type); }
+  if (req.query.operator)     { query += ' AND sim_m2m.operator = ?';    params.push(req.query.operator); }
+  if (req.query.status)       { query += ' AND sim_m2m.status = ?';      params.push(req.query.status); }
+  if (req.query.vehicle_type) { query += ' AND sim_m2m.vehicle_type = ?'; params.push(req.query.vehicle_type); }
   if (req.query.search) {
-    query += ' AND (plate_no LIKE ? OR phone_no LIKE ? OR iccid LIKE ?)';
+    query += ' AND (sim_m2m.plate_no LIKE ? OR sim_m2m.phone_no LIKE ? OR sim_m2m.iccid LIKE ?)';
     const s = `%${req.query.search}%`;
     params.push(s, s, s);
   }
-  query += ' ORDER BY id DESC';   // id DESC uses the PK btree → faster than created_at on large tables
+  query += ' ORDER BY sim_m2m.id DESC';   // id DESC uses the PK btree → faster than created_at on large tables
   res.json(db.prepare(query).all(...params));
 });
 
@@ -41,30 +46,31 @@ function syncVehicle(plate_no, vehicle_type) {
 
 // POST /api/m2m
 router.post('/', canEdit('m2m'), (req, res) => {
-  const { iccid, phone_no, operator, status, plate_no, vehicle_type, notes } = req.body;
+  const { iccid, phone_no, operator, status, plate_no, vehicle_type, notes, package_id } = req.body;
   if (!operator) return res.status(400).json({ message: 'Operatör zorunludur.' });
 
   syncVehicle(plate_no, vehicle_type);
 
   const result = db.prepare(`
-    INSERT INTO sim_m2m (iccid, phone_no, operator, status, plate_no, vehicle_type, notes)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO sim_m2m (iccid, phone_no, operator, status, plate_no, vehicle_type, notes, package_id)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
   `).run(iccid || null, phone_no || null, operator, status || 'active',
-         plate_no || null, vehicle_type || null, notes || null);
+         plate_no || null, vehicle_type || null, notes || null, package_id || null);
   res.status(201).json({ id: result.lastInsertRowid, message: 'M2M hattı eklendi.' });
 });
 
 // PUT /api/m2m/:id
 router.put('/:id', canEdit('m2m'), (req, res) => {
-  const { iccid, phone_no, operator, status, plate_no, vehicle_type, notes } = req.body;
-
+  const { iccid, phone_no, operator, status, plate_no, vehicle_type, notes, package_id } = req.body;
+  
   syncVehicle(plate_no, vehicle_type);
 
   const result = db.prepare(`
-    UPDATE sim_m2m SET iccid=?, phone_no=?, operator=?, status=?, plate_no=?, vehicle_type=?, notes=?,
-    updated_at=CURRENT_TIMESTAMP WHERE id=?
+    UPDATE sim_m2m
+    SET iccid=?, phone_no=?, operator=?, status=?, plate_no=?, vehicle_type=?, notes=?, package_id=?, updated_at=CURRENT_TIMESTAMP
+    WHERE id=?
   `).run(iccid || null, phone_no || null, operator, status,
-         plate_no || null, vehicle_type || null, notes || null, req.params.id);
+         plate_no || null, vehicle_type || null, notes || null, package_id || null, req.params.id);
   if (result.changes === 0) return res.status(404).json({ message: 'Kayıt bulunamadı.' });
   res.json({ message: 'M2M hattı güncellendi.' });
 });
@@ -96,7 +102,7 @@ router.post('/bulk-update', canEdit('m2m'), (req, res) => {
   const params = [];
   
   // Sadece izin verilen alanların güncellenmesini sağla
-  const allowedFields = ['operator', 'status', 'vehicle_type', 'notes'];
+  const allowedFields = ['operator', 'status', 'vehicle_type', 'notes', 'package_id'];
   Object.keys(data).forEach(key => {
     if (allowedFields.includes(key) && data[key] !== undefined) {
       fields.push(`${key} = ?`);

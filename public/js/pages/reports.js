@@ -177,6 +177,24 @@ const ReportsPage = (() => {
             </table>
           </div>
         </div>
+        <!-- Paket Dağılımı -->
+        <div class="card report-section">
+          <div class="card-header"><span class="card-title">📦 Paket Dağılımı</span></div>
+          <div class="table-container">
+            <table>
+              <thead><tr><th>Paket Adı</th><th>Operatör</th><th>Tip</th><th>Hat Sayısı</th></tr></thead>
+              <tbody>
+                ${(summary.byPackage || []).length ? (summary.byPackage || []).map(p => `
+                <tr>
+                  <td><strong>${p.package_name || '—'}</strong></td>
+                  <td>${UI.operatorBadge(p.operator_name || '—')}</td>
+                  <td>${p.type === 'm2m' ? '🚗 M2M' : p.type === 'data' ? '🌐 Data' : '📞 Ses'}</td>
+                  <td><span class="badge badge-info">${p.count} hat</span></td>
+                </tr>`).join('') : `<tr><td colspan="4">${UI.emptyState('📦', 'Paket ataması yok', 'Hatlara Ayarlar bölümünden paket atayabilirsiniz.')}</td></tr>`}
+              </tbody>
+            </table>
+          </div>
+        </div>
       `;
     } catch (err) {
       container.innerHTML = `<p style="color:var(--danger)">${err.message}</p>`;

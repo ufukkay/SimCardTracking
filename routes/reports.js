@@ -62,11 +62,25 @@ router.post('/advanced', (req, res) => {
 
   const formatGroup = (obj) => Object.entries(obj).map(([k, v]) => ({ key: k, count: v }));
 
+  // Package distribution — tüm tablolardaki paket kullanımını say
+  const pkgRows = db.prepare(`
+    SELECT p.id, p.name as package_name, p.type, o.name as operator_name,
+           (
+             (SELECT COUNT(*) FROM sim_m2m WHERE package_id = p.id) +
+             (SELECT COUNT(*) FROM sim_data WHERE package_id = p.id) +
+             (SELECT COUNT(*) FROM sim_voice WHERE package_id = p.id)
+           ) as count
+    FROM packages p
+    LEFT JOIN operators o ON p.operator_id = o.id
+    ORDER BY count DESC, p.name ASC
+  `).all().filter(r => r.count > 0);
+
   res.json({
     summary: {
       totals: { m2m: m2mTotal, data: dataTotal, voice: voiceTotal, all: m2mTotal + dataTotal + voiceTotal },
       byOperator: { m2m: formatGroup(m2mByOp), data: formatGroup(dataByOp), voice: formatGroup(voiceByOp) },
-      byStatus: { m2m: formatGroup(m2mByStatus), data: formatGroup(dataByStatus), voice: formatGroup(voiceByStatus) }
+      byStatus: { m2m: formatGroup(m2mByStatus), data: formatGroup(dataByStatus), voice: formatGroup(voiceByStatus) },
+      byPackage: pkgRows
     },
     lists: { m2m: m2mList, data: dataList, voice: voiceList }
   });

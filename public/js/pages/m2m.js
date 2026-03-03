@@ -56,10 +56,10 @@ const M2MPage = (() => {
                 <th>ICCID</th>
                 <th>Telefon No</th>
                 <th>Operatör</th>
+                <th>Paket</th>
                 <th>Araç Tipi</th>
                 <th>Durum</th>
                 <th>Plaka</th>
-                <th>Notlar</th>
                 <th>İşlem</th>
               </tr>
             </thead>
@@ -87,7 +87,13 @@ const M2MPage = (() => {
               </div>
               <div class="form-group">
                 <label class="form-label">Operatör <span style="color:var(--danger)">*</span></label>
-                <select name="operator" class="form-control" id="m2mOperatorSel" required></select>
+                <select name="operator" class="form-control" id="m2mOperatorSel" required onchange="SettingsPage?.onOperatorChange(this.value, 'm2m', 'm2mPagePkgSel')"></select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Paket Seç (İsteğe Bağlı)</label>
+                <select name="package_id" class="form-control" id="m2mPagePkgSel">
+                  <option value="">Seçiniz...</option>
+                </select>
               </div>
               <div class="form-group">
                 <label class="form-label">Durum</label>
@@ -137,7 +143,14 @@ const M2MPage = (() => {
             <div class="form-grid">
               <div class="form-group">
                 <label class="form-label">Operatör</label>
-                <select name="operator" class="form-control" id="m2mBulkOperatorSel"></select>
+                <select name="operator" class="form-control" id="m2mBulkOperatorSel" onchange="SettingsPage?.onOperatorChange(this.value, 'm2m', 'm2mBulkPkgSel')"></select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Paket (Tarife)</label>
+                <select name="package_id" class="form-control" id="m2mBulkPkgSel">
+                  <option value="">Değiştirme...</option>
+                  <option value="__CLEAR__">— Paketi Kaldır —</option>
+                </select>
               </div>
               <div class="form-group">
                 <label class="form-label">Durum</label>
@@ -240,13 +253,14 @@ const M2MPage = (() => {
         'iccid': { label: 'ICCID', getVal: r => r.iccid || '—' },
         'phone_no': { label: 'Telefon No', getVal: r => r.phone_no || '—' },
         'operator': { label: 'Operatör', getVal: r => r.operator || '—' },
+        'package_name': { label: 'Paket', getVal: r => r.package_name || '—' },
         'vehicle_type': { label: 'Araç Tipi', getVal: r => r.vehicle_type || '—' },
         'status': { label: 'Durum', getVal: r => r.status || '—' },
-        'plate_no': { label: 'Plaka', getVal: r => r.plate_no || '—' },
-        'notes': { label: 'Notlar', getVal: r => r.notes || '—' }
+        'plate_no': { label: 'Plaka', getVal: r => r.plate_no || '—' }
       };
 
       if (!M2MPage.colFilters) M2MPage.colFilters = {};
+      const unfilteredRows = rows;
       rows = UI.filterRows(rows, M2MPage.colFilters, colDefs);
       rows = UI.sortRows(rows, M2MPage.colFilters._sort, colDefs);
 
@@ -262,17 +276,17 @@ const M2MPage = (() => {
           <td class="td-muted" style="font-family:monospace;font-size:12px">${r.iccid || '—'}</td>
           <td>${r.phone_no || '—'}</td>
           <td>${UI.operatorBadge(r.operator)}</td>
+          <td class="td-muted" style="font-size:12px">${r.package_name ? `<span class="badge" style="background:var(--bg-secondary);color:var(--text-main)">${r.package_name}</span>` : '—'}</td>
           <td>${r.vehicle_type ? `<span class="badge" style="background:var(--bg-secondary);color:var(--text-main)">${r.vehicle_type}</span>` : '—'}</td>
           <td>${UI.statusBadge(r.status)}</td>
           <td><strong>${r.plate_no || '—'}</strong></td>
-          <td class="td-muted" style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.notes || '—'}</td>
           <td>
             <div class="action-buttons">
               ${window.AppPerms?.canEdit('m2m') ? `
               <button class="btn btn-secondary btn-sm btn-icon" title="Düzenle" onclick="M2MPage.openEdit(${r.id})">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
               </button>
-              <button class="btn btn-danger btn-sm btn-icon" title="Sil" onclick="M2MPage.del(${r.id}, '${r.plate_no || r.phone_no || 'Bu kayıt'}')">  
+              <button class="btn btn-danger btn-sm btn-icon" title="Sil" onclick="M2MPage.del(${r.id}, '${r.plate_no || r.phone_no || 'Bu kayıt'}')">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
               </button>` : '<span class="td-muted" style="font-size:11px">—</span>'}
             </div>
@@ -280,7 +294,7 @@ const M2MPage = (() => {
         </tr>
       `).join('');
       
-      UI.setupTableFilters('m2mTableBody', rows, M2MPage.colFilters, colDefs, () => load());
+      UI.setupTableFilters('m2mTableBody', unfilteredRows, M2MPage.colFilters, colDefs, () => load());
       
       // Selection init
       UI.initSelection('m2mTableBody', 'm2mSelectAll', (ids) => {
@@ -307,6 +321,13 @@ const M2MPage = (() => {
     document.getElementById('m2mModalTitle').textContent = 'M2M Hattını Düzenle';
     try {
       const row = await API.get(`/m2m/${id}`);
+      // First populate operator selects (needed for pre-fill)
+      await UI.fillOperatorSelect(document.getElementById('m2mOperatorSel'));
+      // Then populate packages for the operator
+      if (row.operator && typeof SettingsPage !== 'undefined') {
+        await SettingsPage.onOperatorChange(row.operator, 'm2m', 'm2mPagePkgSel');
+      }
+      // Then set form values (including package_id)
       UI.setForm('m2mForm', row);
       UI.openModal('m2mModal');
     } catch (err) { UI.toast(err.message, 'error'); }
@@ -356,10 +377,14 @@ const M2MPage = (() => {
     const ids = UI.getSelectedIds('m2mTableBody');
     const formData = UI.formData('m2mBulkForm');
     
-    // Sadece doldurulan alanları gönder
+    // Sadece doldurulan alanları veya __CLEAR__ olanları gönder
     const data = {};
     Object.keys(formData).forEach(key => {
-      if (formData[key]) data[key] = formData[key];
+      if (formData[key] === '__CLEAR__') {
+        data[key] = null; // Paketi kaldır
+      } else if (formData[key]) {
+        data[key] = formData[key];
+      }
     });
 
     if (Object.keys(data).length === 0) {

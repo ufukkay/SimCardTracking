@@ -71,6 +71,12 @@ const API = (() => {
     addOperator:   (d)   => request('POST',   '/operators', d),
     deleteOperator:(id)  => request('DELETE', `/operators/${id}`),
 
+    // Packages
+    getPackages:   ()    => request('GET',    '/packages'),
+    addPackage:    (d)   => request('POST',   '/packages', d),
+    updatePackage: (id,d)=> request('PUT',    `/packages/${id}`, d),
+    deletePackage: (id)  => request('DELETE', `/packages/${id}`),
+
     // Reports
     getSummary:     () => request('GET', '/reports/summary'),
     getReportM2M:   () => request('GET', '/reports/m2m'),

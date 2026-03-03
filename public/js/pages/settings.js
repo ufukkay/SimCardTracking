@@ -15,6 +15,7 @@ const SettingsPage = (() => {
         <button class="tab-btn" onclick="SettingsPage.switchTab('locations',this)">📍 Lokasyonlar</button>
         <button class="tab-btn" onclick="SettingsPage.switchTab('personnelTab',this)">👤 Personeller</button>
         <button class="tab-btn" onclick="SettingsPage.switchTab('operators',this)">📡 Operatörler</button>
+        <button class="tab-btn" onclick="SettingsPage.switchTab('packages',this)">📦 Paketler</button>
         <button class="tab-btn" onclick="SettingsPage.switchTab('importM2M',this)">📥 M2M Aktar</button>
         <button class="tab-btn" onclick="SettingsPage.switchTab('importData',this)">📥 Data Aktar</button>
         <button class="tab-btn" onclick="SettingsPage.switchTab('importSes',this)">📥 Ses Aktar</button>
@@ -102,6 +103,37 @@ const SettingsPage = (() => {
         </div>
       </div>
 
+      <!-- PAKETLER -->
+      <div class="tab-pane" id="tab-packages">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Paket (Tarife) Yönetimi</span>
+            <button class="btn btn-primary" onclick="SettingsPage.openPackageModal()">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Yeni Paket
+            </button>
+          </div>
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Adı</th>
+                  <th>Operatör</th>
+                  <th>Tipi</th>
+                  <th>Data (GB)</th>
+                  <th>SMS</th>
+                  <th>Dakika</th>
+                  <th>Açıklama</th>
+                  <th>Fiyat</th>
+                  <th>İşlem</th>
+                </tr>
+              </thead>
+              <tbody id="packagesList"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
       <!-- M2M İŞLEMLERİ -->
       <div class="tab-pane" id="tab-importM2M">
         <div class="card" style="max-width:800px; margin-bottom:16px;">
@@ -110,7 +142,8 @@ const SettingsPage = (() => {
             <div class="form-grid">
               <div class="form-group"><label class="form-label">ICCID</label><input name="iccid" class="form-control" placeholder="SIM kart ICCID numarası"></div>
               <div class="form-group"><label class="form-label">Telefon Numarası</label><input name="phone_no" class="form-control" placeholder="05XX XXX XX XX"></div>
-              <div class="form-group"><label class="form-label">Operatör *</label><select name="operator" class="form-control settingsOperatorSel" required></select></div>
+              <div class="form-group"><label class="form-label">Operatör *</label><select name="operator" id="m2mOpSel" class="form-control settingsOperatorSel" required onchange="SettingsPage.onOperatorChange(this.value, 'm2m', 'm2mPkgSel')"></select></div>
+              <div class="form-group"><label class="form-label">Paket Seç (İsteğe Bağlı)</label><select name="package_id" id="m2mPkgSel" class="form-control settingsPackageSel"><option value="">Seçiniz...</option></select></div>
               <div class="form-group">
                 <label class="form-label">Durum</label>
                 <select name="status" class="form-control">
@@ -149,7 +182,8 @@ const SettingsPage = (() => {
             <div class="form-grid">
               <div class="form-group"><label class="form-label">ICCID</label><input name="iccid" class="form-control" placeholder="SIM kart ICCID"></div>
               <div class="form-group"><label class="form-label">Telefon Numarası</label><input name="phone_no" class="form-control" placeholder="05XX XXX XX XX"></div>
-              <div class="form-group"><label class="form-label">Operatör *</label><select name="operator" class="form-control settingsOperatorSel" required></select></div>
+              <div class="form-group"><label class="form-label">Operatör *</label><select name="operator" id="dataOpSel" class="form-control settingsOperatorSel" required onchange="SettingsPage.onOperatorChange(this.value, 'data', 'dataPkgSel')"></select></div>
+              <div class="form-group"><label class="form-label">Paket Seç (İsteğe Bağlı)</label><select name="package_id" id="dataPkgSel" class="form-control settingsPackageSel"><option value="">Seçiniz...</option></select></div>
               <div class="form-group">
                 <label class="form-label">Durum</label>
                 <select name="status" class="form-control">
@@ -177,15 +211,17 @@ const SettingsPage = (() => {
           <form id="settingsVoiceForm" onsubmit="SettingsPage.addVoice(event)" style="padding-bottom:16px;">
             <div class="form-grid">
               <div class="form-group col-span-2">
-                <label class="form-label">Personel (Ad Soyad)</label>
-                <input type="text" id="settingsVoicePersonSearch" class="form-control" list="settingsPersonnelList" placeholder="Personel adını yazın veya seçin..." autocomplete="off">
+                <label class="form-label">Personel Adı Soyadı</label>
+                <input type="text" name="assigned_to" id="settingsVoicePersonSearch" class="form-control" list="settingsPersonnelList" placeholder="Personel adını yazın veya seçin..." autocomplete="off">
+                <datalist id="settingsPersonnelList"></datalist>
               </div>
               <div class="form-group"><label class="form-label">Departman</label><input name="department" id="settingsVoiceDept" class="form-control"></div>
-              <div class="form-group"><label class="form-label">Şirket</label><input name="company" id="settingsVoiceComp" class="form-control"></div>
+              <div class="form-group"><label class="form-label">Şirket</label><input name="assigned_company" id="settingsVoiceComp" class="form-control"></div>
               
               <div class="form-group"><label class="form-label">ICCID</label><input name="iccid" class="form-control"></div>
               <div class="form-group"><label class="form-label">Telefon Numarası</label><input name="phone_no" class="form-control"></div>
-              <div class="form-group"><label class="form-label">Operatör *</label><select name="operator" class="form-control settingsOperatorSel" required></select></div>
+              <div class="form-group"><label class="form-label">Operatör *</label><select name="operator" id="voiceOpSel" class="form-control settingsOperatorSel" required onchange="SettingsPage.onOperatorChange(this.value, 'voice', 'voicePkgSel')"></select></div>
+              <div class="form-group"><label class="form-label">Paket Seç (İsteğe Bağlı)</label><select name="package_id" id="voicePkgSel" class="form-control settingsPackageSel"><option value="">Seçiniz...</option></select></div>
               <div class="form-group">
                 <label class="form-label">Durum</label>
                 <select name="status" class="form-control">
@@ -195,13 +231,9 @@ const SettingsPage = (() => {
                 </select>
               </div>
               <div class="form-group col-span-2"><label class="form-label">Notlar</label><textarea name="notes" class="form-control"></textarea></div>
-              
-              <input type="hidden" name="first_name" id="settingsVoiceFName">
-              <input type="hidden" name="last_name" id="settingsVoiceLName">
             </div>
             <div style="text-align:right; margin-top:12px;"><button type="submit" class="btn btn-primary">Kaydet</button></div>
           </form>
-          <datalist id="settingsPersonnelList"></datalist>
           <datalist id="settingsVehiclesList"></datalist>
           <datalist id="settingsLocationsList"></datalist>
         </div>
@@ -322,6 +354,36 @@ const SettingsPage = (() => {
         </div>
       </div>
 
+      <!-- Paket (Tarife) -->
+      <div class="modal-overlay" id="packageModal">
+        <div class="modal" style="max-width:420px">
+          <div class="modal-header"><span class="modal-title" id="packageModalTitle">Yeni Paket</span><button class="modal-close" onclick="UI.closeModal('packageModal')">×</button></div>
+          <form class="modal-body" id="packageForm" onsubmit="SettingsPage.savePackage(event)">
+            <div class="form-group"><label class="form-label">Paket Adı *</label><input name="name" class="form-control" placeholder="Örn: 10GB Data Planı" required></div>
+            <div class="form-group">
+              <label class="form-label">Paket Tipi *</label>
+              <select name="type" class="form-control" required>
+                <option value="m2m">M2M Hattı</option>
+                <option value="data">Data Hattı</option>
+                <option value="voice">Ses Hattı</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Operatör *</label>
+              <select name="operator_id" class="form-control settingsOperatorSel" required></select>
+            </div>
+            <div class="form-group"><label class="form-label">Data Limiti (GB)</label><input type="number" step="0.01" name="data_limit" class="form-control" placeholder="Örn: 10"></div>
+            <div class="form-grid" style="grid-template-columns: 1fr 1fr; margin-bottom: 0;">
+              <div class="form-group"><label class="form-label">SMS (Adet)</label><input type="number" name="sms_limit" class="form-control" placeholder="Örn: 1000"></div>
+              <div class="form-group"><label class="form-label">Dakika</label><input type="number" name="minutes_limit" class="form-control" placeholder="Örn: 500"></div>
+            </div>
+            <div class="form-group"><label class="form-label">Aylık Fiyat (₺)</label><input type="number" step="0.01" name="price" class="form-control" placeholder="0.00"></div>
+            <div class="form-group"><label class="form-label">Ek Açıklama / Özellikler</label><input name="features" class="form-control" placeholder="Örn: Sınırsız WhatsApp"></div>
+          </form>
+          <div class="modal-footer"><button class="btn btn-secondary" onclick="UI.closeModal('packageModal')">İptal</button><button class="btn btn-primary" id="packageSaveBtn" onclick="document.getElementById('packageForm').requestSubmit()">Kaydet</button></div>
+        </div>
+      </div>
+
       <!-- Lokasyon -->
       <div class="modal-overlay" id="locationModal">
         <div class="modal" style="max-width:420px">
@@ -359,6 +421,7 @@ const SettingsPage = (() => {
     loadLocations();
     loadPersonnel();
     loadOperators();
+    loadPackages();
     populateLineForms();
     
     // Show update tab for admins
@@ -386,6 +449,9 @@ const SettingsPage = (() => {
     }
     if (tab === 'update') {
       SettingsPage.checkUpdate();
+    }
+    if (tab === 'packages') {
+      loadPackages();
     }
   }
 
@@ -644,6 +710,69 @@ const SettingsPage = (() => {
     UI.confirm(`"${name}" silinecek.`, async()=>{ try{await API.deleteOperator(id); UI.toast('Silindi.','success'); loadOperators();}catch(e){UI.toast(e.message,'error');} });
   }
 
+  /* ════════════ PACKAGES ════════════ */
+  let editingPackageId = null;
+  async function loadPackages() {
+    const tbody = document.getElementById('packagesList'); if (!tbody) return;
+    try {
+      const pkgs = await API.getPackages();
+      const typeLabels = { m2m: 'M2M', data: 'Data', voice: 'Ses' };
+      tbody.innerHTML = pkgs.length ? pkgs.map(p => `
+        <tr>
+          <td><strong>${p.name}</strong></td>
+          <td>${UI.operatorBadge(p.operator_name || '—')}</td>
+          <td><span class="badge ${p.type === 'm2m' ? 'badge-info' : (p.type === 'data' ? 'badge-primary' : 'badge-warning')}">${typeLabels[p.type] || p.type}</span></td>
+          <td class="td-muted"><strong>${p.data_limit != null ? p.data_limit : '—'}</strong></td>
+          <td class="td-muted"><strong>${p.sms_limit != null ? p.sms_limit : '—'}</strong></td>
+          <td class="td-muted"><strong>${p.minutes_limit != null ? p.minutes_limit : '—'}</strong></td>
+          <td class="td-muted" style="font-size:12px">${p.features || '—'}</td>
+          <td><strong>${p.price ? p.price + ' ₺' : '—'}</strong></td>
+          <td>
+            <div class="action-buttons">
+              <button class="btn btn-secondary btn-sm btn-icon" onclick="SettingsPage.openPackageModal(${p.id})" title="Düzenle">${editIcon()}</button>
+              <button class="btn btn-danger btn-sm btn-icon" onclick="SettingsPage.deletePackage(${p.id}, '${p.name}')" title="Sil">${delIcon()}</button>
+            </div>
+          </td>
+        </tr>`).join('') : `<tr><td colspan="6" class="td-muted" style="padding:24px;text-align:center">Önce sağ üstten "Yeni Paket" butonuna basarak tarife tanımlayın.</td></tr>`;
+    } catch(err) { tbody.innerHTML = `<tr><td colspan="6" style="color:var(--danger)">${err.message}</td></tr>`; }
+  }
+
+  async function openPackageModal(id = null) {
+    editingPackageId = id;
+    const form = document.getElementById('packageForm');
+    form.reset();
+    document.getElementById('packageModalTitle').textContent = id ? 'Paketi Düzenle' : 'Yeni Paket';
+    
+    // Ensure operators are loaded into the select
+    const ops = await API.getOperators();
+    const sel = form.querySelector('[name="operator_id"]');
+    sel.innerHTML = `<option value="">Seçiniz...</option>` + ops.map(o => `<option value="${o.id}">${o.name}</option>`).join('');
+
+    if (id) {
+      try {
+        const pkgs = await API.getPackages();
+        const p = pkgs.find(x => x.id === id);
+        if (p) UI.setForm('packageForm', p);
+      } catch (err) { UI.toast(err.message, 'error'); }
+    }
+    UI.openModal('packageModal');
+  }
+
+  async function savePackage(e) {
+    e.preventDefault(); const btn = document.getElementById('packageSaveBtn'); btn.disabled = true;
+    try {
+      const d = UI.formData('packageForm');
+      if (editingPackageId) { await API.updatePackage(editingPackageId, d); UI.toast('Paket güncellendi.', 'success'); } 
+      else { await API.addPackage(d); UI.toast('Paket eklendi.', 'success'); }
+      _pkgsCache = null; // Cache'i temizle — dropdown'lar güncel paketi görsün
+      UI.closeModal('packageModal'); loadPackages();
+    } catch(err) { UI.toast(err.message, 'error'); } finally { btn.disabled = false; }
+  }
+
+  function deletePackage(id, name) {
+    UI.confirm(`"${name}" silinecek. Emin misiniz?`, async()=>{ try{await API.deletePackage(id); _pkgsCache = null; UI.toast('Paket silindi.','success'); loadPackages();}catch(e){UI.toast(e.message,'error');} });
+  }
+
   /* ════════════ PASSWORD ════════════ */
   async function changePassword(e) {
     e.preventDefault();
@@ -779,15 +908,59 @@ const SettingsPage = (() => {
     if(e) e.preventDefault(); const btn = e.target.querySelector('button[type="submit"]'); if(btn) btn.disabled=true;
     try {
       const d = UI.formData('settingsVoiceForm');
-      if (!d.first_name || !d.last_name) {
-        // Fallback split if they just typed a name not in list
-        const parts = document.getElementById('settingsVoicePersonSearch').value.split(' ');
-        d.last_name = parts.pop() || '';
-        d.first_name = parts.join(' ') || '';
-      }
+      // assigned_to alanı zaten form'dan geliyor
       await API.addVoice(d); UI.toast('Ses Hattı eklendi.','success');
       e.target.reset(); document.getElementById('settingsVoicePersonSearch').value='';
     } catch(err) { UI.toast(err.message, 'error'); } finally { if(btn) btn.disabled=false; }
+  }
+
+  /* ════════════ DYNAMIC PACKAGE DROPDOWN ════════════ */
+  let _pkgsCache = null;
+  async function onOperatorChange(operatorNameOrId, simType, targetSelectId) {
+    const sel = document.getElementById(targetSelectId);
+    if (!sel) return;
+    sel.innerHTML = '<option value="">Yükleniyor...</option>';
+    try {
+      if (!_pkgsCache) _pkgsCache = await API.getPackages();
+      console.log('[DEBUG] onOperatorChange:', { operatorNameOrId, simType, targetSelectId, cacheSize: _pkgsCache.length });
+      if (_pkgsCache.length > 0) console.log('[DEBUG] Sample Package:', _pkgsCache[0]);
+      
+      let filtered = [];
+      if (operatorNameOrId) {
+        const opIdOrName = String(operatorNameOrId).trim().toLowerCase();
+        
+        filtered = _pkgsCache.filter(p => {
+          // 1. Tip Kontrolü
+          const typeMatch = !simType || p.type === simType;
+          
+          // 2. Operatör Kontrolü: 
+          const opMatch = String(p.operator_id) === opIdOrName || 
+                          (p.operator_name || '').trim().toLowerCase() === opIdOrName;
+          
+          return typeMatch && opMatch;
+        });
+      }
+
+      if (filtered.length === 0) {
+        sel.innerHTML = '<option value="">Paket tanımlanmamış</option>';
+        sel.disabled = true;
+      } else {
+        sel.disabled = false;
+        sel.innerHTML = '<option value="">Paket Seç (İsteğe Bağlı)...</option>' + 
+          filtered.map(p => {
+            const limitText = [
+              p.data_limit != null ? p.data_limit + 'GB' : null,
+              p.sms_limit != null ? p.sms_limit + 'SMS' : null,
+              p.minutes_limit != null ? p.minutes_limit + 'Dk' : null
+            ].filter(Boolean).join('/');
+            const extra = limitText ? ` (${limitText})` : '';
+            return `<option value="${p.id}">${p.name}${extra}${p.price ? ' — ' + p.price + '₺' : ''}</option>`;
+          }).join('');
+      }
+    } catch (e) {
+      sel.innerHTML = '<option value="">Hata!</option>';
+      console.error('onOperatorChange error:', e);
+    }
   }
 
   return {
@@ -798,6 +971,8 @@ const SettingsPage = (() => {
     loadLocations, openAddLocation, openEditLocation, saveLocation, deleteLocation,
     loadPersonnel, openAddPersonnel, openEditPersonnel, savePersonnel, deletePersonnel,
     loadOperators, addOperator, deleteOperator,
+    loadPackages, openPackageModal, savePackage, deletePackage,
+    onOperatorChange,
     changePassword,
     checkUpdate, applyUpdate,
     addM2M, addData, addVoice

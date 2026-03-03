@@ -3,20 +3,33 @@ const router = express.Router();
 const db = require('../database/db');
 const { authMiddleware, canView, canEdit } = require('../middleware/auth');
 
+// Helper function (assuming it's defined elsewhere or will be added)
+const syncPersonnel = (firstName, lastName, department, company) => {
+  // Logic to sync personnel data, e.g., add to a personnel table if not exists
+  // This is a placeholder for the actual implementation
+  console.log(`Syncing personnel: ${firstName} ${lastName}, Dept: ${department}, Company: ${company}`);
+};
+
 router.use(authMiddleware);
 
 // GET /api/voice
 router.get('/', canView('voice'), (req, res) => {
-  let query = 'SELECT * FROM sim_voice WHERE 1=1';
+  let query = `
+    SELECT sim_voice.*, p.name as package_name 
+    FROM sim_voice 
+    LEFT JOIN packages p ON sim_voice.package_id = p.id 
+    WHERE 1=1
+  `;
   const params = [];
-  if (req.query.operator) { query += ' AND operator = ?'; params.push(req.query.operator); }
-  if (req.query.status)   { query += ' AND status = ?';   params.push(req.query.status); }
-  if (req.query.search)   {
-    query += ' AND (assigned_to LIKE ? OR phone_no LIKE ? OR iccid LIKE ? OR department LIKE ? OR assigned_company LIKE ?)';
+  if (req.query.operator) { query += ' AND sim_voice.operator = ?'; params.push(req.query.operator); }
+  if (req.query.status)   { query += ' AND sim_voice.status = ?';   params.push(req.query.status); }
+  // You might want a filter by assigned_to or department as well, keep as is
+  if (req.query.search) {
+    query += ' AND (sim_voice.phone_no LIKE ? OR sim_voice.iccid LIKE ? OR sim_voice.assigned_to LIKE ?)';
     const s = `%${req.query.search}%`;
-    params.push(s, s, s, s, s);
+    params.push(s, s, s);
   }
-  query += ' ORDER BY created_at DESC';
+  query += ' ORDER BY sim_voice.id DESC';
   res.json(db.prepare(query).all(...params));
 });
 
@@ -27,21 +40,33 @@ router.get('/:id', canView('voice'), (req, res) => {
 });
 
 router.post('/', canEdit('voice'), (req, res) => {
-  const { iccid, phone_no, operator, status, assigned_to, department, assigned_company, notes } = req.body;
+  const { iccid, phone_no, operator, status, assigned_to, first_name, last_name, department, assigned_company, notes, package_id } = req.body;
   if (!operator) return res.status(400).json({ message: 'Operatör zorunludur.' });
+
+  // assigned_to direkt gelebilir veya first_name+last_name dan oluşturulur
+  const finalAssignedTo = assigned_to ||
+    ((first_name || last_name) ? `${first_name||''} ${last_name||''}`.trim() : null);
+
   const result = db.prepare(`
-    INSERT INTO sim_voice (iccid, phone_no, operator, status, assigned_to, department, assigned_company, notes)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(iccid, phone_no, operator, status || 'active', assigned_to, department, assigned_company, notes);
+    INSERT INTO sim_voice (iccid, phone_no, operator, status, assigned_to, department, assigned_company, notes, package_id)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(iccid || null, phone_no || null, operator, status || 'active',
+         finalAssignedTo, department || null, assigned_company || null, notes || null, package_id || null);
   res.status(201).json({ id: result.lastInsertRowid, message: 'Ses hattı eklendi.' });
 });
 
 router.put('/:id', canEdit('voice'), (req, res) => {
-  const { iccid, phone_no, operator, status, assigned_to, department, assigned_company, notes } = req.body;
+  const { iccid, phone_no, operator, status, assigned_to, first_name, last_name, department, assigned_company, notes, package_id } = req.body;
+  
+  const finalAssignedTo = assigned_to ||
+    ((first_name || last_name) ? `${first_name||''} ${last_name||''}`.trim() : null);
+
   const result = db.prepare(`
-    UPDATE sim_voice SET iccid=?, phone_no=?, operator=?, status=?, assigned_to=?,
-    department=?, assigned_company=?, notes=?, updated_at=CURRENT_TIMESTAMP WHERE id=?
-  `).run(iccid, phone_no, operator, status, assigned_to, department, assigned_company, notes, req.params.id);
+    UPDATE sim_voice 
+    SET iccid=?, phone_no=?, operator=?, status=?, assigned_to=?, department=?, assigned_company=?, notes=?, package_id=?,
+    updated_at=CURRENT_TIMESTAMP WHERE id=?
+  `).run(iccid || null, phone_no || null, operator, status,
+         finalAssignedTo, department || null, assigned_company || null, notes || null, package_id || null, req.params.id);
   if (result.changes === 0) return res.status(404).json({ message: 'Kayıt bulunamadı.' });
   res.json({ message: 'Ses hattı güncellendi.' });
 });
@@ -69,7 +94,7 @@ router.post('/bulk-update', canEdit('voice'), (req, res) => {
 
   const fields = [];
   const params = [];
-  const allowedFields = ['operator', 'status', 'assigned_to', 'department', 'assigned_company', 'notes'];
+  const allowedFields = ['operator', 'status', 'assigned_to', 'department', 'assigned_company', 'notes', 'package_id'];
   Object.keys(data).forEach(key => {
     if (allowedFields.includes(key) && data[key] !== undefined) {
       fields.push(`${key} = ?`);

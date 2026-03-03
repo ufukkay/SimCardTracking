@@ -120,14 +120,26 @@ const UI = (() => {
   // colDef = { 'operator': { label: 'Operatör', getVal: row => row.operator } }
   // storageObj = object where filters are kept (e.g. M2MPage.colFilters)
   // onApply = callback to trigger data refresh
-  function setupTableFilters(tableBodyId, currentRows, filterStateObj, colDefs, onApply) {
+  function setupTableFilters(tableBodyId, unfilteredRows, filterStateObj, colDefs, onApply) {
     const tbody = document.getElementById(tableBodyId);
     if (!tbody) return;
     const ths = tbody.closest('table').querySelectorAll('th');
 
     ths.forEach(th => {
-      const text = th.textContent.trim().replace(/[↕↑↓]/g, '').trim().toLowerCase();
-      const colKey = Object.keys(colDefs).find(k => (colDefs[k].label || '').toLowerCase() === text);
+      // Try to get colKey from attribute first, because th.textContent includes all menu text after first render
+      let colKey = th.getAttribute('data-col-key');
+      if (!colKey) {
+        let text = th.textContent.trim();
+        // If it already has a label, extract just that
+        if (th.querySelector('.th-label')) {
+          text = th.querySelector('.th-label').textContent.trim();
+        } else {
+          // Otherwise clean up first load raw text
+          text = text.replace(/[↕↑↓⋮]/g, '').trim();
+        }
+        colKey = Object.keys(colDefs).find(k => (colDefs[k].label || '').toLowerCase() === text.toLowerCase());
+        if (colKey) th.setAttribute('data-col-key', colKey);
+      }
       if (!colKey) return;
       
       const colDef = colDefs[colKey];
@@ -201,9 +213,23 @@ const UI = (() => {
         menu.classList.toggle('open');
       };
 
-      // Only rebuild menu content if it's being opened or data changed significanly
-      // For now, let's keep it simple but ensure uniqueVals are calculated efficiently
-      let rawValues = currentRows.map(r => colDef.getVal(r));
+      // Calculate available unique values for THIS column, by applying all OTHER active filters
+      let rowsForThisCol = unfilteredRows;
+      if (filterStateObj) {
+        Object.keys(filterStateObj).forEach(otherColKey => {
+          if (otherColKey !== colKey && otherColKey !== '_sort') {
+            const activeFilters = filterStateObj[otherColKey];
+            if (activeFilters && activeFilters.length > 0 && colDefs[otherColKey]) {
+              rowsForThisCol = rowsForThisCol.filter(r => {
+                const val = colDefs[otherColKey].getVal(r);
+                return activeFilters.includes(val);
+              });
+            }
+          }
+        });
+      }
+
+      let rawValues = rowsForThisCol.map(r => colDef.getVal(r));
       let uniqueVals = [...new Set(rawValues)].filter(v => v !== '—' && v !== '' && v !== null && v !== undefined);
       uniqueVals.sort();
 

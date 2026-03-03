@@ -48,6 +48,7 @@ const DataPage = (() => {
                 <th>ICCID</th>
                 <th>Telefon No</th>
                 <th>Operatör</th>
+                <th>Paket</th>
                 <th>Durum</th>
                 <th>Lokasyon</th>
                 <th>Notlar</th>
@@ -78,7 +79,13 @@ const DataPage = (() => {
               </div>
               <div class="form-group">
                 <label class="form-label">Operatör <span style="color:var(--danger)">*</span></label>
-                <select name="operator" class="form-control" id="dataOperatorSel" required></select>
+                <select name="operator" class="form-control" id="dataOperatorSel" required onchange="SettingsPage?.onOperatorChange(this.value, 'data', 'dataPagePkgSel')"></select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Paket Seç (İsteğe Bağlı)</label>
+                <select name="package_id" class="form-control" id="dataPagePkgSel">
+                  <option value="">Seçiniz...</option>
+                </select>
               </div>
               <div class="form-group">
                 <label class="form-label">Durum</label>
@@ -118,7 +125,14 @@ const DataPage = (() => {
             <div class="form-grid">
               <div class="form-group">
                 <label class="form-label">Operatör</label>
-                <select name="operator" class="form-control" id="dataBulkOperatorSel"></select>
+                <select name="operator" class="form-control" id="dataBulkOperatorSel" onchange="SettingsPage?.onOperatorChange(this.value, 'data', 'dataBulkPkgSel')"></select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Paket (Tarife)</label>
+                <select name="package_id" class="form-control" id="dataBulkPkgSel">
+                  <option value="">Değiştirme...</option>
+                  <option value="__CLEAR__">— Paketi Kaldır —</option>
+                </select>
               </div>
               <div class="form-group">
                 <label class="form-label">Durum</label>
@@ -184,12 +198,14 @@ const DataPage = (() => {
         'iccid': { label: 'ICCID', getVal: r => r.iccid || '—' },
         'phone_no': { label: 'Telefon No', getVal: r => r.phone_no || '—' },
         'operator': { label: 'Operatör', getVal: r => r.operator || '—' },
+        'package_name': { label: 'Paket', getVal: r => r.package_name || '—' },
         'status': { label: 'Durum', getVal: r => r.status || '—' },
         'location': { label: 'Lokasyon', getVal: r => r.location || '—' },
         'notes': { label: 'Notlar', getVal: r => r.notes || '—' }
       };
 
       if (!DataPage.colFilters) DataPage.colFilters = {};
+      const unfilteredRows = rows;
       rows = UI.filterRows(rows, DataPage.colFilters, colDefs);
       rows = UI.sortRows(rows, DataPage.colFilters._sort, colDefs);
 
@@ -204,6 +220,7 @@ const DataPage = (() => {
           <td class="td-muted" style="font-family:monospace;font-size:12px">${r.iccid || '—'}</td>
           <td>${r.phone_no || '—'}</td>
           <td>${UI.operatorBadge(r.operator)}</td>
+          <td class="td-muted" style="font-size:12px">${r.package_name ? `<span class="badge" style="background:var(--bg-secondary);color:var(--text-main)">${r.package_name}</span>` : '—'}</td>
           <td>${UI.statusBadge(r.status)}</td>
           <td><strong>${r.location || '—'}</strong></td>
           <td class="td-muted" style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.notes || '—'}</td>
@@ -221,7 +238,7 @@ const DataPage = (() => {
         </tr>
       `).join('');
       
-      UI.setupTableFilters('dataTableBody', rows, DataPage.colFilters, colDefs, () => load());
+      UI.setupTableFilters('dataTableBody', unfilteredRows, DataPage.colFilters, colDefs, () => load());
 
       UI.initSelection('dataTableBody', 'dataSelectAll', (ids) => {
         const bar = document.getElementById('bulkActionsBar');
@@ -247,6 +264,13 @@ const DataPage = (() => {
     document.getElementById('dataModalTitle').textContent = 'Data Hattını Düzenle';
     try {
       const row = await API.get(`/data/${id}`);
+      // Populate operator select first
+      await UI.fillOperatorSelect(document.getElementById('dataOperatorSel'));
+      // Then populate packages for this operator
+      if (row.operator && typeof SettingsPage !== 'undefined') {
+        await SettingsPage.onOperatorChange(row.operator, 'data', 'dataPagePkgSel');
+      }
+      // Then pre-fill form (including package_id)
       UI.setForm('dataForm', row);
       UI.openModal('dataModal');
     } catch (err) { UI.toast(err.message, 'error'); }
@@ -285,7 +309,13 @@ const DataPage = (() => {
     const ids = UI.getSelectedIds('dataTableBody');
     const formData = UI.formData('dataBulkForm');
     const data = {};
-    Object.keys(formData).forEach(key => { if (formData[key]) data[key] = formData[key]; });
+    Object.keys(formData).forEach(key => {
+      if (formData[key] === '__CLEAR__') {
+        data[key] = null; // Paketi kaldır
+      } else if (formData[key]) {
+        data[key] = formData[key];
+      }
+    });
     if (Object.keys(data).length === 0) { UI.toast('Güncellenecek herhangi bir alan doldurmadınız.', 'info'); return; }
 
     const saveBtn = document.getElementById('dataBulkSaveBtn');

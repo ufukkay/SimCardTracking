@@ -49,6 +49,7 @@ const VoicePage = (() => {
                 <th>ICCID</th>
                 <th>Telefon No</th>
                 <th>Operatör</th>
+                <th>Paket</th>
                 <th>Durum</th>
                 <th>Personel</th>
                 <th>Departman</th>
@@ -79,7 +80,13 @@ const VoicePage = (() => {
               </div>
               <div class="form-group">
                 <label class="form-label">Operatör <span style="color:var(--danger)">*</span></label>
-                <select name="operator" class="form-control" id="voiceOperatorSel" required></select>
+                <select name="operator" class="form-control" id="voiceOperatorSel" required onchange="SettingsPage?.onOperatorChange(this.value, 'voice', 'voicePagePkgSel')"></select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Paket Seç (İsteğe Bağlı)</label>
+                <select name="package_id" class="form-control" id="voicePagePkgSel">
+                  <option value="">Seçiniz...</option>
+                </select>
               </div>
               <div class="form-group">
                 <label class="form-label">Durum</label>
@@ -128,7 +135,14 @@ const VoicePage = (() => {
             <div class="form-grid">
               <div class="form-group">
                 <label class="form-label">Operatör</label>
-                <select name="operator" class="form-control" id="voiceBulkOperatorSel"></select>
+                <select name="operator" class="form-control" id="voiceBulkOperatorSel" onchange="SettingsPage?.onOperatorChange(this.value, 'voice', 'voiceBulkPkgSel')"></select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Paket (Tarife)</label>
+                <select name="package_id" class="form-control" id="voiceBulkPkgSel">
+                  <option value="">Değiştirme...</option>
+                  <option value="__CLEAR__">— Paketi Kaldır —</option>
+                </select>
               </div>
               <div class="form-group">
                 <label class="form-label">Durum</label>
@@ -213,6 +227,7 @@ const VoicePage = (() => {
         'iccid': { label: 'ICCID', getVal: r => r.iccid || '—' },
         'phone_no': { label: 'Telefon No', getVal: r => r.phone_no || '—' },
         'operator': { label: 'Operatör', getVal: r => r.operator || '—' },
+        'package_name': { label: 'Paket', getVal: r => r.package_name || '—' },
         'status': { label: 'Durum', getVal: r => r.status || '—' },
         'assigned_to': { label: 'Personel', getVal: r => r.assigned_to || '—' },
         'department': { label: 'Departman', getVal: r => r.department || '—' },
@@ -220,6 +235,7 @@ const VoicePage = (() => {
       };
 
       if (!VoicePage.colFilters) VoicePage.colFilters = {};
+      const unfilteredRows = rows;
       rows = UI.filterRows(rows, VoicePage.colFilters, colDefs);
       rows = UI.sortRows(rows, VoicePage.colFilters._sort, colDefs);
 
@@ -234,6 +250,7 @@ const VoicePage = (() => {
           <td class="td-muted" style="font-family:monospace;font-size:12px">${r.iccid || '—'}</td>
           <td>${r.phone_no || '—'}</td>
           <td>${UI.operatorBadge(r.operator)}</td>
+          <td class="td-muted" style="font-size:12px">${r.package_name ? `<span class="badge" style="background:var(--bg-secondary);color:var(--text-main)">${r.package_name}</span>` : '—'}</td>
           <td>${UI.statusBadge(r.status)}</td>
           <td><strong>${r.assigned_to || '—'}</strong></td>
           <td class="td-muted">${r.department || '—'}</td>
@@ -252,7 +269,7 @@ const VoicePage = (() => {
         </tr>
       `).join('');
       
-      UI.setupTableFilters('voiceTableBody', rows, VoicePage.colFilters, colDefs, () => load());
+      UI.setupTableFilters('voiceTableBody', unfilteredRows, VoicePage.colFilters, colDefs, () => load());
 
       UI.initSelection('voiceTableBody', 'voiceSelectAll', (ids) => {
         const bar = document.getElementById('bulkActionsBar');
@@ -278,7 +295,17 @@ const VoicePage = (() => {
     document.getElementById('voiceModalTitle').textContent = 'Ses Hattını Düzenle';
     try {
       const row = await API.get(`/voice/${id}`);
+      // 1. Önce operatör listesini doldur (async — DB'den çek)
+      await UI.fillOperatorSelect(document.getElementById('voiceOperatorSel'));
+      // 2. Sonra operatöre ait paketleri getir
+      if (row.operator && typeof SettingsPage !== 'undefined') {
+        await SettingsPage.onOperatorChange(row.operator, 'voice', 'voicePagePkgSel');
+      }
+      // 3. Form alanlarını doldur
       UI.setForm('voiceForm', row);
+      // 4. assigned_to alanını elle set et (datalist input'u setForm kaçırabilir)
+      const pInput = document.getElementById('voicePersonnelInput');
+      if (pInput) pInput.value = row.assigned_to || '';
       UI.openModal('voiceModal');
     } catch (err) { UI.toast(err.message, 'error'); }
   }
@@ -316,7 +343,13 @@ const VoicePage = (() => {
     const ids = UI.getSelectedIds('voiceTableBody');
     const formData = UI.formData('voiceBulkForm');
     const data = {};
-    Object.keys(formData).forEach(key => { if (formData[key]) data[key] = formData[key]; });
+    Object.keys(formData).forEach(key => {
+      if (formData[key] === '__CLEAR__') {
+        data[key] = null; // Paketi kaldır
+      } else if (formData[key]) {
+        data[key] = formData[key];
+      }
+    });
     if (Object.keys(data).length === 0) { UI.toast('Güncellenecek herhangi bir alan doldurmadınız.', 'info'); return; }
 
     const saveBtn = document.getElementById('voiceBulkSaveBtn');

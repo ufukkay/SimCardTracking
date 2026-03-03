@@ -29,6 +29,20 @@ db.exec(`
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
 
+  CREATE TABLE IF NOT EXISTS packages (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    type TEXT NOT NULL CHECK(type IN ('m2m', 'data', 'voice', 'general')),
+    operator_id INTEGER NOT NULL,
+    price REAL DEFAULT 0,
+    data_limit REAL DEFAULT NULL,
+    sms_limit INTEGER DEFAULT NULL,
+    minutes_limit INTEGER DEFAULT NULL,
+    features TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(operator_id) REFERENCES operators(id)
+  );
+
   CREATE TABLE IF NOT EXISTS sim_m2m (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     iccid TEXT,
@@ -38,6 +52,7 @@ db.exec(`
     plate_no TEXT,
     vehicle_type TEXT,
     notes TEXT,
+    package_id INTEGER REFERENCES packages(id),
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
@@ -50,6 +65,7 @@ db.exec(`
     status TEXT NOT NULL DEFAULT 'active',
     location TEXT,
     notes TEXT,
+    package_id INTEGER REFERENCES packages(id),
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
@@ -64,6 +80,7 @@ db.exec(`
     department TEXT,
     assigned_company TEXT,
     notes TEXT,
+    package_id INTEGER REFERENCES packages(id),
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
@@ -101,22 +118,22 @@ db.exec(`
 // CREATE INDEX IF NOT EXISTS → safe to run multiple times (idempotent).
 db.exec(`
   CREATE INDEX IF NOT EXISTS idx_m2m_plate_no     ON sim_m2m  (plate_no);
-  CREATE INDEX IF NOT EXISTS idx_m2m_phone_no      ON sim_m2m  (phone_no);
-  CREATE INDEX IF NOT EXISTS idx_m2m_iccid         ON sim_m2m  (iccid);
-  CREATE INDEX IF NOT EXISTS idx_m2m_operator      ON sim_m2m  (operator);
-  CREATE INDEX IF NOT EXISTS idx_m2m_status        ON sim_m2m  (status);
-  CREATE INDEX IF NOT EXISTS idx_m2m_vehicle_type  ON sim_m2m  (vehicle_type);
+  CREATE INDEX IF NOT EXISTS idx_m2m_phone_no     ON sim_m2m  (phone_no);
+  CREATE INDEX IF NOT EXISTS idx_m2m_iccid        ON sim_m2m  (iccid);
+  CREATE INDEX IF NOT EXISTS idx_m2m_operator     ON sim_m2m  (operator);
+  CREATE INDEX IF NOT EXISTS idx_m2m_status       ON sim_m2m  (status);
+  CREATE INDEX IF NOT EXISTS idx_m2m_vehicle_type ON sim_m2m  (vehicle_type);
 
-  CREATE INDEX IF NOT EXISTS idx_data_phone_no     ON sim_data (phone_no);
-  CREATE INDEX IF NOT EXISTS idx_data_iccid        ON sim_data (iccid);
-  CREATE INDEX IF NOT EXISTS idx_data_operator     ON sim_data (operator);
-  CREATE INDEX IF NOT EXISTS idx_data_status       ON sim_data (status);
-  CREATE INDEX IF NOT EXISTS idx_data_location     ON sim_data (location);
+  CREATE INDEX IF NOT EXISTS idx_data_phone_no    ON sim_data (phone_no);
+  CREATE INDEX IF NOT EXISTS idx_data_iccid       ON sim_data (iccid);
+  CREATE INDEX IF NOT EXISTS idx_data_operator    ON sim_data (operator);
+  CREATE INDEX IF NOT EXISTS idx_data_status      ON sim_data (status);
+  CREATE INDEX IF NOT EXISTS idx_data_location    ON sim_data (location);
 
-  CREATE INDEX IF NOT EXISTS idx_voice_phone_no    ON sim_voice (phone_no);
-  CREATE INDEX IF NOT EXISTS idx_voice_iccid       ON sim_voice (iccid);
-  CREATE INDEX IF NOT EXISTS idx_voice_operator    ON sim_voice (operator);
-  CREATE INDEX IF NOT EXISTS idx_voice_status      ON sim_voice (status);
+  CREATE INDEX IF NOT EXISTS idx_voice_phone_no   ON sim_voice (phone_no);
+  CREATE INDEX IF NOT EXISTS idx_voice_iccid      ON sim_voice (iccid);
+  CREATE INDEX IF NOT EXISTS idx_voice_operator   ON sim_voice (operator);
+  CREATE INDEX IF NOT EXISTS idx_voice_status     ON sim_voice (status);
   CREATE INDEX IF NOT EXISTS idx_voice_assigned_to ON sim_voice (assigned_to);
 
   CREATE INDEX IF NOT EXISTS idx_vehicles_plate_no ON vehicles  (plate_no);
@@ -125,6 +142,47 @@ db.exec(`
 // ─── Schema Migrations ───
 // Safely add new columns to existing databases (try/catch = idempotent)
 try { db.exec(`ALTER TABLE users ADD COLUMN permissions TEXT DEFAULT NULL`); } catch (_) {}
+try { db.exec(`ALTER TABLE sim_m2m ADD COLUMN package_id INTEGER REFERENCES packages(id)`); } catch (_) {}
+try { db.exec(`ALTER TABLE sim_data ADD COLUMN package_id INTEGER REFERENCES packages(id)`); } catch (_) {}
+try { db.exec(`ALTER TABLE sim_voice ADD COLUMN package_id INTEGER REFERENCES packages(id)`); } catch (_) {}
+try { db.exec(`ALTER TABLE packages ADD COLUMN data_limit REAL DEFAULT NULL`); } catch (_) {}
+try { db.exec(`ALTER TABLE packages ADD COLUMN sms_limit INTEGER DEFAULT NULL`); } catch (_) {}
+try { db.exec(`ALTER TABLE packages ADD COLUMN minutes_limit INTEGER DEFAULT NULL`); } catch (_) {}
+
+// ─── Packages type kısıtlaması migration: 'general' tipini destekle ───
+// SQLite'ta ALTER TABLE ile CHECK kısıtlaması değiştirilemez; recreate yapılır.
+try {
+  // Mevcut kısıtlamayı kontrol et — 'general' yoksa tabloyu yeniden yarat
+  const tableInfo = db.prepare(`SELECT sql FROM sqlite_master WHERE type='table' AND name='packages'`).get();
+  if (tableInfo && tableInfo.sql && !tableInfo.sql.includes("'general'")) {
+    db.exec(`
+      PRAGMA foreign_keys = OFF;
+      ALTER TABLE packages RENAME TO _packages_old;
+      CREATE TABLE packages (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        type TEXT NOT NULL CHECK(type IN ('m2m', 'data', 'voice', 'general')),
+        operator_id INTEGER NOT NULL,
+        price REAL DEFAULT 0,
+        data_limit REAL DEFAULT NULL,
+        sms_limit INTEGER DEFAULT NULL,
+        minutes_limit INTEGER DEFAULT NULL,
+        features TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY(operator_id) REFERENCES operators(id)
+      );
+      INSERT INTO packages SELECT * FROM _packages_old;
+      DROP TABLE _packages_old;
+      PRAGMA foreign_keys = ON;
+    `);
+    console.log('[DB] packages tablosu güncellendi: general tipi eklendi.');
+  }
+} catch (migErr) { console.warn('[DB] packages migration hatası (görmezden gelindi):', migErr.message); }
+
+// ─── Package_id Indexes (after migration so column exists) ───
+try { db.exec(`CREATE INDEX IF NOT EXISTS idx_m2m_package_id   ON sim_m2m  (package_id)`); } catch (_) {}
+try { db.exec(`CREATE INDEX IF NOT EXISTS idx_data_package_id  ON sim_data (package_id)`); } catch (_) {}
+try { db.exec(`CREATE INDEX IF NOT EXISTS idx_voice_package_id ON sim_voice (package_id)`); } catch (_) {}
 
 // Default operatörler
 const seedOperators = db.prepare(`INSERT OR IGNORE INTO operators (name) VALUES (?)`);
@@ -141,5 +199,4 @@ if (!existingAdmin) {
   console.log('Default admin oluşturuldu: admin / admin123');
 }
 
-module.exports = db;
- 
+module.exports = db; 
