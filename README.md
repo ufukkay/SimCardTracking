@@ -1,136 +1,78 @@
 <div align="center">
-  <h1>📡 SIM Card Tracking System</h1>
-  <p><strong>Multi-Language SIM Inventory Management Solution</strong></p>
+  <h1>📱 Sim Kart Takip Sistemi</h1>
+  <p>Şirket içi M2M, Data ve Ses hatlarının kolay, hızlı ve güvenilir bir şekilde takip edilmesini sağlayan modern web uygulaması.</p>
   
-  [Türkçe](#-türkçe) | [English](#-english) | [Deutsch](#-deutsch) | [Français](#-français) | [Español](#-español) | [Italiano](#-italiano) | [Português](#-português) | [Русский](#-русский) | [中文](#-中文) | [العربية](#-العربية)
+  [Türkçe](#-türkçe) | [English](#-english) | [Deutsch](#-deutsch) | [Français](#-français) | [Español](#-español)
 </div>
+
+---
+
+## 📸 Ekran Görüntüleri / Screenshots
+
+|                              Giriş Ekranı (Login)                              |                            Panel Görünümü (Dashboard)                            |
+| :----------------------------------------------------------------------------: | :------------------------------------------------------------------------------: |
+| <img src="https://via.placeholder.com/600x350?text=Giriş+Ekranı" width="100%"> | <img src="https://via.placeholder.com/600x350?text=Panel+Görünümü" width="100%"> |
 
 ---
 
 ## 🇹🇷 Türkçe
 
-### Proje Hakkında
+### 🎯 Projenin Amacı
 
-Şirket içi M2M, Data ve Ses hatlarının takibi için geliştirilmiş modern, hızlı ve güvenilir bir web uygulamasıdır.
+Şirket envanterindeki **M2M**, **Data** ve **Ses** hatlarının tek bir merkezden yönetilmesini sağlar. Kimin hangi hattı kullandığını, ICCID bilgilerini ve operatör detaylarını anlık takip edebilirsiniz.
 
-- **Merkezi Yönetim**: Tüm SIM envanterini tek noktadan yönetin.
-- **Dinamik Filtreleme**: ICCID, operatör ve personel bazlı anlık arama.
-- **Gelişmiş Arayüz**: Google Sheets tarzı minimal ve kullanıcı dostu tasarım.
+### 🚀 Kurulum
 
-### Hızlı Kurulum
+1. `git clone https://github.com/ufukkay/SimCardTracking.git`
+2. `npm install`
+3. `npm start`
 
-```bash
-git clone https://github.com/ufukkay/SimCardTracking.git
-cd SimCardTracking
-npm install
-npm start
-```
-
-Varsayılan: `admin` / `admin123`
+- **Giriş:** `admin` / `admin123`
 
 ---
 
 ## 🇺🇸 English
 
-### About Project
+### 🎯 Project Purpose
 
-A modern, fast, and reliable web application designed for tracking internal M2M, Data, and Voice lines.
+Enables centralized management of **M2M**, **Data**, and **Voice** lines. Track who is using which line, ICCID information, and operator details in real-time.
 
-- **Centralized Management**: Manage your entire SIM inventory from one place.
-- **Dynamic Filtering**: Instant search by ICCID, operator, and personnel.
-- **Advanced UI**: Google Sheets style minimal and user-friendly design.
+### 🚀 Setup
 
-### Quick Start
+1. `git clone https://github.com/ufukkay/SimCardTracking.git`
+2. `npm install`
+3. `npm start`
 
-```bash
-git clone https://github.com/ufukkay/SimCardTracking.git
-cd SimCardTracking
-npm install
-npm start
-```
-
-Default: `admin` / `admin123`
+- **Login:** `admin` / `admin123`
 
 ---
 
 ## 🇩🇪 Deutsch
 
-### Über das Projekt
+### 🎯 Projektziel
 
-Eine moderne, schnelle und zuverlässige Webanwendung zur Verfolgung interner M2M-, Daten- und Sprachleitungen.
-
-- **Zentrale Verwaltung**: Verwalten Sie Ihren gesamten SIM-Bestand an einem Ort.
-- **Dynamische Filterung**: Sofortige Suche nach ICCID, Betreiber und Personal.
-- **Benutzeroberfläche**: Minimalistisches Design im Google Sheets-Stil.
+Ermöglicht die zentrale Verwaltung von **M2M-**, **Daten-** und **Sprachleitungen**. Verfolgen Sie in Echtzeit, wer welche Leitung nutzt, ICCID-Informationen und Betreiberdetails.
 
 ---
 
 ## 🇫🇷 Français
 
-### À propos du projet
+### 🎯 Objectif du projet
 
-Une application web moderne, rapide et fiable conçue pour le suivi des lignes M2M, Data et Voix internes.
-
-- **Gestion centralisée**: Gérez tout votre inventaire SIM à partir d'un seul endroit.
-- **Filtrage dynamique**: Recherche instantanée par ICCID, opérateur et personnel.
+Permet une gestion centralisée des lignes **M2M**, **Données** et **Vocales**. Suivez en temps réel qui utilise quelle ligne, les informations ICCID et les détails de l'opérateur.
 
 ---
 
 ## 🇪🇸 Español
 
-### Sobre el proyecto
+### 🎯 Propósito del Proyecto
 
-Una aplicación web moderna, rápida y fiable diseñada para el seguimiento de líneas internas de M2M, Datos y Voz.
-
-- **Gestión centralizada**: Gestione todo su inventario de SIM desde un solo lugar.
-- **Filtrado dinámico**: Búsqueda instantánea por ICCID, operador y personal.
+Permite la gestión centralizada de líneas **M2M**, **Datos** y **Voz**. Rastree en tiempo real quién está usando qué línea, la información de ICCID y los detalles del operador.
 
 ---
 
-## 🇮🇹 Italiano
+## 🌍 IIS Deployment & Details
 
-### Informazioni sul progetto
-
-Un'applicazione web moderna, veloce e affidabile progettata per il monitoraggio delle linee interne M2M, Dati e Voce.
-
-- **Gestione centralizzata**: Gestisci l'intero inventario SIM da un unico posto.
-
----
-
-## 🇵🇹 Português
-
-### Sobre o projeto
-
-Uma aplicação web moderna, rápida e fiável concebida para o rastreio de linhas internas de M2M, Dados e Voz.
-
----
-
-## 🇷🇺 Русский
-
-### О проекте
-
-Современное, быстрое и надежное веб-приложение, предназначенное для отслеживания внутренних линий M2M, передачи данных и голоса.
-
----
-
-## 中文 (Chinese)
-
-### 关于项目
-
-一个现代、快速、可靠的 Web 应用程序，专为跟踪内部 M2M、数据和语音线路而设计。
-
----
-
-## العربية (Arabic)
-
-### عن المشروع
-
-تطبيق ويب حديث وسريع وموثوق مصمم لتتبع خطوط M2M والبيانات والصوت الداخلية.
-
----
-
-## 🚀 Deployment (IIS)
-
-Refer to the [original documentation](file:///c:/Users/ufuk.kaya/Desktop/Projeler/SimCardTracking/README.md) for detailed IIS setup and `deploy-iis.ps1` usage.
+For advanced setup on Windows Server via IIS, please refer to our [Detailed Guide](file:///c:/Users/ufuk.kaya/Desktop/Projeler/SimCardTracking/README.md).
 
 _Developed by Ufuk Kaya_
