@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../database/db');
 const { authMiddleware, canView, canEdit } = require('../middleware/auth');
+const { logActivity } = require('../middleware/logger');
 
 router.use(authMiddleware);
 
@@ -45,6 +46,8 @@ router.post('/', canEdit('settings'), (req, res) => {
     const pMin = minutes_limit !== '' && minutes_limit != null ? parseInt(minutes_limit, 10) : null;
     
     const info = stmt.run(name, type, operator_id, parsedPrice, pData, pSms, pMin, features || '');
+
+    logActivity(req, 'CREATE', 'PACKAGES', info.lastInsertRowid, { name, type });
     res.status(201).json({ id: info.lastInsertRowid });
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -75,6 +78,8 @@ router.put('/:id', canEdit('settings'), (req, res) => {
     const pMin = minutes_limit !== '' && minutes_limit != null ? parseInt(minutes_limit, 10) : null;
 
     stmt.run(name, type, operator_id, parsedPrice, pData, pSms, pMin, features || '', req.params.id);
+
+    logActivity(req, 'UPDATE', 'PACKAGES', req.params.id, { name, type });
     res.json({ success: true });
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -109,6 +114,8 @@ router.delete('/:id', canEdit('settings'), (req, res) => {
     }
 
     db.prepare('DELETE FROM packages WHERE id = ?').run(id);
+
+    logActivity(req, 'DELETE', 'PACKAGES', id);
     res.json({ success: true });
   } catch (err) {
     res.status(400).json({ error: err.message });

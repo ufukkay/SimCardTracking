@@ -75,6 +75,7 @@
     voice:    { title: 'Ses Hatları',  render: () => canView('voice') ? VoicePage.render()   : renderAccessDenied('Ses Hatları') },
     reports:  { title: 'Raporlar',     render: () => ReportsPage.render() },
     settings: { title: 'Ayarlar',      render: () => SettingsPage.render() },
+    logs:     { title: 'İşlem Geçmişi', render: () => (currentUser.role === 'admin') ? LogsPage.render() : renderAccessDenied('İşlem Geçmişi') },
   };
 
   // ─── Navigate ─────────────────────────────────────────────────────────────

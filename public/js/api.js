@@ -72,7 +72,8 @@ const API = (() => {
     deleteOperator:(id)  => request('DELETE', `/operators/${id}`),
 
     // Packages
-    getPackages:   ()    => request('GET',    '/packages'),
+    getPackages: (q) => request('GET', `/packages${q || ''}`),
+    getLogs: (q) => request('GET', `/logs${q || ''}`),
     addPackage:    (d)   => request('POST',   '/packages', d),
     updatePackage: (id,d)=> request('PUT',    `/packages/${id}`, d),
     deletePackage: (id)  => request('DELETE', `/packages/${id}`),

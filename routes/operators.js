@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../database/db');
 const { authMiddleware, adminOnly } = require('../middleware/auth');
+const { logActivity } = require('../middleware/logger');
 
 router.use(authMiddleware);
 
@@ -15,12 +16,16 @@ router.post('/', adminOnly, (req, res) => {
   const existing = db.prepare('SELECT id FROM operators WHERE name = ?').get(name);
   if (existing) return res.status(409).json({ message: 'Bu operatör zaten mevcut.' });
   const result = db.prepare('INSERT INTO operators (name) VALUES (?)').run(name);
+
+  logActivity(req, 'CREATE', 'OPERATORS', result.lastInsertRowid, { name });
   res.status(201).json({ id: result.lastInsertRowid, message: 'Operatör eklendi.' });
 });
 
 router.delete('/:id', adminOnly, (req, res) => {
   const result = db.prepare('DELETE FROM operators WHERE id = ?').run(req.params.id);
   if (result.changes === 0) return res.status(404).json({ message: 'Operatör bulunamadı.' });
+
+  logActivity(req, 'DELETE', 'OPERATORS', req.params.id);
   res.json({ message: 'Operatör silindi.' });
 });
 

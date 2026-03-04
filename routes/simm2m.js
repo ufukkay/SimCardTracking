@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../database/db');
 const { authMiddleware, canView, canEdit } = require('../middleware/auth');
+const { logActivity } = require('../middleware/logger');
 
 router.use(authMiddleware);
 
@@ -56,6 +57,8 @@ router.post('/', canEdit('m2m'), (req, res) => {
     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
   `).run(iccid || null, phone_no || null, operator, status || 'active',
          plate_no || null, vehicle_type || null, notes || null, package_id || null);
+  
+  logActivity(req, 'CREATE', 'M2M', result.lastInsertRowid, { iccid, phone_no, plate_no });
   res.status(201).json({ id: result.lastInsertRowid, message: 'M2M hattı eklendi.' });
 });
 
@@ -72,6 +75,8 @@ router.put('/:id', canEdit('m2m'), (req, res) => {
   `).run(iccid || null, phone_no || null, operator, status,
          plate_no || null, vehicle_type || null, notes || null, package_id || null, req.params.id);
   if (result.changes === 0) return res.status(404).json({ message: 'Kayıt bulunamadı.' });
+  
+  logActivity(req, 'UPDATE', 'M2M', req.params.id, { iccid, phone_no, plate_no });
   res.json({ message: 'M2M hattı güncellendi.' });
 });
 
@@ -79,6 +84,8 @@ router.put('/:id', canEdit('m2m'), (req, res) => {
 router.delete('/:id', canEdit('m2m'), (req, res) => {
   const result = db.prepare('DELETE FROM sim_m2m WHERE id = ?').run(req.params.id);
   if (result.changes === 0) return res.status(404).json({ message: 'Kayıt bulunamadı.' });
+  
+  logActivity(req, 'DELETE', 'M2M', req.params.id);
   res.json({ message: 'M2M hattı silindi.' });
 });
 
@@ -89,6 +96,8 @@ router.post('/bulk-delete', canEdit('m2m'), (req, res) => {
   
   const placeholders = ids.map(() => '?').join(',');
   const result = db.prepare(`DELETE FROM sim_m2m WHERE id IN (${placeholders})`).run(...ids);
+  
+  logActivity(req, 'BULK_DELETE', 'M2M', ids.join(','), { count: result.changes });
   res.json({ message: `${result.changes} kayıt başarıyla silindi.` });
 });
 
@@ -117,6 +126,7 @@ router.post('/bulk-update', canEdit('m2m'), (req, res) => {
   const query = `UPDATE sim_m2m SET ${fields.join(', ')} WHERE id IN (${placeholders})`;
   const result = db.prepare(query).run(...params, ...ids);
   
+  logActivity(req, 'BULK_UPDATE', 'M2M', ids.join(','), { count: result.changes, updates: data });
   res.json({ message: `${result.changes} kayıt başarıyla güncellendi.` });
 });
 

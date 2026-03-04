@@ -3,6 +3,7 @@ const router = express.Router();
 const db = require('../database/db');
 const { authMiddleware, adminOnly } = require('../middleware/auth');
 const bcrypt = require('bcryptjs');
+const { logActivity } = require('../middleware/logger');
 
 router.use(authMiddleware);
 
@@ -28,6 +29,8 @@ router.post('/', adminOnly, (req, res) => {
     INSERT INTO users (username, first_name, last_name, company, email, phone, role, password_hash, permissions)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(username, first_name, last_name, company, email, phone, role || 'user', hash, permsJson);
+
+  logActivity(req, 'CREATE', 'USERS', result.lastInsertRowid, { username, role });
   res.status(201).json({ id: result.lastInsertRowid, message: 'Kullanıcı oluşturuldu.' });
 });
 
@@ -43,6 +46,8 @@ router.put('/:id', adminOnly, (req, res) => {
     UPDATE users SET first_name=?, last_name=?, company=?, email=?, phone=?, role=?, permissions=? WHERE id=?
   `).run(first_name, last_name, company, email, phone, role, permsJson, req.params.id);
   if (result.changes === 0) return res.status(404).json({ message: 'Kullanıcı bulunamadı.' });
+
+  logActivity(req, 'UPDATE', 'USERS', req.params.id, { first_name, last_name, role });
   res.json({ message: 'Kullanıcı güncellendi.' });
 });
 
@@ -52,6 +57,8 @@ router.delete('/:id', adminOnly, (req, res) => {
     return res.status(400).json({ message: 'Kendi hesabınızı silemezsiniz.' });
   const result = db.prepare('DELETE FROM users WHERE id = ?').run(req.params.id);
   if (result.changes === 0) return res.status(404).json({ message: 'Kullanıcı bulunamadı.' });
+
+  logActivity(req, 'DELETE', 'USERS', req.params.id);
   res.json({ message: 'Kullanıcı silindi.' });
 });
 
@@ -63,6 +70,8 @@ router.put('/me/password', (req, res) => {
     return res.status(400).json({ message: 'Mevcut şifre hatalı.' });
   const hash = bcrypt.hashSync(new_password, 10);
   db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(hash, req.user.id);
+
+  logActivity(req, 'PASSWORD_CHANGE', 'USERS', req.user.id);
   res.json({ message: 'Şifre güncellendi.' });
 });
 

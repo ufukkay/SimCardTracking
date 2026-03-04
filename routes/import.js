@@ -4,6 +4,7 @@ const XLSX = require("xlsx");
 const multer = require("multer");
 const db = require("../database/db");
 const { authMiddleware } = require("../middleware/auth");
+const { logActivity } = require("../middleware/logger");
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -214,6 +215,13 @@ router.post("/excel/:type", authMiddleware, upload.single("file"), (req, res) =>
     });
     insertMany(rows);
 
+    logActivity(req, 'IMPORT_EXCEL', 'IMPORT', null, { 
+      type, 
+      filename: req.file.originalname, 
+      count: results.inserted, 
+      errorCount: results.errors.length 
+    });
+
     res.json({ message: `${results.inserted} kayıt eklendi.`, ...results });
   } catch (e) {
     res.status(400).json({ message: "Excel okunamadı: " + e.message });
@@ -305,6 +313,13 @@ router.post("/json/:type", authMiddleware, (req, res) => {
     });
   });
   insertMany(rows);
+
+  logActivity(req, 'IMPORT_JSON', 'IMPORT', null, { 
+    type, 
+    count: inserted, 
+    errorCount: errors.length 
+  });
+
   res.json({ message: `${inserted} kayıt eklendi.`, inserted, errors });
 });
 

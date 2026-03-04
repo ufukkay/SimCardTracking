@@ -6,6 +6,7 @@ const db = require('../database/db');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'simkart_gizli_anahtar_2024';
 const JWT_EXPIRES = '8h';
+const { logActivity } = require('../middleware/logger');
 
 // POST /api/auth/login
 router.post('/login', (req, res) => {
@@ -14,18 +15,26 @@ router.post('/login', (req, res) => {
     return res.status(400).json({ message: 'Kullanıcı adı ve şifre gerekli.' });
 
   const user = db.prepare('SELECT * FROM users WHERE username = ?').get(username);
-  if (!user)
+  if (!user) {
+    logActivity(req, 'LOGIN_FAIL', 'AUTH', null, { username, reason: 'Kullanıcı bulunamadı' });
     return res.status(401).json({ message: 'Kullanıcı adı veya şifre hatalı.' });
+  }
 
   const valid = bcrypt.compareSync(password, user.password_hash);
-  if (!valid)
+  if (!valid) {
+    logActivity(req, 'LOGIN_FAIL', 'AUTH', null, { username: user.username, reason: 'Hatalı şifre' });
     return res.status(401).json({ message: 'Kullanıcı adı veya şifre hatalı.' });
+  }
 
   const token = jwt.sign(
     { id: user.id, username: user.username, role: user.role },
     JWT_SECRET,
     { expiresIn: JWT_EXPIRES }
   );
+
+  // Set req.user temporarily for logging
+  req.user = { id: user.id, username: user.username, role: user.role };
+  logActivity(req, 'LOGIN', 'AUTH', user.id, 'Başarılı giriş');
 
   res.json({
     token,

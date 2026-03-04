@@ -111,6 +111,19 @@ db.exec(`
     notes TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
+
+  CREATE TABLE IF NOT EXISTS activity_logs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER,
+    username TEXT,
+    action TEXT NOT NULL,
+    module TEXT NOT NULL,
+    target_id TEXT,
+    details TEXT,
+    ip_address TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(user_id) REFERENCES users(id)
+  );
 `);
 
 // ─── Performance Indexes ───
@@ -137,6 +150,10 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_voice_assigned_to ON sim_voice (assigned_to);
 
   CREATE INDEX IF NOT EXISTS idx_vehicles_plate_no ON vehicles  (plate_no);
+  CREATE INDEX IF NOT EXISTS idx_logs_user_id      ON activity_logs (user_id);
+  CREATE INDEX IF NOT EXISTS idx_logs_action       ON activity_logs (action);
+  CREATE INDEX IF NOT EXISTS idx_logs_module       ON activity_logs (module);
+  CREATE INDEX IF NOT EXISTS idx_logs_created_at   ON activity_logs (created_at);
 `);
 
 // ─── Schema Migrations ───

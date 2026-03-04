@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../database/db');
 const { authMiddleware, adminOnly } = require('../middleware/auth');
+const { logActivity } = require('../middleware/logger');
 
 router.use(authMiddleware);
 
@@ -25,6 +26,8 @@ router.post('/', adminOnly, (req, res) => {
   const existing = db.prepare('SELECT id FROM vehicles WHERE plate_no = ?').get(plate_no);
   if (existing) return res.status(409).json({ message: 'Bu plaka zaten kayıtlı.' });
   const result = db.prepare('INSERT INTO vehicles (plate_no, vehicle_type, notes) VALUES (?, ?, ?)').run(plate_no, vehicle_type, notes);
+
+  logActivity(req, 'CREATE', 'VEHICLES', result.lastInsertRowid, { plate_no, vehicle_type });
   res.status(201).json({ id: result.lastInsertRowid, message: 'Araç eklendi.' });
 });
 
@@ -32,12 +35,16 @@ router.put('/:id', adminOnly, (req, res) => {
   const { plate_no, vehicle_type, notes } = req.body;
   const result = db.prepare('UPDATE vehicles SET plate_no=?, vehicle_type=?, notes=? WHERE id=?').run(plate_no, vehicle_type, notes, req.params.id);
   if (result.changes === 0) return res.status(404).json({ message: 'Araç bulunamadı.' });
+
+  logActivity(req, 'UPDATE', 'VEHICLES', req.params.id, { plate_no, vehicle_type });
   res.json({ message: 'Araç güncellendi.' });
 });
 
 router.delete('/:id', adminOnly, (req, res) => {
   const result = db.prepare('DELETE FROM vehicles WHERE id = ?').run(req.params.id);
   if (result.changes === 0) return res.status(404).json({ message: 'Araç bulunamadı.' });
+
+  logActivity(req, 'DELETE', 'VEHICLES', req.params.id);
   res.json({ message: 'Araç silindi.' });
 });
 

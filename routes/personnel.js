@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../database/db');
 const { authMiddleware, adminOnly } = require('../middleware/auth');
+const { logActivity } = require('../middleware/logger');
 
 router.use(authMiddleware);
 
@@ -27,6 +28,8 @@ router.post('/', adminOnly, (req, res) => {
   const { first_name, last_name, department, company, phone, notes } = req.body;
   if (!first_name || !last_name) return res.status(400).json({ message: 'Ad ve soyad zorunludur.' });
   const result = db.prepare('INSERT INTO personnel (first_name, last_name, department, company, phone, notes) VALUES (?, ?, ?, ?, ?, ?)').run(first_name, last_name, department, company, phone, notes);
+
+  logActivity(req, 'CREATE', 'PERSONNEL', result.lastInsertRowid, { first_name, last_name });
   res.status(201).json({ id: result.lastInsertRowid, message: 'Personel eklendi.' });
 });
 
@@ -34,12 +37,16 @@ router.put('/:id', adminOnly, (req, res) => {
   const { first_name, last_name, department, company, phone, notes } = req.body;
   const result = db.prepare('UPDATE personnel SET first_name=?, last_name=?, department=?, company=?, phone=?, notes=? WHERE id=?').run(first_name, last_name, department, company, phone, notes, req.params.id);
   if (result.changes === 0) return res.status(404).json({ message: 'Personel bulunamadı.' });
+
+  logActivity(req, 'UPDATE', 'PERSONNEL', req.params.id, { first_name, last_name });
   res.json({ message: 'Personel güncellendi.' });
 });
 
 router.delete('/:id', adminOnly, (req, res) => {
   const result = db.prepare('DELETE FROM personnel WHERE id = ?').run(req.params.id);
   if (result.changes === 0) return res.status(404).json({ message: 'Personel bulunamadı.' });
+
+  logActivity(req, 'DELETE', 'PERSONNEL', req.params.id);
   res.json({ message: 'Personel silindi.' });
 });
 

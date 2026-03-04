@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../database/db');
 const { authMiddleware, canView, canEdit } = require('../middleware/auth');
+const { logActivity } = require('../middleware/logger');
 
 // Helper function (assuming it's defined elsewhere or will be added)
 const syncPersonnel = (firstName, lastName, department, company) => {
@@ -52,6 +53,8 @@ router.post('/', canEdit('voice'), (req, res) => {
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(iccid || null, phone_no || null, operator, status || 'active',
          finalAssignedTo, department || null, assigned_company || null, notes || null, package_id || null);
+  
+  logActivity(req, 'CREATE', 'VOICE', result.lastInsertRowid, { iccid, phone_no, assigned_to: finalAssignedTo });
   res.status(201).json({ id: result.lastInsertRowid, message: 'Ses hattı eklendi.' });
 });
 
@@ -68,12 +71,16 @@ router.put('/:id', canEdit('voice'), (req, res) => {
   `).run(iccid || null, phone_no || null, operator, status,
          finalAssignedTo, department || null, assigned_company || null, notes || null, package_id || null, req.params.id);
   if (result.changes === 0) return res.status(404).json({ message: 'Kayıt bulunamadı.' });
+  
+  logActivity(req, 'UPDATE', 'VOICE', req.params.id, { iccid, phone_no, assigned_to: finalAssignedTo });
   res.json({ message: 'Ses hattı güncellendi.' });
 });
 
 router.delete('/:id', canEdit('voice'), (req, res) => {
   const result = db.prepare('DELETE FROM sim_voice WHERE id = ?').run(req.params.id);
   if (result.changes === 0) return res.status(404).json({ message: 'Kayıt bulunamadı.' });
+  
+  logActivity(req, 'DELETE', 'VOICE', req.params.id);
   res.json({ message: 'Ses hattı silindi.' });
 });
 
@@ -83,6 +90,8 @@ router.post('/bulk-delete', canEdit('voice'), (req, res) => {
   if (!Array.isArray(ids) || ids.length === 0) return res.status(400).json({ message: 'Geçersiz ID listesi.' });
   const placeholders = ids.map(() => '?').join(',');
   const result = db.prepare(`DELETE FROM sim_voice WHERE id IN (${placeholders})`).run(...ids);
+  
+  logActivity(req, 'BULK_DELETE', 'VOICE', ids.join(','), { count: result.changes });
   res.json({ message: `${result.changes} kayıt başarıyla silindi.` });
 });
 
@@ -107,6 +116,8 @@ router.post('/bulk-update', canEdit('voice'), (req, res) => {
   const placeholders = ids.map(() => '?').join(',');
   const query = `UPDATE sim_voice SET ${fields.join(', ')} WHERE id IN (${placeholders})`;
   const result = db.prepare(query).run(...params, ...ids);
+  
+  logActivity(req, 'BULK_UPDATE', 'VOICE', ids.join(','), { count: result.changes, updates: data });
   res.json({ message: `${result.changes} kayıt başarıyla güncellendi.` });
 });
 

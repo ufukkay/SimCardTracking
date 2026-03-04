@@ -26,6 +26,7 @@ app.use("/api/vehicles", require("./routes/vehicles"));
 app.use("/api/locations", require("./routes/locations"));
 app.use("/api/personnel", require("./routes/personnel"));
 app.use("/api/packages", require("./routes/packages"));
+app.use("/api/logs", require("./routes/logs"));
 app.use("/api/admin/update", require("./routes/update"));
 
 
