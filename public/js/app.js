@@ -117,6 +117,105 @@
     navigate(page, false); // Don't pushState again
   });
 
+  // ─── Theme Toggle ────────────────────────────────────────────────────────
+  const themeToggle = document.getElementById('themeToggle');
+  const themeIcon = document.getElementById('themeIcon');
+  const body = document.body;
+
+  function setTheme(isDark) {
+    body.classList.toggle('dark-theme', isDark);
+    localStorage.setItem('simtrack_theme', isDark ? 'dark' : 'light');
+    themeIcon.innerHTML = isDark 
+      ? '<circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>'
+      : '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>';
+  }
+
+  themeToggle.addEventListener('click', () => {
+    const isDark = !body.classList.contains('dark-theme');
+    setTheme(isDark);
+  });
+
+  // Load saved theme
+  const savedTheme = localStorage.getItem('simtrack_theme');
+  if (savedTheme === 'dark') setTheme(true);
+
+  // ─── Timeline Global Function ─────────────────────────────────────────────
+  window.openTimeline = async (targetId, title = 'SIM Geçmişi') => {
+    const container = document.getElementById('timelineContent');
+    container.innerHTML = UI.loading();
+    document.querySelector('#timelineModal .modal-title').textContent = title;
+    UI.openModal('timelineModal');
+
+    try {
+      // Fetch logs for this specific targetId
+      const logs = await API.getLogs(`?targetId=${targetId}&limit=50`);
+      
+      if (!logs || logs.length === 0) {
+        container.innerHTML = UI.emptyState('⏳', 'Henüz geçmiş kaydı bulunmuyor.', 'Bu kart üzerindeki işlemler burada listelenecektir.');
+        return;
+      }
+
+      const actionTranslations = {
+        'CREATE': 'Kart Oluşturuldu',
+        'UPDATE': 'Kart Güncellendi',
+        'DELETE': 'Kart Silindi',
+        'BULK_UPDATE': 'Toplu Güncelleme Uygulandı'
+      };
+
+      const keyTranslations = {
+        'iccid': 'ICCID',
+        'phone_no': 'Telefon No',
+        'plate_no': 'Plaka',
+        'operator': 'Operatör',
+        'vehicle_type': 'Araç Tipi',
+        'status': 'Durum',
+        'package_id': 'Paket ID',
+        'assigned_to': 'Personel',
+        'location': 'Lokasyon'
+      };
+
+      container.innerHTML = logs.map(log => {
+        const date = new Date(log.created_at).toLocaleString('tr-TR');
+        let detailsHtml = '';
+        
+        try {
+          if (log.details && log.details.startsWith('{')) {
+            const d = JSON.parse(log.details);
+            detailsHtml = Object.entries(d).map(([k, v]) => {
+              const label = keyTranslations[k] || k;
+              let val = v;
+              if (k === 'status') {
+                const statusMap = { 'active': 'Aktif', 'passive': 'Pasif', 'spare': 'Yedek' };
+                val = statusMap[v] || v;
+              }
+              return `• ${label}: ${val}`;
+            }).join('<br>');
+          } else {
+            detailsHtml = log.details || '-';
+          }
+        } catch(e) { detailsHtml = log.details || '-'; }
+
+        return `
+          <div class="timeline-item">
+            <div class="timeline-dot"></div>
+            <span class="timeline-date">${date}</span>
+            <div class="timeline-card">
+              <div class="timeline-title">${actionTranslations[log.action] || log.action}</div>
+              <div class="timeline-details">${detailsHtml}</div>
+              <div class="timeline-user">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                ${log.username}
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+    } catch (err) {
+      container.innerHTML = `<p style="color:var(--danger);padding:20px;text-align:center">${err.message}</p>`;
+    }
+  };
+
   // ─── Initial page ─────────────────────────────────────────────────────────
   const hash = window.location.hash.replace('#', '');
   navigate(hash || 'm2m', false);

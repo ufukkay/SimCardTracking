@@ -172,6 +172,11 @@
         <header class="topbar">
           <h2 class="topbar-title" id="pageTitle">—</h2>
           <div class="topbar-right" id="topbarActions"></div>
+          <div class="theme-toggle" id="themeToggle" title="Tema Değiştir">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="themeIcon">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+          </div>
         </header>
         <div class="page-content" id="pageContent">
           <div class="loading-overlay"><div class="spinner"></div></div>
@@ -190,5 +195,22 @@
     <script src="/js/pages/settings.js"></script>
     <script src="/js/pages/logs.js"></script>
     <script src="/js/app.js"></script>
+    <!-- Timeline Modal -->
+    <div class="modal-overlay" id="timelineModal">
+      <div class="modal" style="max-width: 600px;">
+        <div class="modal-header">
+          <span class="modal-title">SIM Kart Geçmişi</span>
+          <button class="modal-close" onclick="UI.closeModal('timelineModal')">×</button>
+        </div>
+        <div class="modal-body">
+          <div id="timelineContent" class="timeline">
+            <!-- Timeline items will be loaded here -->
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" onclick="UI.closeModal('timelineModal')">Kapat</button>
+        </div>
+      </div>
+    </div>
   </body>
 </html>

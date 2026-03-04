@@ -259,9 +259,12 @@ const VoicePage = (() => {
           <td><strong>${r.assigned_to || '—'}</strong></td>
           <td class="td-muted">${r.department || '—'}</td>
           <td class="td-muted">${r.assigned_company || '—'}</td>
-          <td>
-            <div class="action-buttons">
-              ${window.AppPerms?.canEdit('voice') ? `
+            <td>
+              <div class="action-buttons">
+                <button class="btn btn-secondary btn-sm btn-icon" title="Geçmiş" onclick="window.openTimeline(${r.id}, 'Ses Hattı Geçmişi: ${r.assigned_to}')">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                </button>
+                ${window.AppPerms?.canEdit('voice') ? `
               <button class="btn btn-secondary btn-sm btn-icon" title="Düzenle" onclick="VoicePage.openEdit(${r.id})">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
               </button>

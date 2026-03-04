@@ -20,8 +20,8 @@ function logActivity(req, action, module, targetId = null, details = null) {
     }
 
     const stmt = db.prepare(`
-      INSERT INTO activity_logs (user_id, username, action, module, target_id, details, ip_address)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO activity_logs (user_id, username, action, module, target_id, details, ip_address, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now', 'localtime'))
     `);
     
     stmt.run(userId, username, action, module, targetId ? String(targetId) : null, detailStr, ipAddress);

@@ -224,9 +224,12 @@ const DataPage = (() => {
           <td>${UI.statusBadge(r.status)}</td>
           <td><strong>${r.location || '—'}</strong></td>
           <td class="td-muted" style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.notes || '—'}</td>
-          <td>
-            <div class="action-buttons">
-              ${window.AppPerms?.canEdit('data') ? `
+            <td>
+              <div class="action-buttons">
+                <button class="btn btn-secondary btn-sm btn-icon" title="Geçmiş" onclick="window.openTimeline(${r.id}, 'Data Hattı Geçmişi: ${r.location}')">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                </button>
+                ${window.AppPerms?.canEdit('data') ? `
               <button class="btn btn-secondary btn-sm btn-icon" title="Düzenle" onclick="DataPage.openEdit(${r.id})">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
               </button>

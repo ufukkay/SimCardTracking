@@ -180,17 +180,23 @@ const LogsPage = {
 
   getActionBadge: (action) => {
     let cls = 'badge-muted';
-    let label = action;
+    const actionMap = {
+      'CREATE': { cls: 'badge-success', label: 'EKLEME' },
+      'UPDATE': { cls: 'badge-info', label: 'GÜNCELLEME' },
+      'DELETE': { cls: 'badge-danger', label: 'SİLME' },
+      'LOGIN': { cls: 'badge-primary', label: 'GİRİŞ' },
+      'LOGIN_FAIL': { cls: 'badge-danger', label: 'HATALI GİRİŞ' },
+      'PASSWORD_CHANGE': { cls: 'badge-info', label: 'ŞİFRE DEĞİŞİMİ' },
+      'BULK_DELETE': { cls: 'badge-danger', label: 'TOPLU SİLME' },
+      'BULK_UPDATE': { cls: 'badge-info', label: 'TOPLU GÜNCELL.' },
+      'IMPORT_EXCEL': { cls: 'badge-primary', label: 'EXCEL AKTAR.' },
+      'IMPORT_JSON': { cls: 'badge-primary', label: 'JSON AKTAR.' }
+    };
 
-    if (action === 'CREATE') { cls = 'badge-success'; label = 'EKLEME'; }
-    if (action === 'UPDATE') { cls = 'badge-info'; label = 'GÜNCELLEME'; }
-    if (action === 'DELETE' || action === 'LOGIN_FAIL' || action === 'BULK_DELETE') { cls = 'badge-danger'; label = action.replace('_', ' '); }
-    if (action === 'LOGIN') { cls = 'badge-primary'; label = 'GİRİŞ'; }
-    if (action === 'PASSWORD_CHANGE') { cls = 'badge-info'; label = 'ŞİFRE DEĞİŞİMİ'; }
-    if (action === 'BULK_UPDATE') { cls = 'badge-info'; label = 'TOPLU GÜNCELL.'; }
-    if (action === 'IMPORT_EXCEL') { cls = 'badge-primary'; label = 'EXCEL AKTAR.'; }
-    if (action === 'IMPORT_JSON') { cls = 'badge-primary'; label = 'JSON AKTAR.'; }
+    const match = actionMap[action];
+    const label = match ? match.label : action;
+    const finalCls = match ? match.cls : 'badge-muted';
     
-    return `<span class="badge ${cls}">${label}</span>`;
+    return `<span class="badge ${finalCls}">${label}</span>`;
   }
 };

@@ -1173,3 +1173,194 @@ input[type="checkbox"] {
   width: 15px;
   height: 15px;
 }
+
+/* ─── DARK THEME OVERRIDES ─── */
+body.dark-theme {
+  --bg-primary: #202124; /* Google Dark Background */
+  --bg-secondary: #292a2d; /* Google Dark Surface */
+  --bg-card: #292a2d;
+  --bg-hover: #3c4043;
+  --border: #3c4043;
+  --border-light: #292a2d;
+
+  --text-primary: #e8eaed;
+  --text-secondary: #9aa0a6;
+  --text-muted: #70757a;
+
+  --accent: #8ab4f8; /* Google Dark Blue */
+  --accent-hover: #aecbfa;
+  --accent-light: rgba(138, 180, 248, 0.1);
+
+  --success: #81c995;
+  --success-light: rgba(129, 201, 149, 0.1);
+  --warning: #fdd663;
+  --warning-light: rgba(253, 214, 99, 0.1);
+  --danger: #f28b82;
+  --danger-light: rgba(242, 139, 130, 0.1);
+}
+
+body.dark-theme .sidebar,
+body.dark-theme .topbar,
+body.dark-theme .card,
+body.dark-theme .stat-grid,
+body.dark-theme .stat-card,
+body.dark-theme .table-container,
+body.dark-theme thead th,
+body.dark-theme .modal,
+body.dark-theme .login-card,
+body.dark-theme .col-filter-menu,
+body.dark-theme .toast {
+  background-color: var(--bg-secondary);
+  border-color: var(--border);
+}
+
+body.dark-theme .form-control {
+  background-color: #1a1b1e; /* Darker, neutral black-gray */
+  border-color: #3c4043;
+  color: var(--text-primary);
+}
+
+body.dark-theme .form-control:focus {
+  border-color: var(--accent);
+  background-color: #1a1b1e;
+}
+
+body.dark-theme .btn-secondary {
+  background-color: #334155;
+  border-color: #475569;
+  color: #f8fafc;
+}
+
+body.dark-theme .btn-secondary:hover {
+  background-color: #475569;
+}
+
+body.dark-theme thead th {
+  background-color: #202124;
+  border-bottom: 1px solid #3c4043;
+  color: #e8eaed;
+}
+
+body.dark-theme .data-table tr:hover {
+  background-color: #303134;
+}
+
+body.dark-theme .nav-item.active {
+  background-color: rgba(138, 180, 248, 0.12);
+  color: #8ab4f8;
+}
+
+body.dark-theme .nav-item:hover {
+  background-color: var(--bg-hover);
+}
+
+body.dark-theme .nav-item.active {
+  background-color: rgba(56, 189, 248, 0.15);
+  color: var(--accent);
+}
+
+body.dark-theme .divider {
+  border-top-color: var(--border);
+}
+
+body.dark-theme .modal-header,
+body.dark-theme .modal-footer {
+  border-color: var(--border);
+}
+
+body.dark-theme .user-card {
+  border-color: var(--border);
+}
+
+/* ─── TIMELINE COMPONENT ─── */
+.timeline {
+  position: relative;
+  padding: 20px 0;
+}
+.timeline::before {
+  content: "";
+  position: absolute;
+  left: 20px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--border);
+}
+.timeline-item {
+  position: relative;
+  margin-bottom: 30px;
+  padding-left: 50px;
+}
+.timeline-dot {
+  position: absolute;
+  left: 14px;
+  top: 4px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--bg-secondary);
+  border: 3px solid var(--accent);
+  z-index: 1;
+}
+.timeline-date {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 600;
+  margin-bottom: 4px;
+  display: block;
+}
+.timeline-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px 15px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+.timeline-title {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.timeline-details {
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+.timeline-user {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-light);
+  font-size: 11px;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* Theme Toggle Button */
+.theme-toggle {
+  position: fixed;
+  top: 8px;
+  right: 20px;
+  z-index: 1001;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: var(--transition);
+  color: var(--text-secondary);
+  background: var(--bg-hover);
+  border: 1px solid var(--border);
+}
+.theme-toggle:hover {
+  background: var(--accent-light);
+  color: var(--accent);
+  border-color: var(--accent);
+}
