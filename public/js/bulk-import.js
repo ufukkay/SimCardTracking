@@ -50,6 +50,19 @@ const BulkImport = (() => {
         { key: "notes", label: "Notlar", placeholder: "" },
       ],
     },
+    packages: {
+      label: "Paket",
+      fields: [
+        { key: "name", label: "Paket Adı", placeholder: "Eko Plan" },
+        { key: "type", label: "Tip", type: "type" },
+        { key: "operator", label: "Operatör", type: "operator" },
+        { key: "data_limit", label: "Data (GB)", placeholder: "10" },
+        { key: "sms_limit", label: "SMS", placeholder: "1000" },
+        { key: "minutes_limit", label: "Dakika", placeholder: "500" },
+        { key: "price", label: "Fiyat", placeholder: "99.90" },
+        { key: "features", label: "Özellikler", placeholder: "" },
+      ],
+    },
   };
 
   const STATUS_OPTS = [
@@ -92,6 +105,13 @@ const BulkImport = (() => {
       const cur = manualRows[rowIdx]?.[field.key] || '';
       return `<select class="form-control" data-row="${rowIdx}" data-key="${field.key}" style="min-width:130px">
         ${VEHICLE_TYPE_OPTS.map(o => `<option value="${o.v}" ${cur === o.v ? 'selected' : ''}>${o.l}</option>`).join('')}
+      </select>`;
+    }
+    if (field.type === "type") {
+      return `<select class="form-control" data-row="${rowIdx}" data-key="${field.key}">
+        <option value="m2m">M2M</option>
+        <option value="data">Data</option>
+        <option value="voice">Ses</option>
       </select>`;
     }
     return `<input class="form-control" data-row="${rowIdx}" data-key="${field.key}" placeholder="${field.placeholder || ""}" value="${manualRows[rowIdx]?.[field.key] || ""}">`;
@@ -496,17 +516,46 @@ const BulkImport = (() => {
         <input name="assigned_company" id="s-voice-comp-${type}" class="form-control" placeholder="Şirket adı">
       </div>`;
 
-    container.innerHTML = `
-      <div>
-        <div class="tabs" style="margin-bottom:18px">
-          <button class="tab-btn active" onclick="BulkImport.switchBulkTab('st-add-${type}', this)">➕ Yeni Ekle</button>
-          <button class="tab-btn" onclick="BulkImport.switchBulkTab('st-manual-${type}', this)">✏️ Manuel Giriş</button>
-          <button class="tab-btn" onclick="BulkImport.switchBulkTab('st-excel-${type}', this)">📊 Excel ile Yükle</button>
-        </div>
+    let opOptionsForPackages = '';
+    if (type === "packages") {
+      try {
+        const ops = await API.getOperators();
+        opOptionsForPackages = ops.map((o) => `<option value="${o.id}">${o.name}</option>`).join("");
+      } catch {}
+    }
 
-        <!-- YENİ EKLE -->
-        <div class="tab-pane active" id="st-add-${type}">
-          <form id="s-add-form-${type}" onsubmit="BulkImport.saveSingle(event,'${type}')">
+    let addFormHtml = "";
+    if (type === "packages") {
+      addFormHtml = `
+            <div class="form-grid" style="grid-template-columns: 1fr 1fr;">
+              <div class="form-group"><label class="form-label">Paket Adı *</label><input name="name" class="form-control" placeholder="Örn: 10GB Data Planı" required></div>
+              <div class="form-group">
+                <label class="form-label">Paket Tipi *</label>
+                <select name="type" class="form-control" required>
+                  <option value="m2m">M2M Hattı</option>
+                  <option value="data">Data Hattı</option>
+                  <option value="voice">Ses Hattı</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Operatör *</label>
+                <select name="operator_id" class="form-control" required><option value="">Seçiniz...</option>${opOptionsForPackages}</select>
+              </div>
+              <div class="form-group"><label class="form-label">Data Limiti (GB)</label><input type="number" step="0.01" name="data_limit" class="form-control" placeholder="Örn: 10"></div>
+              <div class="form-group"><label class="form-label">SMS (Adet)</label><input type="number" name="sms_limit" class="form-control" placeholder="Örn: 1000"></div>
+              <div class="form-group"><label class="form-label">Dakika</label><input type="number" name="minutes_limit" class="form-control" placeholder="Örn: 500"></div>
+              <div class="form-group"><label class="form-label">Aylık Fiyat (₺)</label><input type="number" step="0.01" name="price" class="form-control" placeholder="0.00"></div>
+              <div class="form-group"><label class="form-label">Ek Açıklama / Özellikler</label><input name="features" class="form-control" placeholder="Örn: Sınırsız WhatsApp"></div>
+            </div>
+            <div style="display:flex;justify-content:flex-end;margin-top:14px">
+              <button type="submit" class="btn btn-primary" id="s-add-btn-${type}">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Paket Ekle
+              </button>
+            </div>
+      `;
+    } else {
+      addFormHtml = `
             <div class="form-grid-3">
               <div class="form-group">
                 <label class="form-label">ICCID</label>
@@ -540,6 +589,21 @@ const BulkImport = (() => {
                 Hat Ekle
               </button>
             </div>
+      `;
+    }
+
+    container.innerHTML = `
+      <div>
+        <div class="tabs" style="margin-bottom:18px">
+          <button class="tab-btn active" onclick="BulkImport.switchBulkTab('st-add-${type}', this)">➕ ${type === 'packages' ? "Yeni Paket Ekle" : "Yeni Ekle"}</button>
+          <button class="tab-btn" onclick="BulkImport.switchBulkTab('st-manual-${type}', this)">✏️ Manuel Giriş</button>
+          <button class="tab-btn" onclick="BulkImport.switchBulkTab('st-excel-${type}', this)">📊 Excel ile Yükle</button>
+        </div>
+
+        <!-- YENİ EKLE -->
+        <div class="tab-pane active" id="st-add-${type}">
+          <form id="s-add-form-${type}" onsubmit="BulkImport.saveSingle(event,'${type}')">
+            ${addFormHtml}
           </form>
         </div>
 
@@ -677,7 +741,8 @@ const BulkImport = (() => {
       if (type === "m2m") await API.addM2M(data);
       else if (type === "data") await API.addData(data);
       else if (type === "voice") await API.addVoice(data);
-      UI.toast("Hat eklendi.", "success");
+      else if (type === "packages") await API.addPackage(data);
+      UI.toast(type === 'packages' ? "Paket eklendi." : "Hat eklendi.", "success");
       form.reset();
       onSuccess?.();
     } catch (err) {

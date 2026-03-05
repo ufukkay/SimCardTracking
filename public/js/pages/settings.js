@@ -106,10 +106,16 @@ const SettingsPage = (() => {
         <div class="card">
           <div class="card-header">
             <span class="card-title">Paket (Tarife) Yönetimi</span>
-            <button class="btn btn-primary" onclick="SettingsPage.openPackageModal()">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-              Yeni Paket
-            </button>
+            <div style="display:flex;gap:10px">
+              <button class="btn btn-secondary" onclick="SettingsPage.exportExcelPackages()">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Excel'e Aktar
+              </button>
+              <button class="btn btn-primary" onclick="SettingsPage.openCombinedPackageModal()">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Paket Ekle / Yükle
+              </button>
+            </div>
           </div>
           <div class="table-container">
             <table>
@@ -365,7 +371,7 @@ const SettingsPage = (() => {
         // Trigger the active sub-tab's logic if it hasn't been rendered
         const subType = activeSubBtn.textContent.toLowerCase().includes('m2m') ? 'm2m' : 
                         activeSubBtn.textContent.toLowerCase().includes('data') ? 'data' : 'voice';
-        const containerId = subType === 'voice' ? 'import-container-voice' : `import-container-${subType}`;
+        const containerId = `import-container-${subType}`;
         const container = document.getElementById(containerId);
         if (container && container.querySelector('.spinner')) {
           BulkImport.renderTab(subType, containerId, null);
@@ -422,7 +428,7 @@ const SettingsPage = (() => {
       targetPane?.querySelector('.tab-pane')?.classList.add('active');
     }
     
-    const containerId = type === 'voice' ? 'import-container-voice' : `import-container-${type}`;
+    const containerId = `import-container-${type}`;
     const container = document.getElementById(containerId);
     if (container && container.querySelector('.spinner')) {
       BulkImport.renderTab(type, containerId, null);
@@ -747,6 +753,87 @@ const SettingsPage = (() => {
     UI.confirm(`"${name}" silinecek. Emin misiniz?`, async()=>{ try{await API.deletePackage(id); _pkgsCache = null; UI.toast('Paket silindi.','success'); loadPackages();}catch(e){UI.toast(e.message,'error');} });
   }
 
+  async function openCombinedPackageModal() {
+    let overlay = document.getElementById('combinedPackageModalOverlay');
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.id = 'combinedPackageModalOverlay';
+      overlay.className = 'modal-overlay';
+      overlay.innerHTML = `
+        <div class="modal" style="max-width:860px;width:100%">
+          <div class="modal-header">
+            <span class="modal-title">Paket Ekle / Yükle</span>
+            <button class="modal-close" onclick="UI.closeModal('combinedPackageModalOverlay')">×</button>
+          </div>
+          <div id="combinedPackageModalBody" style="padding:0 20px 20px"></div>
+        </div>
+      `;
+      document.body.appendChild(overlay);
+    }
+    UI.openModal('combinedPackageModalOverlay');
+    document.getElementById('combinedPackageModalBody').innerHTML = '<div class="spinner" style="margin:40px auto;display:block;"></div>';
+    await BulkImport.renderTab('packages', 'combinedPackageModalBody', () => {
+      UI.closeModal('combinedPackageModalOverlay');
+      loadPackages();
+    });
+  }
+
+  async function exportExcelPackages() {
+    try {
+      const XLSX = window.XLSX;
+      if (!XLSX) return UI.toast("XLSX kütüphanesi yüklenmedi.", "error");
+
+      UI.toast('Excel dışa aktarma hazırlanıyor...', 'info');
+
+      const pkgs = await API.getPackages();
+      if (!pkgs || pkgs.length === 0) {
+        return UI.toast("Dışa aktarılacak veri bulunamadı.", "warning");
+      }
+
+      const typeLabels = { m2m: 'M2M', data: 'Data', voice: 'Ses' };
+
+      const exportData = pkgs.map(item => ({
+        'Paket Adı': item.name || '',
+        'Tip': typeLabels[item.type] || item.type || '',
+        'Operatör': item.operator_name || '',
+        'Data Limit (GB)': item.data_limit != null ? item.data_limit : '',
+        'SMS Limit': item.sms_limit != null ? item.sms_limit : '',
+        'Dakika Limit': item.minutes_limit != null ? item.minutes_limit : '',
+        'Fiyat (₺)': item.price != null ? item.price : '',
+        'Özellikler': item.features || '',
+        'Oluşturulma': item.created_at ? new Date(item.created_at).toLocaleString('tr-TR') : ''
+      }));
+
+      const ws = XLSX.utils.json_to_sheet(exportData);
+      
+      const wscols = [
+        {wch: 25}, // Paket Adı
+        {wch: 10}, // Tip
+        {wch: 15}, // Operatör
+        {wch: 15}, // Data
+        {wch: 12}, // SMS
+        {wch: 15}, // Dakika
+        {wch: 10}, // Fiyat
+        {wch: 40}, // Özellikler
+        {wch: 20}  // Oluşturulma
+      ];
+      ws['!cols'] = wscols;
+
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Paketler");
+
+      const today = new Date();
+      const dateStr = `${today.getFullYear()}${(today.getMonth()+1).toString().padStart(2,'0')}${today.getDate().toString().padStart(2,'0')}`;
+      XLSX.writeFile(wb, `Paketler_${dateStr}.xlsx`);
+      
+      UI.toast('Excel başarıyla indirildi.', 'success');
+      
+    } catch (error) {
+      console.error('Export Excel Error:', error);
+      UI.toast('Excel dışa aktarılırken hata oluştu: ' + error.message, 'error');
+    }
+  }
+
   /* ════════════ PASSWORD ════════════ */
   async function changePassword(e) {
     e.preventDefault();
@@ -924,12 +1011,14 @@ const SettingsPage = (() => {
     loadUsers, openAddUser, openEditUser, saveUser, deleteUser,
     onRoleChange, onPermViewChange, onPermEditChange,
     loadVehicles, openAddVehicle, openEditVehicle, saveVehicle, deleteVehicle,
-    loadLocations, openAddLocation, openEditLocation, saveLocation, deleteLocation,
-    loadPersonnel, openAddPersonnel, openEditPersonnel, savePersonnel, deletePersonnel,
+    loadLocations, openAddLocation, openEditLocation, deleteLocation, saveLocation,
+    loadPersonnel, openAddPersonnel, openEditPersonnel, deletePersonnel, savePersonnel,
     loadOperators, addOperator, deleteOperator,
-    loadPackages, openPackageModal, savePackage, deletePackage,
-    onOperatorChange,
-    changePassword,
-    checkUpdate, applyUpdate
+    loadPackages, onOperatorChange,
+    exportExcelPackages, openCombinedPackageModal,
+    
+    openPackageModal, deletePackage, savePackage,
+    checkUpdate, applyUpdate,
+    changePassword
   };
 })();

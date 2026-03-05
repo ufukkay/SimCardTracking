@@ -91,6 +91,16 @@ router.get("/template/:type", (req, res) => {
       ],
       note: "Durum değerleri: active (Aktif), spare (Yedek), passive (Pasif)",
     },
+    packages: {
+      filename: "Paket_Sablon.xlsx",
+      headers: ["Paket Adı", "Tip", "Operatör", "Data (GB)", "SMS", "Dakika", "Fiyat", "Özellikler"],
+      example: [
+        ["Eko Paket", "m2m", "Turkcell", 1, 1000, 0, 50, "M2M için ekonomik"],
+        ["Süper Data", "data", "Vodafone", 50, 0, 0, 150, "Yüksek hızlı data"],
+        ["Kurumsal Ses", "voice", "Türk Telekom", 10, 5000, 2000, 250, "Full iletişim"],
+      ],
+      note: "Tip değerleri: m2m, data, voice\nOperatör adı mevcut operatörlerden biri olmalıdır."
+    }
   };
 
   const tpl = templates[type];
@@ -194,6 +204,23 @@ router.post("/excel/:type", authMiddleware, upload.single("file"), (req, res) =>
             r["Şirket"] || null,
             r["Notlar"] || null,
           ),
+      packages: (r) => {
+        const opName = r["Operatör"] || r["operator"];
+        const op = db.prepare('SELECT id FROM operators WHERE name = ?').get(opName);
+        return db.prepare(`
+          INSERT INTO packages (name, type, operator_id, data_limit, sms_limit, minutes_limit, price, features)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `).run(
+          r["Paket Adı"] || r["name"] || null,
+          r["Tip"] || r["type"] || "m2m",
+          op ? op.id : null,
+          r["Data (GB)"] || r["data_limit"] || null,
+          r["SMS"] || r["sms_limit"] || null,
+          r["Dakika"] || r["minutes_limit"] || null,
+          r["Fiyat"] || r["price"] || 0,
+          r["Özellikler"] || r["features"] || null
+        );
+      }
     };
 
     if (!insertFns[type])
@@ -291,7 +318,24 @@ router.post("/json/:type", authMiddleware, (req, res) => {
           r.assigned_company || null,
           r.notes || null,
         ),
-  };
+      packages: (r) => {
+        const opName = r.operator;
+        const op = db.prepare('SELECT id FROM operators WHERE name = ?').get(opName);
+        return db.prepare(`
+          INSERT INTO packages (name, type, operator_id, data_limit, sms_limit, minutes_limit, price, features)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `).run(
+          r.name || null,
+          r.type || "m2m",
+          op ? op.id : null,
+          r.data_limit || null,
+          r.sms_limit || null,
+          r.minutes_limit || null,
+          r.price || 0,
+          r.features || null
+        );
+      }
+    };
 
   if (!insertFns[type])
     return res.status(400).json({ message: "Geçersiz tip." });
