@@ -5,7 +5,12 @@ const VoicePage = (() => {
 
   function render() {
     document.getElementById('pageTitle').textContent = 'Ses Hatları';
-    document.getElementById('topbarActions').innerHTML = '';
+    document.getElementById('topbarActions').innerHTML = `
+      <button class="btn btn-secondary" onclick="VoicePage.exportExcel()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+        Excel'e Aktar
+      </button>
+    `;
     document.getElementById('pageContent').innerHTML = `
       <div class="card">
         <div class="card-header">
@@ -381,5 +386,42 @@ const VoicePage = (() => {
     });
   }
 
-  return { render, load, openEdit, save, del, openBulkEdit, saveBulk, bulkDel };
+  async function exportExcel() {
+    try {
+      const search = document.getElementById('voiceSearch')?.value || '';
+      const operator = document.getElementById('voiceOpFilter')?.value || '';
+      const status = document.getElementById('voiceStatusFilter')?.value || '';
+      const params = new URLSearchParams();
+      if (search) params.append('search', search);
+      if (operator) params.append('operator', operator);
+      if (status) params.append('status', status);
+      const qs = params.toString() ? '?' + params.toString() : '';
+
+      const rows = await API.getVoice(qs);
+      if (!rows.length) return UI.toast('Dışa aktarılacak veri bulunamadı.', 'info');
+      if (typeof XLSX === 'undefined') return UI.toast('Excel kütüphanesi yüklenemedi.', 'error');
+
+      const data = rows.map(r => ({
+        'ICCID': r.iccid || '',
+        'Telefon No': r.phone_no || '',
+        'Operatör': r.operator || r.operator_name || '',
+        'Paket': r.package_name || '',
+        'Durum': r.status === 'active' ? 'Aktif' : r.status === 'spare' ? 'Yedek' : 'Pasif',
+        'Personel': r.assigned_to || '',
+        'Departman': r.department || '',
+        'Şirket': r.assigned_company || '',
+        'Notlar': r.notes || '',
+        'Kayıt Tarihi': new Date(r.created_at).toLocaleString('tr-TR')
+      }));
+
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.json_to_sheet(data);
+      ws['!cols'] = [{wch:22}, {wch:15}, {wch:15}, {wch:20}, {wch:10}, {wch:25}, {wch:20}, {wch:20}, {wch:30}, {wch:20}];
+      XLSX.utils.book_append_sheet(wb, ws, 'Ses Hatları');
+      XLSX.writeFile(wb, `Ses_Hat_Listesi_${new Date().toISOString().slice(0,10)}.xlsx`);
+      UI.toast('Excel dosyası indiriliyor...', 'success');
+    } catch (err) { UI.toast(err.message, 'error'); }
+  }
+
+  return { render, load, openEdit, save, del, openBulkEdit, saveBulk, bulkDel, exportExcel };
 })();
