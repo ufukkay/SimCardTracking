@@ -233,6 +233,19 @@ router.post("/excel/:type", authMiddleware, upload.single("file"), (req, res) =>
             results.errors.push(`Satır ${i + 2}: Operatör zorunludur.`);
             return;
           }
+          const pno = r["Telefon No"] || r["phone_no"] || null;
+          if (pno) {
+            const exists = db.prepare(`
+              SELECT 1 FROM sim_m2m   WHERE phone_no = ? UNION ALL
+              SELECT 1 FROM sim_data  WHERE phone_no = ? UNION ALL
+              SELECT 1 FROM sim_voice WHERE phone_no = ?
+              LIMIT 1
+            `).get(pno, pno, pno);
+            if (exists) {
+              results.errors.push(`Satır ${i + 2}: ${pno} numarası zaten kayıtlı.`);
+              return;
+            }
+          }
           insertFns[type](r);
           results.inserted++;
         } catch (e) {
@@ -348,6 +361,18 @@ router.post("/json/:type", authMiddleware, (req, res) => {
         if (!r.operator) {
           errors.push(`Satır ${i + 1}: Operatör zorunludur.`);
           return;
+        }
+        if (r.phone_no) {
+          const exists = db.prepare(`
+            SELECT 1 FROM sim_m2m   WHERE phone_no = ? UNION ALL
+            SELECT 1 FROM sim_data  WHERE phone_no = ? UNION ALL
+            SELECT 1 FROM sim_voice WHERE phone_no = ?
+            LIMIT 1
+          `).get(r.phone_no, r.phone_no, r.phone_no);
+          if (exists) {
+            errors.push(`Satır ${i + 1}: ${r.phone_no} numarası zaten kayıtlı.`);
+            return;
+          }
         }
         insertFns[type](r);
         inserted++;

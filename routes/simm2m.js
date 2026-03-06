@@ -50,6 +50,17 @@ router.post('/', canEdit('m2m'), (req, res) => {
   const { iccid, phone_no, operator, status, plate_no, vehicle_type, notes, package_id } = req.body;
   if (!operator) return res.status(400).json({ message: 'Operatör zorunludur.' });
 
+  // Duplicate check
+  if (phone_no) {
+    const exists = db.prepare(`
+      SELECT 1 FROM sim_m2m   WHERE phone_no = ? UNION ALL
+      SELECT 1 FROM sim_data  WHERE phone_no = ? UNION ALL
+      SELECT 1 FROM sim_voice WHERE phone_no = ?
+      LIMIT 1
+    `).get(phone_no, phone_no, phone_no);
+    if (exists) return res.status(400).json({ message: 'Bu telefon numarası zaten kayıtlı.' });
+  }
+
   syncVehicle(plate_no, vehicle_type);
 
   const result = db.prepare(`
@@ -66,6 +77,17 @@ router.post('/', canEdit('m2m'), (req, res) => {
 router.put('/:id', canEdit('m2m'), (req, res) => {
   const { iccid, phone_no, operator, status, plate_no, vehicle_type, notes, package_id } = req.body;
   
+  // Duplicate check
+  if (phone_no) {
+    const exists = db.prepare(`
+      SELECT 1 FROM sim_m2m   WHERE phone_no = ? AND id != ? UNION ALL
+      SELECT 1 FROM sim_data  WHERE phone_no = ? UNION ALL
+      SELECT 1 FROM sim_voice WHERE phone_no = ?
+      LIMIT 1
+    `).get(phone_no, req.params.id, phone_no, phone_no);
+    if (exists) return res.status(400).json({ message: 'Bu telefon numarası zaten kayıtlı.' });
+  }
+
   syncVehicle(plate_no, vehicle_type);
 
   const result = db.prepare(`

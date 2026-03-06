@@ -216,6 +216,20 @@
     }
   };
 
+  // ─── Global Input Cleanups ────────────────────────────────────────────────
+  document.addEventListener('input', (e) => {
+    const isSearch = e.target.classList.contains('search-input');
+    const isPhone  = e.target.name === 'phone_no' || e.target.getAttribute('data-key') === 'phone_no';
+
+    if (isSearch || isPhone) {
+      const val = e.target.value;
+      // Eğer giriş sayı ile başlıyorsa (Telefon No/ICCID araması), tüm boşlukları sil
+      if (/^\d/.test(val)) {
+        e.target.value = val.replace(/\s/g, '');
+      }
+    }
+  });
+
   // ─── Initial page ─────────────────────────────────────────────────────────
   const hash = window.location.hash.replace('#', '');
   navigate(hash || 'm2m', false);

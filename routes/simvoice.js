@@ -44,6 +44,17 @@ router.post('/', canEdit('voice'), (req, res) => {
   const { iccid, phone_no, operator, status, assigned_to, first_name, last_name, department, assigned_company, notes, package_id } = req.body;
   if (!operator) return res.status(400).json({ message: 'Operatör zorunludur.' });
 
+  // Duplicate check
+  if (phone_no) {
+    const exists = db.prepare(`
+      SELECT 1 FROM sim_m2m   WHERE phone_no = ? UNION ALL
+      SELECT 1 FROM sim_data  WHERE phone_no = ? UNION ALL
+      SELECT 1 FROM sim_voice WHERE phone_no = ?
+      LIMIT 1
+    `).get(phone_no, phone_no, phone_no);
+    if (exists) return res.status(400).json({ message: 'Bu telefon numarası zaten kayıtlı.' });
+  }
+
   // assigned_to direkt gelebilir veya first_name+last_name dan oluşturulur
   const finalAssignedTo = assigned_to ||
     ((first_name || last_name) ? `${first_name||''} ${last_name||''}`.trim() : null);
@@ -61,6 +72,17 @@ router.post('/', canEdit('voice'), (req, res) => {
 router.put('/:id', canEdit('voice'), (req, res) => {
   const { iccid, phone_no, operator, status, assigned_to, first_name, last_name, department, assigned_company, notes, package_id } = req.body;
   
+  // Duplicate check
+  if (phone_no) {
+    const exists = db.prepare(`
+      SELECT 1 FROM sim_m2m   WHERE phone_no = ? UNION ALL
+      SELECT 1 FROM sim_data  WHERE phone_no = ? UNION ALL
+      SELECT 1 FROM sim_voice WHERE phone_no = ? AND id != ?
+      LIMIT 1
+    `).get(phone_no, phone_no, phone_no, req.params.id);
+    if (exists) return res.status(400).json({ message: 'Bu telefon numarası zaten kayıtlı.' });
+  }
+
   const finalAssignedTo = assigned_to ||
     ((first_name || last_name) ? `${first_name||''} ${last_name||''}`.trim() : null);
 
