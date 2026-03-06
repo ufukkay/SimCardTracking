@@ -15,6 +15,15 @@
 
 ---
 
+## 🆕 Versiyon 1.5 - Yenilikler
+
+- **Mükerrer Numara Engelleme:** M2M, Data ve Ses hatları arasında aynı numaranın kaydedilmesi tamamen engellendi.
+- **Akıllı Arama Kutusu:** Sayı ile başlayan aramalarda boşluklar otomatik temizlenirken, isim ile aramalarda boşluklara izin veriliyor.
+- **Toplu İçe Aktarma Geliştirmeleri:** Excel ve JSON import işlemlerinde numara çakışma kontrolleri eklendi.
+- **Performans ve Temizlik:** Kullanılmayan scriptler temizlendi ve veritabanı sorguları optimize edildi.
+
+---
+
 ## 🇹🇷 Türkçe
 
 ### 🎯 Projenin Amacı
