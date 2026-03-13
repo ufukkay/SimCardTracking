@@ -260,7 +260,7 @@ const UI = (() => {
                 <span title="${val}">${val}</span>
               </label>
             `;
-          }).join('') || (!hasEmpty ? `<div style="padding:10px;text-align:center;color:var(--text-muted)">${i18n.t('no_records')}</div>` : '')}
+          }).join('')}
         </div>
         <div class="col-filter-actions">
           <button class="btn btn-ghost btn-sm btn-reset">${i18n.t('reset')}</button>
