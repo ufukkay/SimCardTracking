@@ -20,7 +20,7 @@ const UI = (() => {
     const overlay = document.getElementById('confirmModal');
     document.getElementById('confirmIcon').textContent = icon;
     document.getElementById('confirmTitle').textContent = title;
-    document.getElementById('confirmText').textContent = text;
+    document.getElementById('confirmText').innerHTML = text;
     const okBtn = document.getElementById('confirmOk');
     okBtn.textContent = okText;
     okBtn.className = `btn ${okClass}`;
@@ -44,9 +44,9 @@ const UI = (() => {
   // ─── Badge helpers ───
   function statusBadge(status) {
     const map = {
-      active:  ['badge-success', 'Aktif'],
-      spare:   ['badge-warning', 'Yedek'],
-      passive: ['badge-muted',   'Pasif'],
+      active:  ['badge-success', i18n.t('status_active')],
+      spare:   ['badge-warning', i18n.t('status_spare')],
+      passive: ['badge-muted',   i18n.t('status_passive')],
     };
     const [cls, label] = map[status] || ['badge-muted', status];
     return `<span class="badge ${cls}">${label}</span>`;
@@ -62,26 +62,26 @@ const UI = (() => {
   }
 
   // ─── Empty state ───
-  function emptyState(icon = '📭', text = 'Kayıt bulunamadı', sub = '') {
+  function emptyState(icon = '📭', text = null, sub = '') {
     return `<div class="empty-state">
       <div class="empty-state-icon">${icon}</div>
-      <div class="empty-state-text">${text}</div>
+      <div class="empty-state-text">${text || i18n.t('no_records')}</div>
       ${sub ? `<div class="empty-state-sub">${sub}</div>` : ''}
     </div>`;
   }
 
   // ─── Loading ───
   function loading() {
-    return `<div class="loading-overlay"><div class="spinner"></div></div>`;
+    return `<div class="loading-overlay"><div class="spinner"></div><div style="margin-top:10px">${i18n.t('loading')}</div></div>`;
   }
 
   // ─── Fill select with operators ───
   async function fillOperatorSelect(selectEl) {
     try {
       const ops = await API.getOperators();
-      selectEl.innerHTML = '<option value="">Operatör seçin...</option>' +
+      selectEl.innerHTML = `<option value="">${i18n.t('select_operator')}</option>` +
         ops.map(o => `<option value="${o.name}">${o.name}</option>`).join('');
-    } catch { selectEl.innerHTML = '<option>Yüklenemedi</option>'; }
+    } catch { selectEl.innerHTML = `<option>${i18n.t('select_operator')}</option>`; }
   }
 
   // ─── Form to object ───
@@ -167,7 +167,7 @@ const UI = (() => {
         filterBtn.type = 'button';
         filterBtn.className = 'th-filter-btn';
         filterBtn.innerHTML = '⋮';
-        filterBtn.title = 'Filtrele';
+        filterBtn.title = i18n.t('filter');
         btnGroup.appendChild(filterBtn);
 
         menu = document.createElement('div');
@@ -178,7 +178,7 @@ const UI = (() => {
       const sortBtn = document.createElement('button');
       sortBtn.type = 'button';
       sortBtn.className = 'th-sort-btn';
-      sortBtn.title = 'Sırala';
+      sortBtn.title = i18n.t('sort');
       btnGroup.appendChild(sortBtn);
 
       headerWrap.appendChild(btnGroup);
@@ -229,19 +229,29 @@ const UI = (() => {
         });
       }
 
+      const EMPTY_VAL = '__EMPTY__';
       let rawValues = rowsForThisCol.map(r => colDef.getVal(r));
-      let uniqueVals = [...new Set(rawValues)].filter(v => v !== '—' && v !== '' && v !== null && v !== undefined);
+      let uniqueVals = [...new Set(rawValues)].filter(v => v !== '\u2014' && v !== '' && v !== null && v !== undefined);
       uniqueVals.sort();
+
+      const hasEmpty = rawValues.some(v => v === '\u2014' || v === '' || v === null || v === undefined);
+      const emptyLabel = i18n.t('filter_empty') || '(Bo\u015f)';
+      const emptyChecked = isActive && filterStateObj[colKey].includes(EMPTY_VAL);
 
       menu.innerHTML = `
         <div class="col-filter-search">
-          <input type="text" class="form-control" placeholder="Ara..." onclick="event.stopPropagation()">
+          <input type="text" class="form-control" placeholder="${i18n.t('search_placeholder_short')}" onclick="event.stopPropagation()">
         </div>
         <div class="col-filter-bulk">
-          <button type="button" class="btn-link btn-select-all">Tümünü Seç</button>
-          <button type="button" class="btn-link btn-clear-selection">Temizle</button>
+          <button type="button" class="btn-link btn-select-all">${i18n.t('select_all')}</button>
+          <button type="button" class="btn-link btn-clear-selection">${i18n.t('clear_selection')}</button>
         </div>
         <div class="col-filter-list">
+          ${hasEmpty ? `
+            <label class="col-filter-item col-filter-empty" onclick="event.stopPropagation()">
+              <input type="checkbox" value="${EMPTY_VAL}" ${emptyChecked ? 'checked' : ''}>
+              <span style="color:var(--text-muted);font-style:italic">${emptyLabel}</span>
+            </label>` : ''}
           ${uniqueVals.map(val => {
             const isChecked = isActive && filterStateObj[colKey].includes(val);
             return `
@@ -250,11 +260,11 @@ const UI = (() => {
                 <span title="${val}">${val}</span>
               </label>
             `;
-          }).join('') || '<div style="padding:10px;text-align:center;color:var(--text-muted)">Kayıt yok</div>'}
+          }).join('') || (!hasEmpty ? `<div style="padding:10px;text-align:center;color:var(--text-muted)">${i18n.t('no_records')}</div>` : '')}
         </div>
         <div class="col-filter-actions">
-          <button class="btn btn-ghost btn-sm btn-reset">Sıfırla</button>
-          <button class="btn btn-primary btn-sm btn-apply">Tamam</button>
+          <button class="btn btn-ghost btn-sm btn-reset">${i18n.t('reset')}</button>
+          <button class="btn btn-primary btn-sm btn-apply">${i18n.t('apply')}</button>
         </div>
       `;
 
@@ -308,13 +318,17 @@ const UI = (() => {
   // Filter local rows using the given state
   function filterRows(rows, filterStateObj, colDefs) {
     if (!filterStateObj) return rows;
+    const EMPTY_VAL = '__EMPTY__';
     let filtered = rows;
     Object.keys(filterStateObj).forEach(colKey => {
+      if (colKey === '_sort') return;
       const activeFilters = filterStateObj[colKey];
       if (activeFilters && activeFilters.length > 0 && colDefs[colKey]) {
         filtered = filtered.filter(row => {
           const val = colDefs[colKey].getVal(row);
-          return activeFilters.includes(val);
+          const isEmpty = val === '\u2014' || val === '' || val === null || val === undefined;
+          if (activeFilters.includes(EMPTY_VAL) && isEmpty) return true;
+          return activeFilters.filter(f => f !== EMPTY_VAL).includes(val);
         });
       }
     });
@@ -351,5 +365,44 @@ const UI = (() => {
                 .map(cb => parseInt(cb.value));
   }
 
-  return { toast, confirm, openModal, closeModal, statusBadge, operatorBadge, emptyState, loading, fillOperatorSelect, formData, setForm, sortRows, setupTableFilters, filterRows, initSelection, getSelectedIds };
+  function openTransfer(id, currentType, label) {
+    const types = {
+      'm2m': i18n.t('nav_m2m'),
+      'data': i18n.t('nav_data'),
+      'voice': i18n.t('nav_voice')
+    };
+    
+    let optionsHtml = Object.entries(types)
+      .filter(([k]) => k !== currentType)
+      .map(([k, v]) => `<option value="${k}">${v}</option>`)
+      .join('');
+
+    const content = `
+      <div class="form-group">
+        <label class="form-label">${i18n.t('key_toType')}</label>
+        <select id="transferTargetType" class="form-control">
+          ${optionsHtml}
+        </select>
+      </div>
+    `;
+
+    confirm(content, async () => {
+      const targetType = document.getElementById('transferTargetType').value;
+      try {
+        await API.transferSim(id, currentType, targetType);
+        
+        // Close background modals if they are open
+        closeModal('m2mModal');
+        closeModal('dataModal');
+        closeModal('voiceModal');
+
+        // Refresh the current page
+        if (typeof M2MPage !== 'undefined' && currentType === 'm2m') M2MPage.load();
+        if (typeof DataPage !== 'undefined' && currentType === 'data') DataPage.load();
+        if (typeof VoicePage !== 'undefined' && currentType === 'voice') VoicePage.load();
+      } catch (err) { toast(err.message, 'error'); }
+    }, { title: i18n.t('tooltip_transfer'), icon: '🔄', okText: i18n.t('confirm_ok'), okClass: 'btn-primary' });
+  }
+
+  return { toast, confirm, openModal, closeModal, statusBadge, operatorBadge, emptyState, loading, fillOperatorSelect, formData, setForm, sortRows, setupTableFilters, filterRows, initSelection, getSelectedIds, openTransfer };
 })();

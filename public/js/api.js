@@ -130,5 +130,8 @@ const API = (() => {
     // Bulk Actions
     bulkDelete: (type, ids) => request('POST', `/${type}/bulk-delete`, { ids }),
     bulkUpdate: (type, ids, data) => request('POST', `/${type}/bulk-update`, { ids, data }),
+    
+    // Transfer (Tip Değiştirme)
+    transferSim: (id, currentType, targetType) => request('POST', '/sim/transfer', { id, currentType, targetType }),
   };
 })();

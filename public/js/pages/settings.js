@@ -10,15 +10,15 @@ const SettingsPage = (() => {
     document.getElementById('pageTitle').textContent = 'Ayarlar';
     document.getElementById('pageContent').innerHTML = `
       <div class="tabs">
-        <button class="tab-btn active" onclick="SettingsPage.switchTab('users',this)">👥 Kullanıcılar</button>
-        <button class="tab-btn" onclick="SettingsPage.switchTab('vehicles',this)">🚗 Araçlar</button>
-        <button class="tab-btn" onclick="SettingsPage.switchTab('locations',this)">📍 Lokasyonlar</button>
-        <button class="tab-btn" onclick="SettingsPage.switchTab('personnelTab',this)">👤 Personeller</button>
-        <button class="tab-btn" onclick="SettingsPage.switchTab('operators',this)">📡 Operatörler</button>
-        <button class="tab-btn" onclick="SettingsPage.switchTab('packages',this)">📦 Paketler</button>
-        <button class="tab-btn" onclick="SettingsPage.switchTab('importAll',this)">📲 Hat Aktar</button>
-        <button class="tab-btn" onclick="SettingsPage.switchTab('profile',this)">🔐 Şifre Değiştir</button>
-        <button class="tab-btn" id="updateTabBtn" onclick="SettingsPage.switchTab('update',this)" style="display:none">🔄 Güncelleme</button>
+        <button class="tab-btn active" onclick="SettingsPage.switchTab('users',this)" data-i18n="nav_users">👥 Kullanıcılar</button>
+        <button class="tab-btn" onclick="SettingsPage.switchTab('vehicles',this)" data-i18n="nav_vehicles">🚗 Araçlar</button>
+        <button class="tab-btn" onclick="SettingsPage.switchTab('locations',this)" data-i18n="nav_locations">📍 Lokasyonlar</button>
+        <button class="tab-btn" onclick="SettingsPage.switchTab('personnelTab',this)" data-i18n="nav_personnel">👤 Personeller</button>
+        <button class="tab-btn" onclick="SettingsPage.switchTab('operators',this)" data-i18n="nav_operators">📡 Operatörler</button>
+        <button class="tab-btn" onclick="SettingsPage.switchTab('packages',this)" data-i18n="nav_packages">📦 Paketler</button>
+        <button class="tab-btn" onclick="SettingsPage.switchTab('importAll',this)" data-i18n="nav_import">📲 Hat Aktar</button>
+        <button class="tab-btn" onclick="SettingsPage.switchTab('profile',this)" data-i18n="nav_profile">🔐 Şifre Değiştir</button>
+        <button class="tab-btn" id="updateTabBtn" onclick="SettingsPage.switchTab('update',this)" style="display:none" data-i18n="nav_update">🔄 Güncelleme</button>
       </div>
 
       <!-- KULLANICILAR -->

@@ -3,61 +3,61 @@ const DataPage = (() => {
   let editingId = null;
 
   function render() {
-    document.getElementById('pageTitle').textContent = 'Data Hatları';
+    document.getElementById('pageTitle').textContent = i18n.t('nav_data');
     document.getElementById('topbarActions').innerHTML = `
       <button class="btn btn-secondary" onclick="DataPage.exportExcel()">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-        Excel'e Aktar
+        <span data-i18n="export_excel">${i18n.t('export_excel')}</span>
       </button>
     `;
     document.getElementById('pageContent').innerHTML = `
       <div class="card">
         <div class="card-header">
-          <span class="card-title">Data Hat Listesi</span>
+          <span class="card-title" data-i18n="data_list_title">${i18n.t('data_list_title')}</span>
           <div id="bulkActionsBar" class="bulk-actions-bar" style="display:none">
-            <span id="selectedCount">0 kayıt seçildi</span>
+            <span id="selectedCount">0 ${i18n.t('selected_count')}</span>
             <div class="bulk-buttons">
               <button class="btn btn-secondary btn-sm" onclick="DataPage.openBulkEdit()">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                Toplu Düzenle
+                <span data-i18n="bulk_edit">${i18n.t('bulk_edit')}</span>
               </button>
               <button class="btn btn-danger btn-sm" onclick="DataPage.bulkDel()">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
-                Toplu Sil
+                <span data-i18n="bulk_delete">${i18n.t('bulk_delete')}</span>
               </button>
             </div>
           </div>
         </div>
         <div class="filters">
-          <input type="text" id="dataSearch" class="form-control search-input" placeholder="🔍  Lokasyon, numara veya ICCID ara...">
-          <select id="dataOpFilter" class="form-control" style="width:160px">
-            <option value="">Tüm Operatörler</option>
+          <input type="text" id="dataSearch" class="form-control search-input" data-i18n="search_sim_placeholder" placeholder="${i18n.t('search_sim_placeholder')}">
+          <select id="dataOpFilter" class="form-control filter-select">
+            <option value="" data-i18n="all_operators">${i18n.t('all_operators')}</option>
           </select>
-          <select id="dataStatusFilter" class="form-control" style="width:140px">
-            <option value="">Tüm Durumlar</option>
-            <option value="active">Aktif</option>
-            <option value="spare">Yedek</option>
-            <option value="passive">Pasif</option>
+          <select id="dataStatusFilter" class="form-control filter-select-sm">
+            <option value="" data-i18n="all_statuses">${i18n.t('all_statuses')}</option>
+            <option value="active" data-i18n="status_active">${i18n.t('status_active')}</option>
+            <option value="spare" data-i18n="status_spare">${i18n.t('status_spare')}</option>
+            <option value="passive" data-i18n="status_passive">${i18n.t('status_passive')}</option>
           </select>
           <button class="btn btn-secondary" onclick="DataPage.load()">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.26"/></svg>
-            Yenile
+            <span data-i18n="refresh">${i18n.t('refresh')}</span>
           </button>
         </div>
         <div class="table-container">
-          <table>
+          <table class="data-table">
             <thead>
               <tr>
                 <th style="width:40px"><input type="checkbox" id="dataSelectAll"></th>
-                <th>#</th>
-                <th>ICCID</th>
-                <th>Telefon No</th>
-                <th>Operatör</th>
-                <th>Paket</th>
-                <th>Durum</th>
-                <th>Lokasyon</th>
-                <th>Notlar</th>
-                <th>İşlem</th>
+                <th style="width:36px">#</th>
+                <th data-i18n="col_iccid">${i18n.t('col_iccid')}</th>
+                <th data-i18n="col_phone">${i18n.t('col_phone')}</th>
+                <th data-i18n="col_operator">${i18n.t('col_operator')}</th>
+                <th data-i18n="col_package">${i18n.t('col_package')}</th>
+                <th data-i18n="col_status">${i18n.t('col_status')}</th>
+                <th data-i18n="col_location">${i18n.t('col_location')}</th>
+                <th data-i18n="label_notes">${i18n.t('label_notes')}</th>
+                <th style="width:90px" data-i18n="col_action">${i18n.t('col_action')}</th>
               </tr>
             </thead>
             <tbody id="dataTableBody"></tbody>
@@ -65,55 +65,64 @@ const DataPage = (() => {
         </div>
       </div>
 
-      <!-- Edit Modal -->
+      <!-- Modal -->
       <div class="modal-overlay" id="dataModal">
-        <div class="modal" style="max-width:560px">
+        <div class="modal">
           <div class="modal-header">
-            <span class="modal-title" id="dataModalTitle">Data Hattını Düzenle</span>
+            <span class="modal-title" id="dataModalTitle" data-i18n="new_record">${i18n.t('new_record')}</span>
             <button class="modal-close" onclick="UI.closeModal('dataModal')">×</button>
           </div>
           <form class="modal-body" id="dataForm" onsubmit="DataPage.save(event)">
             <div class="form-grid">
               <div class="form-group">
-                <label class="form-label">ICCID</label>
-                <input name="iccid" class="form-control" placeholder="SIM kart ICCID numarası">
+                <label class="form-label" data-i18n="label_sim_type">${i18n.t('label_sim_type')}</label>
+                <select name="sim_type" class="form-control" onchange="M2MPage.onTypeChange(this.value)">
+                  <option value="m2m" data-i18n="nav_m2m">${i18n.t('nav_m2m')}</option>
+                  <option value="data" selected data-i18n="nav_data">${i18n.t('nav_data')}</option>
+                  <option value="voice" data-i18n="nav_voice">${i18n.t('nav_voice')}</option>
+                </select>
               </div>
               <div class="form-group">
-                <label class="form-label">Telefon Numarası</label>
+                <label class="form-label" data-i18n="label_iccid">${i18n.t('label_iccid')}</label>
+                <input name="iccid" class="form-control" data-i18n="label_iccid" placeholder="${i18n.t('label_iccid')}">
+              </div>
+              <div class="form-group">
+                <label class="form-label" data-i18n="label_phone_no">${i18n.t('label_phone_no')}</label>
                 <input name="phone_no" class="form-control" placeholder="05XX XXX XX XX">
               </div>
               <div class="form-group">
-                <label class="form-label">Operatör <span style="color:var(--danger)">*</span></label>
+                <label class="form-label" data-i18n="label_operator">${i18n.t('label_operator')} <span style="color:var(--danger)">*</span></label>
                 <select name="operator" class="form-control" id="dataOperatorSel" required onchange="SettingsPage?.onOperatorChange(this.value, 'data', 'dataPagePkgSel')"></select>
               </div>
               <div class="form-group">
-                <label class="form-label">Paket Seç (İsteğe Bağlı)</label>
+                <label class="form-label" data-i18n="label_package">${i18n.t('label_package')}</label>
                 <select name="package_id" class="form-control" id="dataPagePkgSel">
-                  <option value="">Seçiniz...</option>
+                  <option value="" data-i18n="select_option">${i18n.t('select_option')}</option>
+                </select>
+              </div>
+               <div class="form-group">
+                <label class="form-label" data-i18n="label_location">${i18n.t('label_location')}</label>
+                <select name="location" class="form-control" id="dataPageLocSel">
+                   <option value="" data-i18n="select_option">${i18n.t('select_option')}</option>
                 </select>
               </div>
               <div class="form-group">
-                <label class="form-label">Durum</label>
+                <label class="form-label" data-i18n="label_status">${i18n.t('label_status')}</label>
                 <select name="status" class="form-control">
-                  <option value="active">Aktif</option>
-                  <option value="spare">Yedek</option>
-                  <option value="passive">Pasif</option>
+                  <option value="active" data-i18n="status_active">${i18n.t('status_active')}</option>
+                  <option value="spare" data-i18n="status_spare">${i18n.t('status_spare')}</option>
+                  <option value="passive" data-i18n="status_passive">${i18n.t('status_passive')}</option>
                 </select>
               </div>
               <div class="form-group col-span-2">
-                <label class="form-label">Lokasyon</label>
-                <input name="location" class="form-control" list="locationsList" placeholder="Seçin veya yazın..." autocomplete="off">
-                <datalist id="locationsList"></datalist>
-              </div>
-              <div class="form-group col-span-2">
-                <label class="form-label">Notlar</label>
-                <textarea name="notes" class="form-control" placeholder="Ek açıklama..."></textarea>
+                <label class="form-label" data-i18n="label_notes">${i18n.t('label_notes')}</label>
+                <textarea name="notes" class="form-control" placeholder="..."></textarea>
               </div>
             </div>
           </form>
           <div class="modal-footer">
-            <button class="btn btn-secondary" onclick="UI.closeModal('dataModal')">İptal</button>
-            <button class="btn btn-primary" onclick="document.getElementById('dataForm').requestSubmit()" id="dataSaveBtn">Kaydet</button>
+            <button class="btn btn-secondary" onclick="UI.closeModal('dataModal')" data-i18n="cancel">${i18n.t('cancel')}</button>
+            <button class="btn btn-primary" onclick="document.getElementById('dataForm').requestSubmit()" id="dataSaveBtn" data-i18n="save">${i18n.t('save')}</button>
           </div>
         </div>
       </div>
@@ -122,7 +131,7 @@ const DataPage = (() => {
       <div class="modal-overlay" id="dataBulkModal">
         <div class="modal">
           <div class="modal-header">
-            <span class="modal-title">Toplu Data Düzenle</span>
+            <span class="modal-title" data-i18n="bulk_edit">${i18n.t('bulk_edit')}</span>
             <button class="modal-close" onclick="UI.closeModal('dataBulkModal')">×</button>
           </div>
           <form class="modal-body" id="dataBulkForm" onsubmit="DataPage.saveBulk(event)">
@@ -200,13 +209,13 @@ const DataPage = (() => {
       let rows = await API.getData(qs);
       
       const colDefs = {
-        'iccid': { label: 'ICCID', getVal: r => r.iccid || '—' },
-        'phone_no': { label: 'Telefon No', getVal: r => r.phone_no || '—' },
-        'operator': { label: 'Operatör', getVal: r => r.operator || '—' },
-        'package_name': { label: 'Paket', getVal: r => r.package_name || '—' },
-        'status': { label: 'Durum', getVal: r => r.status || '—' },
-        'location': { label: 'Lokasyon', getVal: r => r.location || '—' },
-        'notes': { label: 'Notlar', getVal: r => r.notes || '—' }
+        'iccid':      { label: i18n.t('col_iccid'),    getVal: r => r.iccid || '—' },
+        'phone_no':   { label: i18n.t('col_phone'),    getVal: r => r.phone_no || '—' },
+        'operator':   { label: i18n.t('col_operator'), getVal: r => r.operator || '—' },
+        'package_name': { label: i18n.t('col_package'), getVal: r => r.package_name || '—' },
+        'status':     { label: i18n.t('col_status'),   getVal: r => r.status || '—' },
+        'location':   { label: i18n.t('col_location'), getVal: r => r.location || '—' },
+        'notes':      { label: i18n.t('label_notes'),  getVal: r => r.notes || '—' }
       };
 
       if (!DataPage.colFilters) DataPage.colFilters = {};
@@ -214,31 +223,32 @@ const DataPage = (() => {
       rows = UI.filterRows(rows, DataPage.colFilters, colDefs);
       rows = UI.sortRows(rows, DataPage.colFilters._sort, colDefs);
 
+      const emptyMsg = i18n.t('no_records');
       if (!rows.length) {
-        tbody.innerHTML = `<tr><td colspan="9">${UI.emptyState('🌐', 'Data hattı bulunamadı', 'Yeni hat eklemek için butona tıklayın.')}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="10">${UI.emptyState('🌐', emptyMsg)}</td></tr>`;
         return;
       }
       tbody.innerHTML = rows.map((r, i) => `
         <tr>
           <td style="width:40px"><input type="checkbox" class="row-select" value="${r.id}"></td>
           <td class="td-muted">${i + 1}</td>
-          <td class="td-muted" style="font-family:monospace;font-size:12px">${r.iccid || '—'}</td>
+          <td class="td-mono">${r.iccid || '—'}</td>
           <td>${r.phone_no || '—'}</td>
           <td>${UI.operatorBadge(r.operator)}</td>
-          <td class="td-muted" style="font-size:12px">${r.package_name ? `<span class="badge" style="background:var(--bg-secondary);color:var(--text-main)">${r.package_name}</span>` : '—'}</td>
+          <td class="td-muted">${r.package_name ? `<span class="badge badge-package">${r.package_name}</span>` : '—'}</td>
           <td>${UI.statusBadge(r.status)}</td>
           <td><strong>${r.location || '—'}</strong></td>
-          <td class="td-muted" style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.notes || '—'}</td>
-            <td>
-              <div class="action-buttons">
-                <button class="btn btn-secondary btn-sm btn-icon" title="Geçmiş" onclick="window.openTimeline(${r.id}, 'Data Hattı Geçmişi: ${r.location}')">
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-                </button>
-                ${window.AppPerms?.canEdit('data') ? `
-              <button class="btn btn-secondary btn-sm btn-icon" title="Düzenle" onclick="DataPage.openEdit(${r.id})">
+          <td class="td-notes">${r.notes || '—'}</td>
+          <td class="td-actions">
+            <div class="action-buttons">
+              <button class="btn btn-secondary btn-sm btn-icon" title="${i18n.t('tooltip_history')}" onclick="window.openTimeline(${r.id}, '${(r.location || r.phone_no || '').replace(/'/g, '&#39;')}')">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+              </button>
+              ${window.AppPerms?.canEdit('data') ? `
+              <button class="btn btn-secondary btn-sm btn-icon" title="${i18n.t('tooltip_edit')}" onclick="DataPage.openEdit(${r.id})">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
               </button>
-              <button class="btn btn-danger btn-sm btn-icon" title="Sil" onclick="DataPage.del(${r.id}, '${r.location || r.phone_no || 'Bu kayıt'}')">
+              <button class="btn btn-danger btn-sm btn-icon" title="${i18n.t('tooltip_delete')}" onclick="DataPage.del(${r.id}, '${(r.location || r.phone_no || 'Bu kayıt').replace(/'/g, '&#39;')}')">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
               </button>` : '<span class="td-muted" style="font-size:11px">—</span>'}
             </div>
@@ -284,12 +294,38 @@ const DataPage = (() => {
     } catch (err) { UI.toast(err.message, 'error'); }
   }
 
+  function onTypeChange(newType) {
+    // Tip değişimi takibi
+  }
+
+  function openTransferFromEdit() {
+    if (!editingId) return;
+    const loc = document.querySelector('#dataForm [name="location"]')?.value;
+    const phone = document.querySelector('#dataForm [name="phone_no"]')?.value;
+    UI.openTransfer(editingId, 'data', loc || phone || 'Data Hattı');
+  }
+
   async function save(e) {
     e.preventDefault();
     const saveBtn = document.getElementById('dataSaveBtn');
     saveBtn.disabled = true;
     const data = UI.formData('dataForm');
+    const newType = document.getElementById('dataTypeSelect').value;
+
     try {
+      if (editingId && newType !== 'data') {
+        const label = data.location || data.phone_no || 'Data Hattı';
+        UI.confirm(`"${label}" kaydını <strong>${newType.toUpperCase()}</strong> hattına taşımak istediğinize emin misiniz?`, async () => {
+          try {
+            await API.transferSim(editingId, 'data', newType);
+            UI.toast('Hat tipi başarıyla değiştirildi.', 'success');
+            UI.closeModal('dataModal');
+            load();
+          } catch (err) { UI.toast(err.message, 'error'); }
+        }, { title: 'Hat Tipini Değiştir', icon: '🔄', okText: 'Tipi Değiştir', okClass: 'btn-primary' });
+        return;
+      }
+
       if (editingId) { await API.updateData(editingId, data); UI.toast('Data hattı güncellendi.', 'success'); }
       else { await API.addData(data); UI.toast('Data hattı eklendi.', 'success'); }
       UI.closeModal('dataModal');
@@ -383,5 +419,5 @@ const DataPage = (() => {
     } catch (err) { UI.toast(err.message, 'error'); }
   }
 
-  return { render, load, openEdit, save, del, openBulkEdit, saveBulk, bulkDel, exportExcel };
+  return { render, load, openEdit, save, del, openBulkEdit, saveBulk, bulkDel, exportExcel, openTransferFromEdit, onTypeChange };
 })();

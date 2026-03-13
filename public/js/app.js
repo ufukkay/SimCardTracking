@@ -15,12 +15,13 @@
     // Update sidebar user info
     document.getElementById('userAvatar').textContent = currentUser.first_name.charAt(0).toUpperCase();
     document.getElementById('userName').textContent = `${currentUser.first_name} ${currentUser.last_name}`;
-    document.getElementById('userRole').textContent = currentUser.role === 'admin' ? 'Admin' : 'Kullanıcı';
+    document.getElementById('userRole').textContent = currentUser.role === 'admin' ? i18n.t('role_admin') : (currentUser.role === 'editor' ? i18n.t('role_editor') : i18n.t('role_viewer'));
 
     // Apply sidebar visibility based on permissions
     applySidebarPermissions(currentUser);
 
     document.getElementById('appLayout').style.display = 'flex';
+    i18n.updateUI(); // Dil desteğini uygula
   } catch {
     localStorage.clear();
     window.location.href = '/login.html';
@@ -48,7 +49,7 @@
       if (navItem && !canView(mod)) {
         navItem.style.opacity = '0.35';
         navItem.style.pointerEvents = 'none';
-        navItem.title = 'Erişim yetkiniz yok';
+        navItem.title = i18n.t('no_permission');
       }
     });
   }
@@ -70,12 +71,12 @@
 
   // ─── Page Map ─────────────────────────────────────────────────────────────
   const pages = {
-    m2m:      { title: 'M2M Hatları',  render: () => canView('m2m')   ? M2MPage.render()     : renderAccessDenied('M2M Hatları') },
-    data:     { title: 'Data Hatları', render: () => canView('data')  ? DataPage.render()    : renderAccessDenied('Data Hatları') },
-    voice:    { title: 'Ses Hatları',  render: () => canView('voice') ? VoicePage.render()   : renderAccessDenied('Ses Hatları') },
-    reports:  { title: 'Raporlar',     render: () => ReportsPage.render() },
-    settings: { title: 'Ayarlar',      render: () => SettingsPage.render() },
-    logs:     { title: 'İşlem Geçmişi', render: () => (currentUser.role === 'admin') ? LogsPage.render() : renderAccessDenied('İşlem Geçmişi') },
+    m2m:      { title: 'nav_m2m',  render: () => canView('m2m')   ? M2MPage.render()     : renderAccessDenied('nav_m2m') },
+    data:     { title: 'nav_data', render: () => canView('data')  ? DataPage.render()    : renderAccessDenied('nav_data') },
+    voice:    { title: 'nav_voice', render: () => canView('voice') ? VoicePage.render()   : renderAccessDenied('nav_voice') },
+    reports:  { title: 'nav_reports',     render: () => ReportsPage.render() },
+    settings: { title: 'nav_settings',      render: () => SettingsPage.render() },
+    logs:     { title: 'nav_logs', render: () => (currentUser.role === 'admin') ? LogsPage.render() : renderAccessDenied('nav_logs') },
   };
 
   // ─── Navigate ─────────────────────────────────────────────────────────────
@@ -91,6 +92,9 @@
     });
 
     document.getElementById('topbarActions').innerHTML = '';
+    window.currentPageTitleKey = pages[page].title;
+    document.getElementById('pageTitle').textContent = i18n.t(pages[page].title);
+
     pages[page].render();
     if (push) history.pushState({ page }, '', `#${page}`);
   }
@@ -105,10 +109,10 @@
 
   // ─── Logout ───────────────────────────────────────────────────────────────
   document.getElementById('logoutBtn').addEventListener('click', () => {
-    UI.confirm('Çıkış yapmak istediğinize emin misiniz?', () => {
+    UI.confirm(i18n.t('confirm_logout') || 'Çıkış yapmak istediğinize emin misiniz?', () => {
       localStorage.clear();
       window.location.href = '/login.html';
-    }, { title: 'Çıkış Yap', icon: '👋', okText: 'Çıkış Yap', okClass: 'btn-secondary' });
+    }, { title: i18n.t('logout'), icon: '👋', okText: i18n.t('logout'), okClass: 'btn-secondary' });
   });
 
   // ─── Back/Forward ─────────────────────────────────────────────────────────
@@ -140,10 +144,10 @@
   if (savedTheme === 'dark') setTheme(true);
 
   // ─── Timeline Global Function ─────────────────────────────────────────────
-  window.openTimeline = async (targetId, title = 'SIM Geçmişi') => {
+  window.openTimeline = async (targetId, titleKey = 'timeline_title') => {
     const container = document.getElementById('timelineContent');
     container.innerHTML = UI.loading();
-    document.querySelector('#timelineModal .modal-title').textContent = title;
+    document.querySelector('#timelineModal .modal-title').textContent = i18n.t(titleKey);
     UI.openModal('timelineModal');
 
     try {
@@ -156,22 +160,25 @@
       }
 
       const actionTranslations = {
-        'CREATE': 'Kart Oluşturuldu',
-        'UPDATE': 'Kart Güncellendi',
-        'DELETE': 'Kart Silindi',
-        'BULK_UPDATE': 'Toplu Güncelleme Uygulandı'
+        'CREATE': i18n.t('action_CREATE'),
+        'UPDATE': i18n.t('action_UPDATE'),
+        'DELETE': i18n.t('action_DELETE'),
+        'BULK_UPDATE': i18n.t('action_BULK_UPDATE'),
+        'TRANSFER': i18n.t('action_TRANSFER')
       };
 
       const keyTranslations = {
-        'iccid': 'ICCID',
-        'phone_no': 'Telefon No',
-        'plate_no': 'Plaka',
-        'operator': 'Operatör',
-        'vehicle_type': 'Araç Tipi',
-        'status': 'Durum',
-        'package_id': 'Paket ID',
-        'assigned_to': 'Personel',
-        'location': 'Lokasyon'
+        'iccid': i18n.t('key_iccid'),
+        'phone_no': i18n.t('key_phone_no'),
+        'plate_no': i18n.t('key_plate_no'),
+        'operator': i18n.t('key_operator'),
+        'vehicle_type': i18n.t('key_vehicle_type'),
+        'status': i18n.t('key_status'),
+        'package_id': i18n.t('key_package_id'),
+        'assigned_to': i18n.t('key_assigned_to'),
+        'location': i18n.t('key_location'),
+        'fromType': i18n.t('key_fromType'),
+        'toType': i18n.t('key_toType')
       };
 
       container.innerHTML = logs.map(log => {
@@ -185,8 +192,7 @@
               const label = keyTranslations[k] || k;
               let val = v;
               if (k === 'status') {
-                const statusMap = { 'active': 'Aktif', 'passive': 'Pasif', 'spare': 'Yedek' };
-                val = statusMap[v] || v;
+                val = i18n.t('status_' + v) || v;
               }
               return `• ${label}: ${val}`;
             }).join('<br>');
