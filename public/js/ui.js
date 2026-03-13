@@ -230,11 +230,13 @@ const UI = (() => {
       }
 
       const EMPTY_VAL = '__EMPTY__';
+      const isEmpty = v => !v || v === '\u2014' || v === '—' || v === '-' || String(v).trim() === '' || String(v).trim() === '\u2014';
+      
       let rawValues = rowsForThisCol.map(r => colDef.getVal(r));
-      let uniqueVals = [...new Set(rawValues)].filter(v => v !== '\u2014' && v !== '' && v !== null && v !== undefined);
+      let uniqueVals = [...new Set(rawValues)].filter(v => !isEmpty(v));
       uniqueVals.sort();
 
-      const hasEmpty = rawValues.some(v => v === '\u2014' || v === '' || v === null || v === undefined);
+      const hasEmpty = rawValues.some(isEmpty);
       const emptyLabel = i18n.t('filter_empty') || '(Bo\u015f)';
       const emptyChecked = isActive && filterStateObj[colKey].includes(EMPTY_VAL);
 
@@ -326,8 +328,8 @@ const UI = (() => {
       if (activeFilters && activeFilters.length > 0 && colDefs[colKey]) {
         filtered = filtered.filter(row => {
           const val = colDefs[colKey].getVal(row);
-          const isEmpty = val === '\u2014' || val === '' || val === null || val === undefined;
-          if (activeFilters.includes(EMPTY_VAL) && isEmpty) return true;
+          const valIsEmpty = !val || val === '\u2014' || val === '—' || val === '-' || String(val).trim() === '' || String(val).trim() === '\u2014';
+          if (activeFilters.includes(EMPTY_VAL) && valIsEmpty) return true;
           return activeFilters.filter(f => f !== EMPTY_VAL).includes(val);
         });
       }
