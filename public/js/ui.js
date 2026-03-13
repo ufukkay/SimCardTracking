@@ -230,14 +230,12 @@ const UI = (() => {
       }
 
       const EMPTY_VAL = '__EMPTY__';
-      const isEmpty = v => !v || /^[\s\u2013\u2014\u2015-]*$/.test(String(v).trim());
+      const isEmpty = v => !v || String(v).trim() === '' || /^[\s\u2013\u2014\u2015-]*$/.test(String(v).trim());
       
       let rawValues = rowsForThisCol.map(r => colDef.getVal(r));
       let uniqueVals = [...new Set(rawValues)].filter(v => !isEmpty(v));
       uniqueVals.sort();
 
-      // Check if ANY row in the global table has an empty value for this column
-      const hasEmptyGlobal = unfilteredRows.some(r => isEmpty(colDef.getVal(r)));
       const emptyLabel = i18n.t('filter_empty') || '(Bo\u015f)';
       const emptyChecked = isActive && filterStateObj[colKey].includes(EMPTY_VAL);
 
@@ -250,11 +248,10 @@ const UI = (() => {
           <button type="button" class="btn-link btn-clear-selection">${i18n.t('clear_selection')}</button>
         </div>
         <div class="col-filter-list">
-          ${hasEmptyGlobal ? `
-            <label class="col-filter-item col-filter-empty" onclick="event.stopPropagation()">
-              <input type="checkbox" value="${EMPTY_VAL}" ${emptyChecked ? 'checked' : ''}>
-              <span style="color:var(--text-muted);font-style:italic">${emptyLabel}</span>
-            </label>` : ''}
+          <label class="col-filter-item col-filter-empty" onclick="event.stopPropagation()">
+            <input type="checkbox" value="${EMPTY_VAL}" ${emptyChecked ? 'checked' : ''}>
+            <span style="color:var(--text-muted);font-style:italic">${emptyLabel}</span>
+          </label>
           ${uniqueVals.map(val => {
             const isChecked = isActive && filterStateObj[colKey].includes(val);
             return `
@@ -329,7 +326,7 @@ const UI = (() => {
       if (activeFilters && activeFilters.length > 0 && colDefs[colKey]) {
         filtered = filtered.filter(row => {
           const val = colDefs[colKey].getVal(row);
-          const valIsEmpty = !val || /^[\s\u2013\u2014\u2015-]*$/.test(String(val).trim());
+          const valIsEmpty = !val || String(val).trim() === '' || /^[\s\u2013\u2014\u2015-]*$/.test(String(val).trim());
           if (activeFilters.includes(EMPTY_VAL) && valIsEmpty) return true;
           return activeFilters.filter(f => f !== EMPTY_VAL).includes(val);
         });
