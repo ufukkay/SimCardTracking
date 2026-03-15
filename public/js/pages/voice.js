@@ -111,9 +111,8 @@ const VoicePage = (() => {
               </div>
               <div class="form-group">
                 <label class="form-label" data-i18n="label_assigned_to">${i18n.t('label_assigned_to')}</label>
-                <select name="assigned_to" class="form-control" id="voicePersonnelSel">
-                   <option value="" data-i18n="select_option">${i18n.t('select_option')}</option>
-                </select>
+                <input name="assigned_to" class="form-control" list="personnelList" id="voicePersonnelInput" data-i18n="search_placeholder_short" placeholder="${i18n.t('search_placeholder_short')}" autocomplete="off">
+                <datalist id="personnelList"></datalist>
               </div>
               <div class="form-group">
                 <label class="form-label" data-i18n="label_department">${i18n.t('label_department')}</label>

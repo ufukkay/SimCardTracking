@@ -102,9 +102,8 @@ const DataPage = (() => {
               </div>
                <div class="form-group">
                 <label class="form-label" data-i18n="label_location">${i18n.t('label_location')}</label>
-                <select name="location" class="form-control" id="dataPageLocSel">
-                   <option value="" data-i18n="select_option">${i18n.t('select_option')}</option>
-                </select>
+                <input name="location" class="form-control" list="locationsList" id="dataLocInput" data-i18n="search_placeholder_short" placeholder="${i18n.t('search_placeholder_short')}" autocomplete="off">
+                <datalist id="locationsList"></datalist>
               </div>
               <div class="form-group">
                 <label class="form-label" data-i18n="label_status">${i18n.t('label_status')}</label>

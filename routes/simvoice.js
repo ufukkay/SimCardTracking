@@ -4,11 +4,20 @@ const db = require('../database/db');
 const { authMiddleware, canView, canEdit } = require('../middleware/auth');
 const { logActivity } = require('../middleware/logger');
 
-// Helper function (assuming it's defined elsewhere or will be added)
-const syncPersonnel = (firstName, lastName, department, company) => {
-  // Logic to sync personnel data, e.g., add to a personnel table if not exists
-  // This is a placeholder for the actual implementation
-  console.log(`Syncing personnel: ${firstName} ${lastName}, Dept: ${department}, Company: ${company}`);
+const syncPersonnel = (fullName, department, company) => {
+  if (!fullName) return;
+  const nameParts = fullName.trim().split(' ');
+  const lastName = nameParts.length > 1 ? nameParts.pop() : '';
+  const firstName = nameParts.join(' ') || fullName;
+
+  try {
+    const existing = db.prepare('SELECT id FROM personnel WHERE first_name = ? AND last_name = ?').get(firstName, lastName);
+    if (!existing) {
+      db.prepare('INSERT INTO personnel (first_name, last_name, department, company) VALUES (?, ?, ?, ?)').run(firstName, lastName, department || null, company || null);
+    }
+  } catch (e) {
+    console.error('Error syncing personnel:', e);
+  }
 };
 
 router.use(authMiddleware);
@@ -65,6 +74,8 @@ router.post('/', canEdit('voice'), (req, res) => {
   `).run(iccid || null, phone_no || null, operator, status || 'active',
          finalAssignedTo, department || null, assigned_company || null, notes || null, package_id || null);
   
+  syncPersonnel(finalAssignedTo, department, assigned_company);
+  
   logActivity(req, 'CREATE', 'VOICE', result.lastInsertRowid, { iccid, phone_no, assigned_to: finalAssignedTo });
   res.status(201).json({ id: result.lastInsertRowid, message: 'Ses hattı eklendi.' });
 });
@@ -94,6 +105,8 @@ router.put('/:id', canEdit('voice'), (req, res) => {
          finalAssignedTo, department || null, assigned_company || null, notes || null, package_id || null, req.params.id);
   if (result.changes === 0) return res.status(404).json({ message: 'Kayıt bulunamadı.' });
   
+  syncPersonnel(finalAssignedTo, department, assigned_company);
+
   logActivity(req, 'UPDATE', 'VOICE', req.params.id, { iccid, phone_no, assigned_to: finalAssignedTo });
   res.json({ message: 'Ses hattı güncellendi.' });
 });
