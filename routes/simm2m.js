@@ -120,6 +120,8 @@ router.post('/bulk-delete', canEdit('m2m'), (req, res) => {
   const result = db.prepare(`DELETE FROM sim_m2m WHERE id IN (${placeholders})`).run(...ids);
   
   logActivity(req, 'BULK_DELETE', 'M2M', ids.join(','), { count: result.changes });
+  // Log individually for timelines
+  ids.forEach(id => logActivity(req, 'DELETE', 'M2M', id, { bulk: true }));
   res.json({ message: `${result.changes} kayıt başarıyla silindi.` });
 });
 
@@ -149,6 +151,8 @@ router.post('/bulk-update', canEdit('m2m'), (req, res) => {
   const result = db.prepare(query).run(...params, ...ids);
   
   logActivity(req, 'BULK_UPDATE', 'M2M', ids.join(','), { count: result.changes, updates: data });
+  // Log individually for timelines
+  ids.forEach(id => logActivity(req, 'UPDATE', 'M2M', id, { ...data, bulk: true }));
   res.json({ message: `${result.changes} kayıt başarıyla güncellendi.` });
 });
 

@@ -5,6 +5,10 @@ const DataPage = (() => {
   function render() {
     document.getElementById('pageTitle').textContent = i18n.t('nav_data');
     document.getElementById('topbarActions').innerHTML = `
+      <button class="btn btn-primary" onclick="DataPage.openAdd()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        <span data-i18n="new_record">${i18n.t('new_record')}</span>
+      </button>
       <button class="btn btn-secondary" onclick="DataPage.exportExcel()">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
         <span data-i18n="export_excel">${i18n.t('export_excel')}</span>
@@ -76,7 +80,7 @@ const DataPage = (() => {
             <div class="form-grid">
               <div class="form-group">
                 <label class="form-label" data-i18n="label_sim_type">${i18n.t('label_sim_type')}</label>
-                <select name="sim_type" class="form-control" onchange="M2MPage.onTypeChange(this.value)">
+                <select name="sim_type" id="dataTypeSelect" class="form-control" onchange="DataPage.onTypeChange(this.value)">
                   <option value="m2m" data-i18n="nav_m2m">${i18n.t('nav_m2m')}</option>
                   <option value="data" selected data-i18n="nav_data">${i18n.t('nav_data')}</option>
                   <option value="voice" data-i18n="nav_voice">${i18n.t('nav_voice')}</option>
@@ -273,7 +277,12 @@ const DataPage = (() => {
     }
   }
 
-  // openAdd function removed since addition is now centralized in settings
+  function openAdd() {
+    editingId = null;
+    document.getElementById('dataModalTitle').textContent = i18n.t('new_record');
+    document.getElementById('dataForm').reset();
+    UI.openModal('dataModal');
+  }
 
 
   async function openEdit(id) {
@@ -418,5 +427,5 @@ const DataPage = (() => {
     } catch (err) { UI.toast(err.message, 'error'); }
   }
 
-  return { render, load, openEdit, save, del, openBulkEdit, saveBulk, bulkDel, exportExcel, openTransferFromEdit, onTypeChange };
+  return { render, load, openAdd, openEdit, save, del, openBulkEdit, saveBulk, bulkDel, exportExcel, openTransferFromEdit, onTypeChange };
 })();

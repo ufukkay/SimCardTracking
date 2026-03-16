@@ -115,6 +115,7 @@ router.post('/bulk-delete', canEdit('data'), (req, res) => {
   const result = db.prepare(`DELETE FROM sim_data WHERE id IN (${placeholders})`).run(...ids);
   
   logActivity(req, 'BULK_DELETE', 'DATA', ids.join(','), { count: result.changes });
+  ids.forEach(id => logActivity(req, 'DELETE', 'DATA', id, { bulk: true }));
   res.json({ message: `${result.changes} kayıt başarıyla silindi.` });
 });
 
@@ -141,6 +142,7 @@ router.post('/bulk-update', canEdit('data'), (req, res) => {
   const result = db.prepare(query).run(...params, ...ids);
   
   logActivity(req, 'BULK_UPDATE', 'DATA', ids.join(','), { count: result.changes, updates: data });
+  ids.forEach(id => logActivity(req, 'UPDATE', 'DATA', id, { ...data, bulk: true }));
   res.json({ message: `${result.changes} kayıt başarıyla güncellendi.` });
 });
 

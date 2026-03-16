@@ -182,7 +182,12 @@
       };
 
       container.innerHTML = logs.map(log => {
-        const date = new Date(log.created_at).toLocaleString('tr-TR');
+        // Robust date parsing (handle 'YYYY-MM-DD HH:mm:ss' which might fail in some browsers)
+        let dateStr = log.created_at;
+        if (dateStr && !dateStr.includes('T') && dateStr.includes(' ')) {
+          dateStr = dateStr.replace(' ', 'T');
+        }
+        const date = new Date(dateStr).toLocaleString('tr-TR');
         let detailsHtml = '';
         
         try {
