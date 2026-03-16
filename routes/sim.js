@@ -1,13 +1,13 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../database/db');
-const { authMiddleware, canEdit } = require('../middleware/auth');
+const { authMiddleware, canEdit, adminOnly } = require('../middleware/auth');
 const { logActivity } = require('../middleware/logger');
 
 router.use(authMiddleware);
 
 // POST /api/sim/transfer
-router.post('/transfer', canEdit('data'), (req, res) => {
+router.post('/transfer', adminOnly, (req, res) => {
   const { id, currentType, targetType } = req.body;
 
   if (!id || !currentType || !targetType) {

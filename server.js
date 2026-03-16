@@ -30,6 +30,11 @@ app.use("/api/logs", require("./routes/logs"));
 app.use("/api/sim", require("./routes/sim"));
 app.use("/api/admin/update", require("./routes/update"));
 
+// Error handler (must be before app.listen)
+app.use((err, req, res, next) => {
+  console.error('SERVER_ERROR:', err);
+  res.status(500).json({ message: 'Sunucu hatası', error: err.message });
+});
 
 // SPA fallback — login veya index
 app.get("*", (req, res) => {
@@ -40,11 +45,7 @@ app.listen(PORT, () => {
   console.log(`SIM Kart Takip Sistemi çalışıyor: http://localhost:${PORT}`);
 });
 
-// Error handler
-app.use((err, req, res, next) => {
-  console.error('SERVER_ERROR:', err);
-  res.status(500).json({ message: 'Sunucu hatası', error: err.message });
-});
+
 
 module.exports = app;
  
