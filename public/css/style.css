@@ -1813,9 +1813,14 @@ body.dark-theme .theme-toggle {
 
 .dark-theme tbody tr, .dark-theme .changelog-item {
   border-color: var(--border-light);
+  background-color: var(--bg-card) !important;
+  color: var(--text-primary) !important;
+}
+.dark-theme tbody tr:nth-child(even) {
+  background-color: var(--bg-primary) !important;
 }
 .dark-theme tbody tr:hover {
-  background-color: var(--bg-hover);
+  background-color: var(--bg-hover) !important;
 }
 .dark-theme .td-muted, .dark-theme .text-muted, .dark-theme .stat-sub {
   color: var(--text-muted) !important;
