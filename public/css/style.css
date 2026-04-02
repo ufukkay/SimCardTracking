@@ -1829,3 +1829,27 @@ body.dark-theme .theme-toggle {
 .dark-theme .sidebar-logo, .dark-theme .sidebar-footer {
   border-color: var(--border);
 }
+
+/* Scrollbar in dark mode */
+.dark-theme ::-webkit-scrollbar-thumb {
+  background: #404040;
+}
+.dark-theme ::-webkit-scrollbar-thumb:hover {
+  background: #555555;
+}
+.dark-theme ::-webkit-scrollbar-track, .dark-theme ::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* Checkboxes and Badges inside Dark Mode */
+.dark-theme input[type="checkbox"] {
+  accent-color: var(--accent);
+}
+.dark-theme .badge-success { background: rgba(30, 142, 62, 0.2); color: #81c995; }
+.dark-theme .badge-warning { background: rgba(227, 116, 0, 0.2); color: #fde293; }
+.dark-theme .badge-danger { background: rgba(217, 48, 37, 0.2); color: #f28b82; }
+.dark-theme .badge-info { background: rgba(26, 115, 232, 0.2); color: #8ab4f8; }
+.dark-theme .badge-turkcell { background: rgba(2, 132, 199, 0.2); color: #7dd3fc; }
+.dark-theme .badge-vodafone { background: rgba(225, 29, 72, 0.2); color: #fda4af; }
+.dark-theme .badge-turktelekom { background: rgba(71, 85, 105, 0.2); color: #cbd5e1; }
+.dark-theme .badge-muted { background: rgba(95, 99, 104, 0.2); color: #bdc1c6; }
