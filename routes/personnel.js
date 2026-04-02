@@ -25,17 +25,17 @@ router.get('/:id', (req, res) => {
 });
 
 router.post('/', adminOnly, (req, res) => {
-  const { first_name, last_name, department, company, phone, notes } = req.body;
+  const { first_name, last_name, department, company, cost_center, phone, notes } = req.body;
   if (!first_name || !last_name) return res.status(400).json({ message: 'Ad ve soyad zorunludur.' });
-  const result = db.prepare('INSERT INTO personnel (first_name, last_name, department, company, phone, notes) VALUES (?, ?, ?, ?, ?, ?)').run(first_name, last_name, department, company, phone, notes);
+  const result = db.prepare('INSERT INTO personnel (first_name, last_name, department, company, cost_center, phone, notes) VALUES (?, ?, ?, ?, ?, ?, ?)').run(first_name, last_name, department, company, cost_center, phone, notes);
 
   logActivity(req, 'CREATE', 'PERSONNEL', result.lastInsertRowid, { first_name, last_name });
   res.status(201).json({ id: result.lastInsertRowid, message: 'Personel eklendi.' });
 });
 
 router.put('/:id', adminOnly, (req, res) => {
-  const { first_name, last_name, department, company, phone, notes } = req.body;
-  const result = db.prepare('UPDATE personnel SET first_name=?, last_name=?, department=?, company=?, phone=?, notes=? WHERE id=?').run(first_name, last_name, department, company, phone, notes, req.params.id);
+  const { first_name, last_name, department, company, cost_center, phone, notes } = req.body;
+  const result = db.prepare('UPDATE personnel SET first_name=?, last_name=?, department=?, company=?, cost_center=?, phone=?, notes=? WHERE id=?').run(first_name, last_name, department, company, cost_center, phone, notes, req.params.id);
   if (result.changes === 0) return res.status(404).json({ message: 'Personel bulunamadı.' });
 
   logActivity(req, 'UPDATE', 'PERSONNEL', req.params.id, { first_name, last_name });

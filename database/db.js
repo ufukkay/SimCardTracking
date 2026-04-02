@@ -165,6 +165,7 @@ try { db.exec(`ALTER TABLE sim_voice ADD COLUMN package_id INTEGER REFERENCES pa
 try { db.exec(`ALTER TABLE packages ADD COLUMN data_limit REAL DEFAULT NULL`); } catch (_) {}
 try { db.exec(`ALTER TABLE packages ADD COLUMN sms_limit INTEGER DEFAULT NULL`); } catch (_) {}
 try { db.exec(`ALTER TABLE packages ADD COLUMN minutes_limit INTEGER DEFAULT NULL`); } catch (_) {}
+try { db.exec(`ALTER TABLE personnel ADD COLUMN cost_center TEXT DEFAULT NULL`); } catch (_) {}
 
 // ─── Packages type kısıtlaması migration: 'general' tipini destekle ───
 // SQLite'ta ALTER TABLE ile CHECK kısıtlaması değiştirilemez; recreate yapılır.

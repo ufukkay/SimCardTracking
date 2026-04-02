@@ -83,7 +83,7 @@ const SettingsPage = (() => {
             </button>
           </div>
           <div class="table-container">
-            <table><thead><tr><th>#</th><th>Ad Soyad</th><th>Departman</th><th>Şirket</th><th>Telefon</th><th>Notlar</th><th>İşlem</th></tr></thead>
+            <table><thead><tr><th>#</th><th>Ad Soyad</th><th>Departman</th><th>Şirket</th><th>Masraf Kalemi</th><th>Telefon</th><th>Notlar</th><th>İşlem</th></tr></thead>
               <tbody id="personnelTableBody"></tbody></table>
           </div>
         </div>
@@ -334,6 +334,7 @@ const SettingsPage = (() => {
               <div class="form-group"><label class="form-label">Soyad *</label><input name="last_name" class="form-control" required></div>
               <div class="form-group"><label class="form-label">Departman</label><input name="department" class="form-control" placeholder="IT, Muhasebe..."></div>
               <div class="form-group"><label class="form-label">Şirket</label><input name="company" class="form-control"></div>
+              <div class="form-group"><label class="form-label">Masraf Kalemi</label><input name="cost_center" class="form-control" placeholder="Örn: IT123"></div>
               <div class="form-group"><label class="form-label">Telefon</label><input name="phone" class="form-control"></div>
               <div class="form-group col-span-2"><label class="form-label">Notlar</label><textarea name="notes" class="form-control"></textarea></div>
             </div>
@@ -638,6 +639,7 @@ const SettingsPage = (() => {
           <td><strong>${r.first_name} ${r.last_name}</strong></td>
           <td class="td-muted">${r.department || '—'}</td>
           <td class="td-muted">${r.company || '—'}</td>
+          <td class="td-muted">${r.cost_center || '—'}</td>
           <td class="td-muted">${r.phone || '—'}</td>
           <td class="td-muted">${r.notes || '—'}</td>
           <td><div class="action-buttons">
