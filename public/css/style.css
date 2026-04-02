@@ -1750,8 +1750,8 @@ body.dark-theme .theme-toggle {
   --bg-secondary: #1e1e1e;
   --bg-card: #252526;
   --bg-hover: #2d2d2d;
-  --border: #404040;
-  --border-light: #333333;
+  --border: #303030;
+  --border-light: #252525;
 
   --text-primary: #e0e0e0;
   --text-secondary: #a0a0a0;
@@ -1780,8 +1780,12 @@ body.dark-theme .theme-toggle {
 .dark-theme .stat-card, .dark-theme .modal, .dark-theme .col-filter-menu, 
 .dark-theme .filter-bar, .dark-theme thead th {
   background-color: var(--bg-card) !important;
-  border-color: var(--border);
+  border-color: var(--border) !important;
   color: var(--text-primary);
+}
+
+.dark-theme tbody td, .dark-theme tbody th {
+  border-color: var(--border-light) !important;
 }
 
 .dark-theme .filters {
