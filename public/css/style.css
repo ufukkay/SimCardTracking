@@ -1779,9 +1779,13 @@ body.dark-theme .theme-toggle {
 .dark-theme .sidebar, .dark-theme .topbar, .dark-theme .card, .dark-theme .table-container, 
 .dark-theme .stat-card, .dark-theme .modal, .dark-theme .col-filter-menu, 
 .dark-theme .filter-bar, .dark-theme thead th {
-  background-color: var(--bg-card);
+  background-color: var(--bg-card) !important;
   border-color: var(--border);
   color: var(--text-primary);
+}
+
+.dark-theme .filters {
+  background-color: transparent !important;
 }
 
 .dark-theme .form-control, .dark-theme select, .dark-theme input, .dark-theme textarea {
