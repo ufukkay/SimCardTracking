@@ -13,6 +13,11 @@ const i18n = (() => {
       'nav_analysis': 'Analiz',
       'nav_system': 'Sistem',
 
+      // Reports Missing specific keys
+      'REPORTS_M2M_SUMMARY': 'M2M Hat Özeti',
+      'REPORTS_PACKAGE_DIST': 'Paket Dağılımı',
+      'col_count': 'Adet',
+
       // Topbar
       'logout': 'Çıkış',
       'welcome': 'Hoş geldin',

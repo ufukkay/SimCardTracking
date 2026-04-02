@@ -1741,3 +1741,82 @@ body.dark-theme .theme-toggle {
   align-items: center;
   justify-content: center;
 }
+
+/* ============================================
+   DARK THEME (Koyu Mod) Düzeltmeleri
+   ============================================ */
+.dark-theme {
+  --bg-primary: #121212;
+  --bg-secondary: #1e1e1e;
+  --bg-card: #252526;
+  --bg-hover: #2d2d2d;
+  --border: #404040;
+  --border-light: #333333;
+
+  --text-primary: #e0e0e0;
+  --text-secondary: #a0a0a0;
+  --text-muted: #808080;
+
+  --accent: #6eb6ff;
+  --accent-hover: #4d90e0;
+  --accent-light: rgba(110, 182, 255, 0.15);
+
+  --success: #6cc180;
+  --success-light: rgba(108, 193, 128, 0.15);
+  --warning: #fbc05c;
+  --warning-light: rgba(251, 192, 92, 0.15);
+  --danger: #ef6b66;
+  --danger-light: rgba(239, 107, 102, 0.15);
+  --info: #6eb6ff;
+  --info-light: rgba(110, 182, 255, 0.15);
+}
+
+.dark-theme body, .dark-theme .app-layout {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+.dark-theme .sidebar, .dark-theme .topbar, .dark-theme .card, .dark-theme .table-container, 
+.dark-theme .stat-card, .dark-theme .modal, .dark-theme .col-filter-menu, 
+.dark-theme .filter-bar, .dark-theme thead th {
+  background-color: var(--bg-card);
+  border-color: var(--border);
+  color: var(--text-primary);
+}
+
+.dark-theme .form-control, .dark-theme select, .dark-theme input, .dark-theme textarea {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  border-color: var(--border);
+}
+
+.dark-theme .btn {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border-color: var(--border);
+}
+.dark-theme .btn:hover {
+  background: var(--bg-hover);
+}
+.dark-theme .btn-primary {
+  background: var(--accent);
+  color: #121212;
+  border-color: var(--accent);
+}
+.dark-theme .btn-primary:hover {
+  background: var(--accent-hover);
+}
+
+.dark-theme tbody tr, .dark-theme .changelog-item {
+  border-color: var(--border-light);
+}
+.dark-theme tbody tr:hover {
+  background-color: var(--bg-hover);
+}
+.dark-theme .td-muted, .dark-theme .text-muted, .dark-theme .stat-sub {
+  color: var(--text-muted) !important;
+}
+
+.dark-theme .sidebar-logo, .dark-theme .sidebar-footer {
+  border-color: var(--border);
+}
