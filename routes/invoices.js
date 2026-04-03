@@ -380,7 +380,7 @@ router.post('/upload', canEdit('invoices'), upload.array('file'), async (req, re
       return res.status(400).json({ message: 'Dönem ve Operatör seçimi zorunludur.' });
     }
 
-    const { PDFParse } = require('pdf-parse');
+    // We already have pdfParse required at the top
     let insertCount = 0;
 
     for (const file of req.files) {
@@ -443,9 +443,7 @@ router.post('/upload', canEdit('invoices'), upload.array('file'), async (req, re
             });
           }
         } else if (isPDF) {
-          const parser = new PDFParse({ data: file.buffer });
-          const pdfResult = await parser.getText();
-          await parser.destroy();
+          const pdfResult = await pdfParse(file.buffer);
 
           if (pdfResult && pdfResult.text) {
             const lines = pdfResult.text.split('\n');
