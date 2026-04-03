@@ -19,8 +19,16 @@ function authMiddleware(req, res, next) {
 }
 
 function adminOnly(req, res, next) {
-  if (req.user.role !== 'admin')
+  const dbUser = getDbUser(req);
+  if (!dbUser) {
+    return res.status(401).json({ message: 'Kullanıcı bulunamadı.' });
+  }
+  if ((dbUser.role || '').toLowerCase() !== 'admin') {
     return res.status(403).json({ message: 'Bu işlem için admin yetkisi gereklidir.' });
+  }
+
+  // Ensure downstream middleware sees the authoritative role info
+  req.user.role = 'admin';
   next();
 }
 
@@ -32,9 +40,14 @@ function adminOnly(req, res, next) {
 //   { "m2m": {"view": true, "edit": true}, "data": {...}, "voice": {...} }
 
 function getDbUser(req) {
+  if (!req || !req.user || !req.user.id) return null;
+  if (req.dbUser) return req.dbUser;
+
   // Lazily require db to avoid circular dependency at module load time
   const db = require('../database/db');
-  return db.prepare('SELECT role, permissions FROM users WHERE id = ?').get(req.user.id);
+  const row = db.prepare('SELECT role, permissions FROM users WHERE id = ?').get(req.user.id);
+  if (row) req.dbUser = row;
+  return row;
 }
 
 function parsePermissions(dbUser) {

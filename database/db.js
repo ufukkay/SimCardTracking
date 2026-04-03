@@ -124,6 +124,20 @@ db.exec(`
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(user_id) REFERENCES users(id)
   );
+
+  CREATE TABLE IF NOT EXISTS invoices (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    operator TEXT NOT NULL,
+    period TEXT NOT NULL,
+    phone_no TEXT,
+    personnel_name TEXT,
+    tariff TEXT,
+    amount REAL DEFAULT 0,
+    tax_kdv REAL DEFAULT 0,
+    tax_oiv REAL DEFAULT 0,
+    total_amount REAL DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
 `);
 
 // ─── Performance Indexes ───
@@ -166,6 +180,8 @@ try { db.exec(`ALTER TABLE packages ADD COLUMN data_limit REAL DEFAULT NULL`); }
 try { db.exec(`ALTER TABLE packages ADD COLUMN sms_limit INTEGER DEFAULT NULL`); } catch (_) {}
 try { db.exec(`ALTER TABLE packages ADD COLUMN minutes_limit INTEGER DEFAULT NULL`); } catch (_) {}
 try { db.exec(`ALTER TABLE personnel ADD COLUMN cost_center TEXT DEFAULT NULL`); } catch (_) {}
+try { db.exec(`ALTER TABLE invoices ADD COLUMN cost_center TEXT DEFAULT NULL`); } catch (_) {}
+
 
 // ─── Packages type kısıtlaması migration: 'general' tipini destekle ───
 // SQLite'ta ALTER TABLE ile CHECK kısıtlaması değiştirilemez; recreate yapılır.

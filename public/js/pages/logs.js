@@ -1,196 +1,235 @@
-const LogsPage = {
-  render: async () => {
+const LogsPage = (() => {
+  let currentOffset = 0;
+  const limit = 20;
+  let currentFilters = {
+    search: '',
+    module: '',
+    action: ''
+  };
+
+  function render() {
     const pageContent = document.getElementById('pageContent');
+    document.getElementById('pageTitle').textContent = i18n.t('nav_logs');
+    
+    // Topbar Actions
+    document.getElementById('topbarActions').innerHTML = `
+      <div class="topbar-filters">
+        <div class="search-input-wrapper">
+          <input type="text" id="logSearch" class="form-control" data-i18n="search_placeholder" placeholder="${i18n.t('search_placeholder')}">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="search-icon"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        </div>
+        <button class="btn btn-secondary" onclick="LogsPage.refresh()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" /></svg>
+          <span data-i18n="refresh">${i18n.t('refresh')}</span>
+        </button>
+      </div>
+    `;
+
     pageContent.innerHTML = `
-      <div class="card">
-        <div class="card-header">
-          <h3 class="card-title">İşlem Geçmişi (Son 20 Kayıt)</h3>
-          <div class="card-actions" style="display: flex; gap: 10px;">
-            <div class="search-input-wrapper" style="position: relative; width: 250px;">
-              <input type="text" id="logSearch" class="form-control" data-i18n="search_placeholder" placeholder="${i18n.t('search_placeholder')}" style="padding-right: 35px;">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); color: var(--text-muted);">
-                <circle cx="11" cy="11" r="8"></circle>
-                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-              </svg>
+      <div class="card log-card">
+        <div class="card-header border-bottom-0">
+          <div class="header-main">
+            <span class="card-description">Sistemdeki tüm kayıt ekleme, güncelleme ve silme işlemlerini buradan takip edebilirsiniz.</span>
+          </div>
+          <div class="filter-bar">
+            <div class="filter-group">
+              <label class="filter-label">Modül:</label>
+              <select id="moduleFilter" class="form-control filter-select">
+                <option value="">Tümü</option>
+                <option value="m2m">M2M Hatları</option>
+                <option value="data">Data Hatları</option>
+                <option value="voice">Ses Hatları</option>
+                <option value="invoices">Faturalar</option>
+                <option value="personnel">Personel</option>
+                <option value="AUTH">Güvenlik (Auth)</option>
+                <option value="USERS">Kullanıcılar</option>
+                <option value="SETTINGS">Sistem Ayarları</option>
+                <option value="PACKAGES">Paketler</option>
+              </select>
             </div>
-            <button class="btn btn-secondary" onclick="LogsPage.loadLogs()">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
-              </svg>
-              <span data-i18n="refresh">${i18n.t('refresh')}</span>
-            </button>
+            <div class="filter-group">
+              <label class="filter-label">İşlem:</label>
+              <select id="actionFilter" class="form-control filter-select">
+                <option value="">Tümü</option>
+                <option value="CREATE">Ekleme</option>
+                <option value="UPDATE">Güncelleme</option>
+                <option value="DELETE">Silme</option>
+                <option value="TRANSFER">Hat Taşıma</option>
+                <option value="BULK_UPDATE">Toplu Güncelleme</option>
+                <option value="IMPORT_EXCEL">Excel Aktarımı</option>
+                <option value="IMPORT_JSON">Toplu Kayıt Aktarımı</option>
+                <option value="LOGIN">Giriş</option>
+                <option value="LOGIN_FAIL">Hatalı Giriş</option>
+              </select>
+            </div>
           </div>
         </div>
         
         <div class="table-container">
-          <table class="data-table">
+          <table class="data-table log-table">
             <thead>
               <tr>
-                <th style="width: 180px" data-col-key="created_at" data-i18n="col_date">${i18n.t('col_date')}</th>
-                <th style="width: 120px" data-col-key="username" data-i18n="col_user">${i18n.t('col_user')}</th>
-                <th style="width: 100px" data-col-key="module" data-i18n="col_module">${i18n.t('col_module')}</th>
-                <th style="width: 100px" data-col-key="action" data-i18n="col_action">${i18n.t('col_action')}</th>
-                <th data-i18n="col_detail">${i18n.t('col_detail')}</th>
+                <th style="width: 170px">Tarih / Saat</th>
+                <th style="width: 130px">Kullanıcı</th>
+                <th style="width: 110px">Modül</th>
+                <th style="width: 120px">İşlem</th>
+                <th>Detaylar</th>
               </tr>
             </thead>
-            <tbody id="logsTableBody" class="logs-list-view">
-              <tr><td colspan="5" style="text-align:center" data-i18n="loading">${i18n.t('loading')}</td></tr>
+            <tbody id="logsTableBody">
+              <tr><td colspan="5" class="td-center loading-text">Loglar yükleniyor...</td></tr>
             </tbody>
           </table>
+        </div>
+        
+        <div class="load-more-container" id="loadMoreContainer">
+          <button class="btn btn-muted btn-sm" id="loadMoreBtn" onclick="LogsPage.loadMore()">
+            Daha Fazla Yükle
+          </button>
         </div>
       </div>
     `;
 
-    // Global search event
-    const searchInput = document.getElementById('logSearch');
-    let searchTimeout;
-    searchInput.addEventListener('input', () => {
-      clearTimeout(searchTimeout);
-      searchTimeout = setTimeout(() => LogsPage.loadLogs(), 500);
+    // Events
+    document.getElementById('logSearch').addEventListener('input', UI.debounce(() => {
+      currentFilters.search = document.getElementById('logSearch').value;
+      refresh();
+    }, 400));
+
+    document.getElementById('moduleFilter').addEventListener('change', (e) => {
+      currentFilters.module = e.target.value;
+      refresh();
     });
 
-    await LogsPage.loadLogs();
-  },
+    document.getElementById('actionFilter').addEventListener('change', (e) => {
+      currentFilters.action = e.target.value;
+      refresh();
+    });
 
-  loadLogs: async () => {
-    const tableBody = document.getElementById('logsTableBody');
-    const search = document.getElementById('logSearch').value;
+    load(true);
+  }
 
-    if (!LogsPage.colFilters) LogsPage.colFilters = {};
+  async function load(isReset = false) {
+    if (isReset) {
+      currentOffset = 0;
+      document.getElementById('logsTableBody').innerHTML = '<tr><td colspan="5" class="td-center loading-text">Loglar yükleniyor...</td></tr>';
+      document.getElementById('loadMoreContainer').style.display = 'none';
+    }
 
-    let query = search ? `?search=${encodeURIComponent(search)}` : '';
-
-    const keyTranslations = {
-      'iccid': i18n.t('key_iccid'),
-      'phone_no': i18n.t('key_phone_no'),
-      'plate_no': i18n.t('key_plate_no'),
-      'username': i18n.t('key_username') || 'Kullanıcı Adı',
-      'role': i18n.t('key_role') || 'Rol',
-      'status': i18n.t('key_status'),
-      'operator': i18n.t('key_operator'),
-      'vehicle_type': i18n.t('key_vehicle_type'),
-      'first_name': i18n.t('key_first_name') || 'Ad',
-      'last_name': i18n.t('key_last_name') || 'Soyad',
-      'category': i18n.t('key_category') || 'Kategori',
-      'price': i18n.t('key_price') || 'Fiyat',
-      'type': i18n.t('key_type') || 'Tip',
-      'filename': i18n.t('key_filename') || 'Dosya Adı',
-      'count': i18n.t('key_count') || 'Kayıt Sayısı',
-      'errorCount': i18n.t('key_errorCount') || 'Hata Sayısı',
-      'reason': i18n.t('key_reason') || 'Sebep',
-      'updates': i18n.t('key_updates') || 'Güncellemeler',
-      'assigned_to': i18n.t('key_assigned_to'),
-      'location': i18n.t('key_location'),
-      'notes': i18n.t('key_notes'),
-      'fromType': i18n.t('key_fromType'),
-      'toType': i18n.t('key_toType'),
-      'originalId': i18n.t('key_originalId')
-    };
-
-    const moduleTranslations = {
-      'M2M': i18n.t('nav_m2m'),
-      'DATA': i18n.t('nav_data'),
-      'VOICE': i18n.t('nav_voice'),
-      'AUTH': i18n.t('nav_auth') || 'Kimlik Doğrulama',
-      'USERS': i18n.t('nav_users') || 'Kullanıcılar',
-      'PACKAGES': i18n.t('nav_settings'),
-      'SETTINGS': i18n.t('nav_settings')
-    };
-
-    const actionTranslations = {
-      'CREATE': i18n.t('action_CREATE'),
-      'UPDATE': i18n.t('action_UPDATE'),
-      'DELETE': i18n.t('action_DELETE'),
-      'TRANSFER': i18n.t('action_TRANSFER'),
-      'LOGIN': i18n.t('action_LOGIN'),
-      'LOGOUT': i18n.t('action_LOGOUT'),
-      'BULK_UPDATE': i18n.t('action_BULK_UPDATE')
-    };
+    const params = new URLSearchParams({
+      limit: limit,
+      offset: currentOffset,
+      search: currentFilters.search,
+      module: currentFilters.module,
+      action: currentFilters.action
+    });
 
     try {
-      const allLogs = await API.getLogs(query);
-      
-      const colDefs = {
-        'created_at': { label: i18n.t('col_date'), getVal: r => new Date(r.created_at).toLocaleString(i18n.getLang() === 'tr' ? 'tr-TR' : 'en-US') },
-        'username': { label: i18n.t('col_user'), getVal: r => r.username || 'system' },
-        'module': { label: i18n.t('col_module'), getVal: r => moduleTranslations[r.module] || r.module },
-        'action': { label: i18n.t('col_action'), getVal: r => actionTranslations[r.action] || r.action }
-      };
+      const logs = await API.getLogs('?' + params.toString());
+      const tableBody = document.getElementById('logsTableBody');
 
-      let logs = allLogs;
-      logs = UI.filterRows(logs, LogsPage.colFilters, colDefs);
-      logs = UI.sortRows(logs, LogsPage.colFilters._sort, colDefs);
+      if (isReset) tableBody.innerHTML = '';
 
-      if (!logs || logs.length === 0) {
-        tableBody.innerHTML = `<tr><td colspan="5" style="text-align:center" data-i18n="no_records">${i18n.t('no_records')}</td></tr>`;
+      if (logs.length === 0) {
+        if (isReset) {
+          tableBody.innerHTML = `<tr><td colspan="5" class="td-center empty-logs">${UI.emptyState('📋', 'Henüz bir işlem kaydı bulunamadı.')}</td></tr>`;
+        }
+        document.getElementById('loadMoreContainer').style.display = 'none';
         return;
       }
 
-      tableBody.innerHTML = logs.map(log => {
-        const date = new Date(log.created_at).toLocaleString(i18n.getLang() === 'tr' ? 'tr-TR' : 'en-US');
-        let rawDetails = log.details || '-';
-        let detailHtml = rawDetails;
-        
-        try {
-          if (rawDetails.startsWith('{')) {
-            const d = JSON.parse(rawDetails);
-            detailHtml = Object.entries(d).map(([k, v]) => {
-              const label = keyTranslations[k] || i18n.t('key_' + k) || k;
-              let value = v;
-              if (k === 'status') {
-                value = i18n.t('status_' + v) || v;
-              }
-              return `<strong>${label}:</strong> ${value}`;
-            }).join(', ');
-          }
-        } catch(e) {}
+      const rowsHtml = logs.map(log => renderLogRow(log)).join('');
+      tableBody.insertAdjacentHTML('beforeend', rowsHtml);
 
-        const actionBadge = LogsPage.getActionBadge(log.action);
-        const moduleLabel = moduleTranslations[log.module] || log.module;
-
-        return `
-          <tr>
-            <td style="color: var(--text-secondary); font-size: 12px;">${date}</td>
-            <td><strong>${log.username || 'system'}</strong></td>
-            <td><span class="badge badge-muted">${moduleLabel}</span></td>
-            <td>${actionBadge}</td>
-            <td style="font-size: 13px;">
-              <div style="display: flex; flex-direction: column;">
-                <span class="detail-text">${detailHtml}</span>
-                ${log.target_id ? `<small style="color:var(--text-muted)">ID: ${log.target_id}</small>` : ''}
-              </div>
-            </td>
-          </tr>
-        `;
-      }).join('');
-
-      UI.setupTableFilters('logsTableBody', allLogs, LogsPage.colFilters, colDefs, () => LogsPage.loadLogs());
-
+      // Show/hide load more
+      document.getElementById('loadMoreContainer').style.display = logs.length === limit ? 'flex' : 'none';
+      
+      currentOffset += logs.length;
     } catch (err) {
       UI.toast('Loglar yüklenirken hata oluştu', 'error');
-      tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center; color: var(--danger)">Hata oluştu.</td></tr>';
     }
-  },
-
-  getActionBadge: (action) => {
-    let cls = 'badge-muted';
-    const actionMap = {
-      'CREATE': { cls: 'badge-success', label: 'EKLEME' },
-      'UPDATE': { cls: 'badge-info', label: 'GÜNCELLEME' },
-      'DELETE': { cls: 'badge-danger', label: 'SİLME' },
-      'LOGIN': { cls: 'badge-primary', label: 'GİRİŞ' },
-      'LOGIN_FAIL': { cls: 'badge-danger', label: 'HATALI GİRİŞ' },
-      'PASSWORD_CHANGE': { cls: 'badge-info', label: 'ŞİFRE DEĞİŞİMİ' },
-      'BULK_DELETE': { cls: 'badge-danger', label: 'TOPLU SİLME' },
-      'BULK_UPDATE': { cls: 'badge-info', label: 'TOPLU GÜNCELL.' },
-      'IMPORT_EXCEL': { cls: 'badge-primary', label: 'EXCEL AKTAR.' },
-      'IMPORT_JSON': { cls: 'badge-primary', label: 'JSON AKTAR.' }
-    };
-
-    const match = actionMap[action];
-    const label = match ? match.label : action;
-    const finalCls = match ? match.cls : 'badge-muted';
-    
-    return `<span class="badge ${finalCls}">${label}</span>`;
   }
-};
+
+  function renderLogRow(log) {
+    const date = new Date(log.created_at).toLocaleString('tr-TR', {
+      day: '2-digit', month: '2-digit', year: 'numeric',
+      hour: '2-digit', minute: '2-digit'
+    });
+
+    let details = parseDetails(log.details);
+    const actionBadge = getActionBadge(log.action);
+    const moduleLabel = getModuleLabel(log.module);
+
+    return `
+      <tr class="log-row">
+        <td class="td-muted">${date}</td>
+        <td>
+          <div class="user-cell">
+            <div class="user-init">${(log.username || 'S').charAt(0).toUpperCase()}</div>
+            <span>${log.username || 'Sistem'}</span>
+          </div>
+        </td>
+        <td><span class="badge badge-muted">${moduleLabel}</span></td>
+        <td>${actionBadge}</td>
+        <td class="td-details">
+          <div class="detail-container">
+            ${details}
+            ${log.target_id ? `<span class="target-id-badge">ID: ${log.target_id}</span>` : ''}
+          </div>
+        </td>
+      </tr>
+    `;
+  }
+
+  function parseDetails(raw) {
+    if (!raw || raw === '-') return '<span class="detail-empty">—</span>';
+    try {
+      if (raw.startsWith('{')) {
+        const d = JSON.parse(raw);
+        return Object.entries(d).map(([k, v]) => {
+          const label = i18n.t('key_' + k) || k;
+          let val = v;
+          if (v === null || v === '') val = '<span class="val-null">boş</span>';
+          if (k === 'status') val = i18n.t('status_' + v) || v;
+          return `<div class="detail-item"><span class="detail-key">${label}:</span> <span class="detail-val">${val}</span></div>`;
+        }).join('');
+      }
+    } catch (e) {}
+    return `<span class="detail-raw">${raw}</span>`;
+  }
+
+  function getModuleLabel(mod) {
+    const map = {
+      'm2m': 'M2M', 'data': 'Data', 'voice': 'Ses', 'invoices': 'Fatura',
+      'personnel': 'Personel', 'auth': 'Güvenlik', 'users': 'Kullanıcı', 
+      'settings': 'Sistem', 'packages': 'Paket'
+    };
+    return map[(mod || '').toLowerCase()] || mod;
+  }
+
+  function getActionBadge(action) {
+    const act = (action || '').toUpperCase();
+    const map = {
+      'CREATE': { cls: 'badge-success', label: 'Ekleme' },
+      'UPDATE': { cls: 'badge-info', label: 'Güncelleme' },
+      'DELETE': { cls: 'badge-danger', label: 'Silme' },
+      'TRANSFER': { cls: 'badge-warning', label: 'Taşıma' },
+      'LOGIN': { cls: 'badge-primary', label: 'Giriş' },
+      'LOGOUT': { cls: 'badge-muted', label: 'Çıkış' },
+      'BULK_UPDATE': { cls: 'badge-info', label: 'Toplu Günc.' },
+      'BULK_DELETE': { cls: 'badge-danger', label: 'Toplu Silme' },
+      'IMPORT_EXCEL': { cls: 'badge-success', label: 'Excel Aktar.' },
+      'IMPORT_JSON': { cls: 'badge-primary', label: 'Veri Aktar.' },
+      'LOGIN_FAIL': { cls: 'badge-danger', label: 'Hatalı Giriş' },
+      'UPLOAD_INVOICES': { cls: 'badge-success', label: 'Fatura Yükle' }
+    };
+    const m = map[act] || { cls: 'badge-muted', label: action };
+    return `<span class="badge ${m.cls}">${m.label}</span>`;
+  }
+
+  function refresh() { load(true); }
+  function loadMore() { load(false); }
+
+  return { render, refresh, loadMore };
+})();
+

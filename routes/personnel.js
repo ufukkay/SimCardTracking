@@ -43,11 +43,72 @@ router.put('/:id', adminOnly, (req, res) => {
 });
 
 router.delete('/:id', adminOnly, (req, res) => {
-  const result = db.prepare('DELETE FROM personnel WHERE id = ?').run(req.params.id);
-  if (result.changes === 0) return res.status(404).json({ message: 'Personel bulunamadı.' });
+  try {
+    // Check for references in sim_voice or invoices if we want to be strict
+    // For now, we'll just try to delete and catch DB errors
+    const result = db.prepare('DELETE FROM personnel WHERE id = ?').run(req.params.id);
+    if (result.changes === 0) return res.status(404).json({ message: 'Personel bulunamadı.' });
 
-  logActivity(req, 'DELETE', 'PERSONNEL', req.params.id);
-  res.json({ message: 'Personel silindi.' });
+    logActivity(req, 'DELETE', 'PERSONNEL', req.params.id);
+    res.json({ message: 'Personel silindi.' });
+  } catch (err) {
+    console.error('[DELETE_PERSONNEL_ERROR]', err);
+    if (err.message.includes('FOREIGN KEY')) {
+      return res.status(400).json({ message: 'Bu personel başka kayıtlarda kullanıldığı için silinemez.' });
+    }
+    res.status(500).json({ message: 'Personel silinirken bir hata oluştu.', error: err.message });
+  }
+});
+
+router.post('/bulk-update', adminOnly, (req, res) => {
+  const { ids, data } = req.body || {};
+  if (!Array.isArray(ids) || ids.length === 0) {
+    return res.status(400).json({ message: 'Geçerli personel listesi gönderin.' });
+  }
+  if (!data || typeof data !== 'object' || Object.keys(data).length === 0) {
+    return res.status(400).json({ message: 'Güncellenecek alan seçilmedi.' });
+  }
+
+  const allowed = ['department', 'company', 'cost_center', 'phone', 'notes'];
+  const assignments = [];
+  const params = [];
+  allowed.forEach(key => {
+    if (data[key] !== undefined && data[key] !== '') {
+      assignments.push(`${key} = ?`);
+      params.push(data[key]);
+    }
+  });
+
+  if (assignments.length === 0) {
+    return res.status(400).json({ message: 'Geçerli alan bulunamadı.' });
+  }
+
+  const placeholders = ids.map(() => '?').join(',');
+  const query = `UPDATE personnel SET ${assignments.join(', ')} WHERE id IN (${placeholders})`;
+  const result = db.prepare(query).run(...params, ...ids);
+
+  logActivity(req, 'BULK_UPDATE', 'PERSONNEL', ids.join(','), { count: result.changes, updates: data });
+  res.json({ message: `${result.changes} personel güncellendi.`, affected: result.changes });
+});
+
+router.post('/bulk-delete', adminOnly, (req, res) => {
+  const { ids } = req.body || {};
+  if (!Array.isArray(ids) || ids.length === 0) {
+    return res.status(400).json({ message: 'Silinecek personel listesi gönderin.' });
+  }
+  try {
+    const placeholders = ids.map(() => '?').join(',');
+    const stmt = db.prepare(`DELETE FROM personnel WHERE id IN (${placeholders})`);
+    const result = stmt.run(...ids);
+    logActivity(req, 'BULK_DELETE', 'PERSONNEL', ids.join(','), { count: result.changes });
+    res.json({ message: `${result.changes} personel silindi.`, affected: result.changes });
+  } catch (err) {
+    console.error('[BULK_DELETE_PERSONNEL_ERROR]', err);
+    if (err.message.includes('FOREIGN KEY')) {
+      return res.status(400).json({ message: 'Bazı personeller başka kayıtlarda kullanıldığı için silinemedi.' });
+    }
+    res.status(500).json({ message: 'Toplu silme işlemi sırasında bir hata oluştu.', error: err.message });
+  }
 });
 
 module.exports = router;

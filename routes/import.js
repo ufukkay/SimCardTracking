@@ -65,6 +65,7 @@ router.get("/template/:type", (req, res) => {
         "Personel Adı",
         "Departman",
         "Şirket",
+        "Masraf Kalemi",
         "Notlar",
       ],
       example: [
@@ -76,6 +77,7 @@ router.get("/template/:type", (req, res) => {
           "Ahmet Yılmaz",
           "IT",
           "ABC A.Ş.",
+          "ITB-123",
           "",
         ],
         [
@@ -86,6 +88,7 @@ router.get("/template/:type", (req, res) => {
           "Ayşe Kaya",
           "Muhasebe",
           "ABC A.Ş.",
+          "MUH-456",
           "",
         ],
       ],
@@ -189,21 +192,39 @@ router.post("/excel/:type", authMiddleware, upload.single("file"), (req, res) =>
             r["Lokasyon"] || null,
             r["Notlar"] || null,
           ),
-      voice: (r) =>
-        db
+      voice: (r) => {
+        // Personel verisini de eş zamanlı güncellemeye (varsa) çalışabiliriz, veya sadece fatura importu için saklayabiliriz.
+        // Şimdilik import sırasında sadece ses hattına ekliyoruz.
+        // Ancak bu bilgi sim_voice tablosunda saklanacak mı? `sim_voice` tablosunda `cost_center` kolonu var mı kontrol ettik. Yoksa personel üzerinden eşleştiririz.
+        // Let's also sync to personnel just like vehicle sync for m2m
+        const assignedTo = r["Personel Adı"] || null;
+        const costCenter = r["Masraf Kalemi"] || null;
+        const phoneNo = r["Telefon No"] || null;
+        
+        if (assignedTo && assignedTo.toString().trim() !== '') {
+           db.prepare(`
+            INSERT INTO personnel (first_name, last_name, department, company, cost_center, phone)
+            VALUES (?, ?, ?, ?, ?, ?)
+            ON CONFLICT(first_name, last_name) DO UPDATE SET
+              cost_center = COALESCE(excluded.cost_center, cost_center)
+           `).run(assignedTo.split(' ')[0] || '', assignedTo.split(' ').slice(1).join(' ') || '', r["Departman"], r["Şirket"], costCenter, phoneNo);
+        }
+
+        return db
           .prepare(
             `INSERT INTO sim_voice (iccid,phone_no,operator,status,assigned_to,department,assigned_company,notes) VALUES (?,?,?,?,?,?,?,?)`,
           )
           .run(
             r["ICCID"] || null,
-            r["Telefon No"] || null,
+            phoneNo,
             r["Operatör"] || null,
             r["Durum"] || "active",
-            r["Personel Adı"] || null,
+            assignedTo,
             r["Departman"] || null,
             r["Şirket"] || null,
             r["Notlar"] || null,
-          ),
+          )
+      },
       packages: (r) => {
         const opName = r["Operatör"] || r["operator"];
         const op = db.prepare('SELECT id FROM operators WHERE name = ?').get(opName);
@@ -316,21 +337,36 @@ router.post("/json/:type", authMiddleware, (req, res) => {
           r.location || null,
           r.notes || null,
         ),
-    voice: (r) =>
-      db
+    voice: (r) => {
+      const assignedTo = r.assigned_to || null;
+      const costCenter = r.cost_center || null;
+      const phoneNo = r.phone_no || null;
+      
+      if (assignedTo && assignedTo.toString().trim() !== '') {
+         // Auto-sync personnel cost center
+         db.prepare(`
+          INSERT INTO personnel (first_name, last_name, department, company, cost_center, phone)
+          VALUES (?, ?, ?, ?, ?, ?)
+          ON CONFLICT(first_name, last_name) DO UPDATE SET
+            cost_center = COALESCE(excluded.cost_center, cost_center)
+         `).run(assignedTo.split(' ')[0] || '', assignedTo.split(' ').slice(1).join(' ') || '', r.department, r.assigned_company, costCenter, phoneNo);
+      }
+
+      return db
         .prepare(
           `INSERT INTO sim_voice (iccid,phone_no,operator,status,assigned_to,department,assigned_company,notes) VALUES (?,?,?,?,?,?,?,?)`,
         )
         .run(
           r.iccid || null,
-          r.phone_no || null,
+          phoneNo,
           r.operator || null,
           r.status || "active",
-          r.assigned_to || null,
+          assignedTo,
           r.department || null,
           r.assigned_company || null,
           r.notes || null,
-        ),
+        )
+    },
       packages: (r) => {
         const opName = r.operator;
         const op = db.prepare('SELECT id FROM operators WHERE name = ?').get(opName);

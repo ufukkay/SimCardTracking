@@ -47,6 +47,7 @@ const BulkImport = (() => {
           placeholder: "IT, Muhasebe...",
         },
         { key: "assigned_company", label: "Şirket", placeholder: "ABC A.Ş." },
+        { key: "cost_center", label: "Masraf Kalemi", placeholder: "Örn: IT-123" },
         { key: "notes", label: "Notlar", placeholder: "" },
       ],
     },
@@ -514,6 +515,10 @@ const BulkImport = (() => {
       <div class="form-group">
         <label class="form-label">Şirket</label>
         <input name="assigned_company" id="s-voice-comp-${type}" class="form-control" placeholder="Şirket adı">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Masraf Kalemi</label>
+        <input name="cost_center" id="s-voice-cost-${type}" class="form-control" placeholder="Örn: IT-123">
       </div>`;
 
     let opOptionsForPackages = '';
@@ -707,8 +712,10 @@ const BulkImport = (() => {
           if (match) {
             const dept = document.getElementById(`s-voice-dept-${type}`);
             const comp = document.getElementById(`s-voice-comp-${type}`);
+            const cost = document.getElementById(`s-voice-cost-${type}`);
             if (dept && !dept.value) dept.value = match.department || "";
             if (comp && !comp.value) comp.value = match.company || "";
+            if (cost && !cost.value) cost.value = match.cost_center || "";
           }
         });
       }

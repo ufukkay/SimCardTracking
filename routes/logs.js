@@ -11,7 +11,10 @@ router.get('/', (req, res) => {
   try {
     const search = req.query.search || '';
     const targetId = req.query.targetId || null;
+    const module = req.query.module || null;
+    const action = req.query.action || null;
     const limit = parseInt(req.query.limit) || 20;
+    const offset = parseInt(req.query.offset) || 0;
 
     let query = 'SELECT * FROM activity_logs WHERE 1=1';
     const params = [];
@@ -27,8 +30,18 @@ router.get('/', (req, res) => {
       params.push(targetId);
     }
 
-    query += ` ORDER BY created_at DESC LIMIT ?`;
-    params.push(limit);
+    if (module) {
+      query += ` AND LOWER(module) = LOWER(?)`;
+      params.push(module);
+    }
+
+    if (action) {
+      query += ` AND LOWER(action) = LOWER(?)`;
+      params.push(action);
+    }
+
+    query += ` ORDER BY created_at DESC LIMIT ? OFFSET ?`;
+    params.push(limit, offset);
 
     const logs = db.prepare(query).all(...params);
     res.json(logs);

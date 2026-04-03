@@ -8,6 +8,13 @@ const PORT = process.env.PORT || 3000;
 // Middleware
 app.use(cors());
 app.use(express.json());
+app.use((req, res, next) => {
+  const override = req.get("X-HTTP-Method-Override");
+  if (req.method === "POST" && override) {
+    req.method = override.toUpperCase();
+  }
+  next();
+});
 app.use(express.static(path.join(__dirname, "public")));
 
 // Health check for debugging
@@ -28,6 +35,7 @@ app.use("/api/personnel", require("./routes/personnel"));
 app.use("/api/packages", require("./routes/packages"));
 app.use("/api/logs", require("./routes/logs"));
 app.use("/api/sim", require("./routes/sim"));
+app.use("/api/invoices", require("./routes/invoices"));
 app.use("/api/admin/update", require("./routes/update"));
 
 // Error handler (must be before app.listen)

@@ -1,9 +1,12 @@
 /* ─── AYARLAR SAYFASI (FULL REWRITE) ─── */
+const PERMISSION_MODULES = ['m2m','data','voice','invoices'];
+
 const SettingsPage = (() => {
   let editingUserId = null;
   let editingVehicleId = null;
   let editingLocationId = null;
   let editingPersonnelId = null;
+  const selectedPersonnelIds = new Set();
 
   /* ════════════ RENDER ════════════ */
   function render() {
@@ -77,13 +80,28 @@ const SettingsPage = (() => {
         <div class="card">
           <div class="card-header">
             <span class="card-title">Personel Yönetimi</span>
-            <button class="btn btn-primary" onclick="SettingsPage.openAddPersonnel()">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-              Yeni Personel
-            </button>
+            <div style="display:flex; gap:10px; align-items:center; margin-left:auto">
+              <div id="personnelBulkActionsBar" class="bulk-actions-bar" style="display:none">
+                <span id="personnelSelectedCount">0 kayıt seçildi</span>
+                <div class="bulk-buttons">
+                  <button class="btn btn-secondary btn-sm" id="personnelBulkBtn" onclick="SettingsPage.openBulkEditPersonnel()" disabled>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                    <span>Toplu Düzenle</span>
+                  </button>
+                  <button class="btn btn-danger btn-sm" id="personnelBulkDeleteBtn" onclick="SettingsPage.bulkDeletePersonnel()" disabled>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                    <span>Toplu Sil</span>
+                  </button>
+                </div>
+              </div>
+              <button class="btn btn-primary" onclick="SettingsPage.openAddPersonnel()">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Yeni Personel
+              </button>
+            </div>
           </div>
           <div class="table-container">
-            <table><thead><tr><th>#</th><th>Ad Soyad</th><th>Departman</th><th>Şirket</th><th>Masraf Kalemi</th><th>Telefon</th><th>Notlar</th><th>İşlem</th></tr></thead>
+            <table><thead><tr><th style="width:32px"><input type="checkbox" id="personnelSelectAll" onclick="SettingsPage.toggleAllPersonnel(this)"></th><th>#</th><th>Ad Soyad</th><th>Departman</th><th>Şirket</th><th>Masraf Kalemi</th><th>Telefon</th><th>Notlar</th><th>İşlem</th></tr></thead>
               <tbody id="personnelTableBody"></tbody></table>
           </div>
         </div>
@@ -243,8 +261,8 @@ const SettingsPage = (() => {
                     <th style="text-align:center;padding:6px 8px;color:var(--text-muted);font-weight:500">✏️ Düzenle</th>
                   </tr>
                 </thead>
-                <tbody>
-                  <tr style="border-top:1px solid var(--border)">
+                 <tbody>
+                   <tr style="border-top:1px solid var(--border)">
                     <td style="padding:8px 4px">🚗 M2M Hatları</td>
                     <td style="text-align:center"><input type="checkbox" id="perm_m2m_view" onchange="SettingsPage.onPermViewChange('m2m',this)"></td>
                     <td style="text-align:center"><input type="checkbox" id="perm_m2m_edit" onchange="SettingsPage.onPermEditChange('m2m',this)"></td>
@@ -254,14 +272,19 @@ const SettingsPage = (() => {
                     <td style="text-align:center"><input type="checkbox" id="perm_data_view" onchange="SettingsPage.onPermViewChange('data',this)"></td>
                     <td style="text-align:center"><input type="checkbox" id="perm_data_edit" onchange="SettingsPage.onPermEditChange('data',this)"></td>
                   </tr>
-                  <tr style="border-top:1px solid var(--border)">
-                    <td style="padding:8px 4px">📞 Ses Hatları</td>
-                    <td style="text-align:center"><input type="checkbox" id="perm_voice_view" onchange="SettingsPage.onPermViewChange('voice',this)"></td>
-                    <td style="text-align:center"><input type="checkbox" id="perm_voice_edit" onchange="SettingsPage.onPermEditChange('voice',this)"></td>
-                  </tr>
-                </tbody>
-              </table>
-              <div style="font-size:11px;color:var(--text-muted);margin-top:8px">ℹ️ Admin kullanıcılar tüm modüllere tam erişime sahiptir.</div>
+                   <tr style="border-top:1px solid var(--border)">
+                     <td style="padding:8px 4px">📞 Ses Hatları</td>
+                     <td style="text-align:center"><input type="checkbox" id="perm_voice_view" onchange="SettingsPage.onPermViewChange('voice',this)"></td>
+                     <td style="text-align:center"><input type="checkbox" id="perm_voice_edit" onchange="SettingsPage.onPermEditChange('voice',this)"></td>
+                   </tr>
+                   <tr style="border-top:1px solid var(--border)">
+                     <td style="padding:8px 4px">📄 Faturalar</td>
+                     <td style="text-align:center"><input type="checkbox" id="perm_invoices_view" onchange="SettingsPage.onPermViewChange('invoices',this)"></td>
+                     <td style="text-align:center"><input type="checkbox" id="perm_invoices_edit" onchange="SettingsPage.onPermEditChange('invoices',this)"></td>
+                   </tr>
+                 </tbody>
+               </table>
+               <div style="font-size:11px;color:var(--text-muted);margin-top:8px">ℹ️ Admin kullanıcılar tüm modüllere tam erişime sahiptir.</div>
             </div>
           </form>
           <div class="modal-footer"><button class="btn btn-secondary" onclick="UI.closeModal('userModal')">İptal</button><button class="btn btn-primary" id="userSaveBtn" onclick="document.getElementById('userForm').requestSubmit()">Kaydet</button></div>
@@ -326,7 +349,7 @@ const SettingsPage = (() => {
 
       <!-- Personel -->
       <div class="modal-overlay" id="personnelModal">
-        <div class="modal">
+       <div class="modal">
           <div class="modal-header"><span class="modal-title" id="personnelModalTitle">Yeni Personel</span><button class="modal-close" onclick="UI.closeModal('personnelModal')">×</button></div>
           <form class="modal-body" id="personnelForm" onsubmit="SettingsPage.savePersonnel(event)">
             <div class="form-grid">
@@ -340,6 +363,21 @@ const SettingsPage = (() => {
             </div>
           </form>
           <div class="modal-footer"><button class="btn btn-secondary" onclick="UI.closeModal('personnelModal')">İptal</button><button class="btn btn-primary" id="personnelSaveBtn" onclick="document.getElementById('personnelForm').requestSubmit()">Kaydet</button></div>
+        </div>
+      </div>
+
+      <div class="modal-overlay" id="personnelBulkModal">
+        <div class="modal" style="max-width:480px">
+          <div class="modal-header"><span class="modal-title">Toplu Personel Düzenle</span><button class="modal-close" onclick="UI.closeModal('personnelBulkModal')">×</button></div>
+          <form class="modal-body" id="personnelBulkForm" onsubmit="SettingsPage.saveBulkPersonnel(event)">
+            <p style="margin-bottom:14px;font-size:13px;color:var(--text-muted)">Seçili <strong id="bulkPersonnelCount">0</strong> personelin aşağıdaki alanlarını güncelleyebilirsiniz. Boş bıraktığınız alanlar değişmez.</p>
+            <div class="form-group"><label class="form-label">Departman</label><input name="department" class="form-control" placeholder="Örn: IT"></div>
+            <div class="form-group"><label class="form-label">Şirket</label><input name="company" class="form-control" placeholder="Örn: Talay Logistic"></div>
+            <div class="form-group"><label class="form-label">Masraf Kalemi</label><input name="cost_center" class="form-control" placeholder="Örn: IT-123"></div>
+            <div class="form-group"><label class="form-label">Telefon</label><input name="phone" class="form-control" placeholder="05xx xxx xx xx"></div>
+            <div class="form-group"><label class="form-label">Notlar</label><textarea name="notes" class="form-control" rows="2" placeholder="Ek bilgi..."></textarea></div>
+          </form>
+          <div class="modal-footer"><button class="btn btn-secondary" onclick="UI.closeModal('personnelBulkModal')">İptal</button><button class="btn btn-primary" id="personnelBulkSaveBtn" onclick="document.getElementById('personnelBulkForm').requestSubmit()">Güncelle</button></div>
         </div>
       </div>
     `;
@@ -486,6 +524,7 @@ const SettingsPage = (() => {
 
       // Strip permissions from setForm payload (it's an object, not a form field)
       const { permissions: _p, ...formData } = u;
+      formData.role = (formData.role || 'user').toLowerCase();
       UI.setForm('userForm', formData);
 
       document.getElementById('usernameField').readOnly = true;
@@ -495,7 +534,7 @@ const SettingsPage = (() => {
       UI.openModal('userModal');
 
       // Then set role & permissions (after modal is visible/rendered)
-      const role = u.role || 'user';
+      const role = formData.role;
       document.getElementById('userRoleSelect').value = role;
       onRoleChange(role);
       setPermCheckboxes(savedPermissions);
@@ -507,11 +546,14 @@ const SettingsPage = (() => {
     if (!data.password) delete data.password;
     // Collect permissions from checkboxes (only for non-admin users)
     if (data.role !== 'admin') {
-      data.permissions = {
-        m2m:   { view: document.getElementById('perm_m2m_view')?.checked || false,   edit: document.getElementById('perm_m2m_edit')?.checked || false },
-        data:  { view: document.getElementById('perm_data_view')?.checked || false,  edit: document.getElementById('perm_data_edit')?.checked || false },
-        voice: { view: document.getElementById('perm_voice_view')?.checked || false, edit: document.getElementById('perm_voice_edit')?.checked || false },
-      };
+      const perms = {};
+      PERMISSION_MODULES.forEach(mod => {
+        perms[mod] = {
+          view: document.getElementById(`perm_${mod}_view`)?.checked || false,
+          edit: document.getElementById(`perm_${mod}_edit`)?.checked || false,
+        };
+      });
+      data.permissions = perms;
     } else {
       data.permissions = null;
     }
@@ -529,7 +571,7 @@ const SettingsPage = (() => {
     if (panel) panel.style.display = role === 'admin' ? 'none' : 'block';
   }
   function setPermCheckboxes(perms) {
-    ['m2m', 'data', 'voice'].forEach(mod => {
+    PERMISSION_MODULES.forEach(mod => {
       const v = document.getElementById(`perm_${mod}_view`);
       const e = document.getElementById(`perm_${mod}_edit`);
       if (v) v.checked = perms?.[mod]?.view || false;
@@ -632,22 +674,42 @@ const SettingsPage = (() => {
   async function loadPersonnel() {
     const tbody = document.getElementById('personnelTableBody'); if (!tbody) return;
     try {
+      selectedPersonnelIds.clear();
+      const master = document.getElementById('personnelSelectAll');
+      if (master) master.checked = false;
+      updatePersonnelBulkBtn();
+      
+      const userStr = localStorage.getItem('simtrack_user') || '{}';
+      const curUser = JSON.parse(userStr);
+      const isAdmin = curUser.role === 'admin';
+
       const rows = await API.getPersonnel();
-      tbody.innerHTML = rows.length ? rows.map((r,i) => `
+      tbody.innerHTML = rows.length ? rows.map((r,i) => {
+        const fullName = `${r.first_name} ${r.last_name}`;
+        // Escape single quotes for the onclick handler
+        const escapedName = fullName.replace(/'/g, "\\'");
+        
+        return `
         <tr>
+          <td><input type="checkbox" class="personnel-check" data-id="${r.id}" onclick="SettingsPage.togglePersonnelSelection(${r.id}, this.checked)"></td>
           <td class="td-muted">${i+1}</td>
-          <td><strong>${r.first_name} ${r.last_name}</strong></td>
+          <td><strong>${fullName}</strong></td>
           <td class="td-muted">${r.department || '—'}</td>
           <td class="td-muted">${r.company || '—'}</td>
           <td class="td-muted">${r.cost_center || '—'}</td>
           <td class="td-muted">${r.phone || '—'}</td>
           <td class="td-muted">${r.notes || '—'}</td>
-          <td><div class="action-buttons">
-            <button class="btn btn-secondary btn-sm btn-icon" onclick="SettingsPage.openEditPersonnel(${r.id})" title="Düzenle">${editIcon()}</button>
-            <button class="btn btn-danger btn-sm btn-icon" onclick="SettingsPage.deletePersonnel(${r.id},'${r.first_name} ${r.last_name}')" title="Sil">${delIcon()}</button>
-          </div></td>
-        </tr>`).join('') : `<tr><td colspan="7">${UI.emptyState('👤','Personel kaydı yok','Yeni personel ekleyerek başlayın.')}</td></tr>`;
-    } catch(err){if(tbody)tbody.innerHTML=`<tr><td colspan="7" style="color:var(--danger);padding:16px">${err.message}</td></tr>`;}
+          <td>
+            <div class="action-buttons">
+              ${isAdmin ? `
+                <button class="btn btn-secondary btn-sm btn-icon" onclick="SettingsPage.openEditPersonnel(${r.id})" title="Düzenle">${editIcon()}</button>
+                <button class="btn btn-danger btn-sm btn-icon" onclick="SettingsPage.deletePersonnel(${r.id},'${escapedName}')" title="Sil">${delIcon()}</button>
+              ` : '<span class="td-muted" style="font-size:11px">Yetki Yok</span>'}
+            </div>
+          </td>
+        </tr>`;
+      }).join('') : `<tr><td colspan="9">${UI.emptyState('👤','Personel kaydı yok','Yeni personel ekleyerek başlayın.')}</td></tr>`;
+    } catch(err){if(tbody)tbody.innerHTML=`<tr><td colspan="9" style="color:var(--danger);padding:16px">${err.message}</td></tr>`;}
   }
 
   function openAddPersonnel() { editingPersonnelId=null; document.getElementById('personnelModalTitle').textContent='Yeni Personel'; document.getElementById('personnelForm').reset(); UI.openModal('personnelModal'); }
@@ -666,6 +728,85 @@ const SettingsPage = (() => {
   }
   function deletePersonnel(id, name) {
     UI.confirm(`"${name}" silinecek.`, async()=>{ try{await API.deletePersonnel(id); UI.toast('Silindi.','success'); loadPersonnel();}catch(e){UI.toast(e.message,'error');} });
+  }
+
+  function updatePersonnelBulkBtn() {
+    const count = selectedPersonnelIds.size;
+    const bar = document.getElementById('personnelBulkActionsBar');
+    const countEl = document.getElementById('personnelSelectedCount');
+    const editBtn = document.getElementById('personnelBulkBtn');
+    const delBtn = document.getElementById('personnelBulkDeleteBtn');
+
+    if (count > 0) {
+      if (bar) bar.style.display = 'flex';
+      if (countEl) countEl.textContent = `${count} kayıt seçildi`;
+      if (editBtn) editBtn.disabled = false;
+      if (delBtn) delBtn.disabled = false;
+    } else {
+      if (bar) bar.style.display = 'none';
+      if (editBtn) editBtn.disabled = true;
+      if (delBtn) delBtn.disabled = true;
+    }
+  }
+
+  function togglePersonnelSelection(id, checked) {
+    if (checked) selectedPersonnelIds.add(id);
+    else selectedPersonnelIds.delete(id);
+    updatePersonnelBulkBtn();
+  }
+
+  function toggleAllPersonnel(input) {
+    const tbody = document.getElementById('personnelTableBody');
+    if (!tbody) return;
+    selectedPersonnelIds.clear();
+    tbody.querySelectorAll('input.personnel-check').forEach(cb => {
+      cb.checked = input.checked;
+      if (input.checked) selectedPersonnelIds.add(parseInt(cb.dataset.id, 10));
+    });
+    updatePersonnelBulkBtn();
+  }
+
+  function openBulkEditPersonnel() {
+    if (selectedPersonnelIds.size === 0) return UI.toast('Lütfen önce personel seçin.', 'warning');
+    document.getElementById('personnelBulkForm').reset();
+    document.getElementById('bulkPersonnelCount').textContent = selectedPersonnelIds.size;
+    UI.openModal('personnelBulkModal');
+  }
+
+  async function saveBulkPersonnel(e) {
+    e.preventDefault();
+    if (selectedPersonnelIds.size === 0) return UI.toast('Seçili personel bulunmuyor.', 'warning');
+    const data = UI.formData('personnelBulkForm');
+    const payload = {};
+    ['department','company','cost_center','phone','notes'].forEach(key => {
+      if (data[key]) payload[key] = data[key];
+    });
+    if (Object.keys(payload).length === 0) return UI.toast('En az bir alan doldurun.', 'warning');
+    const btn = document.getElementById('personnelBulkSaveBtn');
+    btn.disabled = true;
+    try {
+      await API.bulkUpdate('personnel', Array.from(selectedPersonnelIds), payload);
+      UI.toast('Seçili personeller güncellendi.', 'success');
+      UI.closeModal('personnelBulkModal');
+      loadPersonnel();
+    } catch (err) {
+      UI.toast(err.message, 'error');
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  function bulkDeletePersonnel() {
+    if (selectedPersonnelIds.size === 0) return UI.toast('Lütfen personel seçin.', 'warning');
+    UI.confirm(`Seçili ${selectedPersonnelIds.size} personeli silmek istediğinize emin misiniz?`, async () => {
+      try {
+        await API.bulkDelete('personnel', Array.from(selectedPersonnelIds));
+        UI.toast('Seçili personeller silindi.', 'success');
+        loadPersonnel();
+      } catch (err) {
+        UI.toast(err.message, 'error');
+      }
+    });
   }
 
   /* ════════════ OPERATORS ════════════ */
@@ -920,8 +1061,8 @@ const SettingsPage = (() => {
   }
 
   /* ── Icon helpers ── */
-  function editIcon() { return `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`; }
-  function delIcon()  { return `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>`; }
+  function editIcon() { return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`; }
+  function delIcon()  { return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>`; }
 
 
   /* ════════════ DYNAMIC PACKAGE DROPDOWN ════════════ */
@@ -1015,6 +1156,7 @@ const SettingsPage = (() => {
     loadVehicles, openAddVehicle, openEditVehicle, saveVehicle, deleteVehicle,
     loadLocations, openAddLocation, openEditLocation, deleteLocation, saveLocation,
     loadPersonnel, openAddPersonnel, openEditPersonnel, deletePersonnel, savePersonnel,
+    togglePersonnelSelection, toggleAllPersonnel, openBulkEditPersonnel, saveBulkPersonnel, bulkDeletePersonnel,
     loadOperators, addOperator, deleteOperator,
     loadPackages, onOperatorChange,
     exportExcelPackages, openCombinedPackageModal,

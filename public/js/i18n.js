@@ -8,10 +8,11 @@ const i18n = (() => {
       'nav_voice': 'Ses Hatları',
       'nav_reports': 'Raporlar',
       'nav_settings': 'Ayarlar',
-      'nav_logs': 'İşlem Geçmişi',
       'nav_lines': 'Hatlar',
       'nav_analysis': 'Analiz',
+      'nav_invoices': 'Faturalar',
       'nav_system': 'Sistem',
+      'nav_logs': 'İşlem Geçmişi',
 
       // Reports Missing specific keys
       'REPORTS_M2M_SUMMARY': 'M2M Hat Özeti',
@@ -173,10 +174,11 @@ const i18n = (() => {
       'nav_voice': 'Voice Lines',
       'nav_reports': 'Reports',
       'nav_settings': 'Settings',
-      'nav_logs': 'Activity Logs',
       'nav_lines': 'Lines',
       'nav_analysis': 'Analysis',
+      'nav_invoices': 'Invoices',
       'nav_system': 'System',
+      'nav_logs': 'Activity Logs',
 
       // Topbar
       'logout': 'Logout',

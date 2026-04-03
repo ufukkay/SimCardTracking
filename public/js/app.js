@@ -43,7 +43,7 @@
 
   function applySidebarPermissions(user) {
     if (user.role === 'admin') return; // admin sees everything
-    const moduleMap = { m2m: 'm2m', data: 'data', voice: 'voice' };
+    const moduleMap = { m2m: 'm2m', data: 'data', voice: 'voice', invoices: 'invoices' };
     Object.entries(moduleMap).forEach(([page, mod]) => {
       const navItem = document.querySelector(`.nav-item[data-page="${page}"]`);
       if (navItem && !canView(mod)) {
@@ -69,11 +69,11 @@
       </div>`;
   }
 
-  // ─── Page Map ─────────────────────────────────────────────────────────────
   const pages = {
     m2m:      { title: 'nav_m2m',  render: () => canView('m2m')   ? M2MPage.render()     : renderAccessDenied('nav_m2m') },
     data:     { title: 'nav_data', render: () => canView('data')  ? DataPage.render()    : renderAccessDenied('nav_data') },
     voice:    { title: 'nav_voice', render: () => canView('voice') ? VoicePage.render()   : renderAccessDenied('nav_voice') },
+    invoices: { title: 'nav_invoices', render: () => canView('invoices') ? InvoicesPage.render() : renderAccessDenied('nav_invoices') },
     reports:  { title: 'nav_reports',     render: () => ReportsPage.render() },
     settings: { title: 'nav_settings',      render: () => SettingsPage.render() },
     logs:     { title: 'nav_logs', render: () => (currentUser.role === 'admin') ? LogsPage.render() : renderAccessDenied('nav_logs') },

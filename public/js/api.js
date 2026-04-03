@@ -14,8 +14,20 @@ const API = (() => {
   }
 
   async function request(method, path, body) {
-    const opts = { method, headers: headers() };
-    if (body) opts.body = JSON.stringify(body);
+    const opts = { headers: headers() };
+    let finalMethod = (method || 'GET').toUpperCase();
+
+    if (['PUT', 'PATCH', 'DELETE'].includes(finalMethod)) {
+      opts.headers['X-HTTP-Method-Override'] = finalMethod;
+      finalMethod = 'POST';
+    }
+
+    opts.method = finalMethod;
+
+    if (body && finalMethod !== 'GET') {
+      opts.body = JSON.stringify(body);
+    }
+
     const res = await fetch(BASE + path, opts);
     if (res.status === 401) {
       localStorage.clear();
@@ -32,6 +44,21 @@ const API = (() => {
     post:   (path, body)   => request('POST',   path, body),
     put:    (path, body)   => request('PUT',    path, body),
     delete: (path)         => request('DELETE', path),
+    postFile: async (path, formData) => {
+      const res = await fetch(BASE + path, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${getToken()}` },
+        body: formData
+      });
+      if (res.status === 401) {
+        localStorage.clear();
+        window.location.href = '/login.html';
+        return;
+      }
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.message || 'Yükleme başarısız.');
+      return data;
+    },
 
     // Auth
     login:  (u, p)   => fetch('/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: u, password: p }) }),
