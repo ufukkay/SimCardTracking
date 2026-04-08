@@ -37,6 +37,7 @@ app.use("/api/logs", require("./routes/logs"));
 app.use("/api/sim", require("./routes/sim"));
 app.use("/api/invoices", require("./routes/invoices"));
 app.use("/api/admin/update", require("./routes/update"));
+app.use("/api/system", require("./routes/system"));
 
 // Error handler (must be before app.listen)
 app.use((err, req, res, next) => {

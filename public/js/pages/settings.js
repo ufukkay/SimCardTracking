@@ -1,7 +1,7 @@
 /* ─── AYARLAR SAYFASI (FULL REWRITE) ─── */
-const PERMISSION_MODULES = ['m2m','data','voice','invoices'];
-
-const SettingsPage = (() => {
+window.SettingsPage = (() => {
+  const PERMISSION_MODULES = ['m2m','data','voice','invoices'];
+  const CACHE_BUSTER = Date.now();
   let editingUserId = null;
   let editingVehicleId = null;
   let editingLocationId = null;
@@ -22,6 +22,7 @@ const SettingsPage = (() => {
         <button class="tab-btn" onclick="SettingsPage.switchTab('importAll',this)" data-i18n="nav_import">📲 Hat Aktar</button>
         <button class="tab-btn" onclick="SettingsPage.switchTab('profile',this)" data-i18n="nav_profile">🔐 Şifre Değiştir</button>
         <button class="tab-btn" id="updateTabBtn" onclick="SettingsPage.switchTab('update',this)" style="display:none" data-i18n="nav_update">🔄 Güncelleme</button>
+        <button class="tab-btn" id="systemTabBtn" onclick="SettingsPage.switchTab('system',this)" style="display:none" data-i18n="nav_system">💾 Yedekleme</button>
       </div>
 
       <!-- KULLANICILAR -->
@@ -226,6 +227,71 @@ const SettingsPage = (() => {
         </div>
       </div>
 
+      <!-- SİSTEM YEDEKLEME (admin only) -->
+      <div class="tab-pane" id="tab-system">
+        <div class="card" style="max-width:560px">
+          <div class="card-header"><span class="card-title">💾 Veritabanı Yedekleme</span></div>
+          <div style="padding:10px 0 20px; display:flex; flex-direction:column; gap:16px">
+            <p style="font-size:13px; color:var(--text-muted)">
+              Sistemin mevcut durumunu (tüm hatlar, kullanıcılar, araçlar ve ayarlar) bir dosya olarak bilgisayarınıza indirebilirsiniz. 
+              Düzenli yedekleme yapmanız veri güvenliği için önerilir.
+            </p>
+            <div>
+              <button type="button" class="btn btn-primary" onclick="window.SettingsPage.handleBackup()">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:8px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Veritabanını Yedekle (.db İndir)
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="max-width:560px">
+          <div class="card-header"><span class="card-title">📂 Yedeği Geri Yükle (Restore)</span></div>
+          <div style="padding:10px 0 20px; display:flex; flex-direction:column; gap:16px">
+            <div style="background:rgba(255, 193, 7, 0.1); border-left:4px solid #ffc107; padding:12px 16px; border-radius:4px">
+              <strong style="color:#856404; font-size:13px">⚠️ DİKKAT:</strong>
+              <p style="font-size:12px; color:#856404; margin-top:4px">
+                Geri yükleme işlemi <strong>mevcut tüm verilerinizi silecek</strong> ve yüklediğiniz dosyadaki verileri getirecektir. 
+                İşlem tamamlandığında sistem otomatik olarak yeniden başlatılacaktır.
+              </p>
+            </div>
+            
+            <div class="form-group">
+              <label class="form-label">Yedek Dosyası Seç (.db)</label>
+              <input type="file" id="restoreFile" class="form-control" accept=".db">
+            </div>
+            
+            <div>
+              <button type="button" class="btn btn-danger" id="restoreBtn" onclick="window.SettingsPage.handleRestore()">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                Yedek Dosyasını Geri Yükle
+              </button>
+            </div>
+
+            <!-- Restore Progress Overlay -->
+            <div id="restoreProgressOverlay" style="display:none">
+              <div style="background:var(--bg-secondary); border:1px solid var(--border); border-radius:var(--radius-md); padding:24px; margin-top:4px">
+                <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px">
+                  <div id="restoreSpinner" style="width:24px;height:24px;border:3px solid var(--border);border-top:3px solid var(--primary);border-radius:50%;animation:spin 0.8s linear infinite"></div>
+                  <div>
+                    <div id="restoreTitle" style="font-weight:600;font-size:14px">Geri yükleme başlatılıyor...</div>
+                    <div id="restoreSubtitle" style="font-size:11px;color:var(--text-muted);margin-top:2px">Lütfen sayfayı kapatmayın</div>
+                  </div>
+                </div>
+
+                <!-- Progress Bar -->
+                <div style="background:var(--bg-primary);border-radius:8px;height:8px;overflow:hidden;margin-bottom:16px;border:1px solid var(--border)">
+                  <div id="restoreProgressBar" style="width:0%;height:100%;background:linear-gradient(90deg, #3b82f6, #06b6d4);border-radius:8px;transition:width 0.5s ease-out"></div>
+                </div>
+
+                <!-- Step List -->
+                <div id="restoreSteps" style="display:flex;flex-direction:column;gap:8px;font-size:12px"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- ── MODALS ── -->
 
       <!-- Kullanıcı -->
@@ -382,53 +448,52 @@ const SettingsPage = (() => {
       </div>
     `;
 
+    // Load initial data
     loadUsers();
     loadVehicles();
     loadLocations();
     loadPersonnel();
     loadOperators();
-    loadPackages();
     
-    // Show update tab for admins
-    const currentUser = JSON.parse(localStorage.getItem('simtrack_user') || '{}');
-    if (currentUser.role === 'admin') {
-      const btn = document.getElementById('updateTabBtn');
-      if (btn) btn.style.display = 'inline-block';
-    }
-  }
-
-  function switchTab(tab, btn) {
-    document.querySelectorAll('#pageContent .tab-btn').forEach(b => b.classList.remove('active'));
-    document.querySelectorAll('#pageContent .tab-pane').forEach(p => p.classList.remove('active'));
-    btn.classList.add('active');
-    document.getElementById(`tab-${tab}`).classList.add('active');
-    
-    // Lazy-render import tabs
-    if (tab === 'importAll') {
-      const activeSubBtn = document.querySelector('.sub-tab-btn.active');
-      if (activeSubBtn) {
-        // Trigger the active sub-tab's logic if it hasn't been rendered
-        const subType = activeSubBtn.textContent.toLowerCase().includes('m2m') ? 'm2m' : 
-                        activeSubBtn.textContent.toLowerCase().includes('data') ? 'data' : 'voice';
-        const containerId = `import-container-${subType}`;
-        const container = document.getElementById(containerId);
-        if (container && container.querySelector('.spinner')) {
-          BulkImport.renderTab(subType, containerId, null);
-        }
+    // Show admin-only tabs
+    const userStr = localStorage.getItem('simtrack_user');
+    if (userStr) {
+      const user = JSON.parse(userStr);
+      if (user.role === 'admin') {
+        const ut = document.getElementById('updateTabBtn'); if (ut) ut.style.display = 'block';
+        const st = document.getElementById('systemTabBtn'); if (st) st.style.display = 'block';
       }
     }
-
-    if (tab === 'update') {
-      loadChangelog();
-    }
-    
-    if (tab === 'update') {
-      SettingsPage.checkUpdate();
-    }
-    if (tab === 'packages') {
-      loadPackages();
-    }
   }
+
+    function switchTab(tab, btn) {
+      document.querySelectorAll('#pageContent .tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('#pageContent .tab-pane').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById(`tab-${tab}`).classList.add('active');
+      
+      // Lazy-render import tabs
+      if (tab === 'importAll') {
+        const activeSubBtn = document.querySelector('.sub-tab-btn.active');
+        if (activeSubBtn) {
+          const subType = activeSubBtn.textContent.toLowerCase().includes('m2m') ? 'm2m' : 
+                          activeSubBtn.textContent.toLowerCase().includes('data') ? 'data' : 'voice';
+          const containerId = `import-container-${subType}`;
+          const container = document.getElementById(containerId);
+          if (container && container.querySelector('.spinner')) {
+            BulkImport.renderTab(subType, containerId, null);
+          }
+        }
+      }
+
+      if (tab === 'update') {
+        loadChangelog();
+        SettingsPage.checkUpdate();
+      }
+      if (tab === 'packages') {
+        loadPackages();
+      }
+    }
 
   function switchImportType(type, btn) {
     document.querySelectorAll('.sub-tab-btn').forEach(b => {
@@ -1033,7 +1098,11 @@ const SettingsPage = (() => {
     const applyBtn = document.getElementById('applyUpdateBtn');
     const checkBtn = document.getElementById('checkUpdateBtn');
     if (!box) return;
-    if (!confirm('Güncelleme uygulanacak ve uygulama otomatik yeniden başlatılacak. Devam edilsin mi?')) return;
+    if (!confirm('Güncelleme uygulanacak ve uygulama otomatik yeniden başlatılacak. Önce veritabanı yedeği indirilecek. Devam edilsin mi?')) return;
+    
+    // Uygulama güncellenmeden önce otomatik yedek al
+    await handleBackup();
+
     applyBtn.disabled = true;
     checkBtn.disabled = true;
     box.innerHTML = `<div style="color:var(--text-muted)">⏳ Güncelleme indiriliyor (git pull)...</div>`;
@@ -1045,8 +1114,8 @@ const SettingsPage = (() => {
           <div><strong>${r.message}</strong></div>
         </div>
         <div style="background:var(--bg-primary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 14px;font-size:11px;color:var(--text-muted);white-space:pre-wrap;font-family:monospace">${r.detail}</div>
-        <div id="reloadCountdown" style="margin-top:10px;font-size:12px;color:var(--text-muted)">Sayfa 5 saniye içinde yenileniyor...</div>`;
-      let t = 5;
+        <div id="reloadCountdown" style="margin-top:10px;font-size:12px;color:var(--text-muted)">Sayfa 10 saniye içinde yenileniyor...</div>`;
+      let t = 10;
       const iv = setInterval(() => {
         t--;
         const el = document.getElementById('reloadCountdown');
@@ -1058,6 +1127,131 @@ const SettingsPage = (() => {
       applyBtn.disabled = false;
       checkBtn.disabled = false;
     }
+  }
+
+  /* ════════════ BACKUP & RESTORE ════════════ */
+  async function handleBackup() {
+    try {
+      UI.toast('Yedek hazırlanıyor...', 'info');
+      await API.downloadBackup();
+    } catch (err) {
+      UI.toast('Yedekleme hatası: ' + err.message, 'error');
+    }
+  }
+
+  async function handleRestore() {
+    const fileInput = document.getElementById('restoreFile');
+    if (!fileInput || !fileInput.files[0]) {
+      return UI.toast('Lütfen önce bir yedek dosyası (.db) seçin.', 'error');
+    }
+
+    const file = fileInput.files[0];
+
+    UI.confirm('DİKKAT! Mevcut tüm veriler silinecek ve veritabanı yedeği geri yüklenecektir. Bu işlem geri alınamaz. Onaylıyor musunuz?', async () => {
+      const btn = document.getElementById('restoreBtn');
+      const overlay = document.getElementById('restoreProgressOverlay');
+      const progressBar = document.getElementById('restoreProgressBar');
+      const stepsContainer = document.getElementById('restoreSteps');
+      const titleEl = document.getElementById('restoreTitle');
+      const subtitleEl = document.getElementById('restoreSubtitle');
+      const spinnerEl = document.getElementById('restoreSpinner');
+
+      const steps = [
+        { id: 'validate', icon: '🔍', text: 'Dosya doğrulanıyor...', doneText: 'Dosya doğrulandı', pct: 15 },
+        { id: 'upload',   icon: '📤', text: 'Veritabanı yükleniyor...', doneText: 'Veritabanı yüklendi', pct: 50 },
+        { id: 'replace',  icon: '🔄', text: 'Veritabanı değiştiriliyor...', doneText: 'Veritabanı değiştirildi', pct: 75 },
+        { id: 'reopen',   icon: '🔗', text: 'Bağlantı yeniden kuruluyor...', doneText: 'Bağlantı kuruldu', pct: 90 },
+        { id: 'done',     icon: '✅', text: 'Tamamlandı!', doneText: 'Tamamlandı!', pct: 100 },
+      ];
+
+      function renderSteps(activeIdx) {
+        stepsContainer.innerHTML = steps.map((s, i) => {
+          let statusIcon, color, fontWeight;
+          if (i < activeIdx) {
+            statusIcon = '✅'; color = 'var(--success, #16a34a)'; fontWeight = '400';
+          } else if (i === activeIdx) {
+            statusIcon = '⏳'; color = 'var(--primary, #3b82f6)'; fontWeight = '600';
+          } else {
+            statusIcon = '⬜'; color = 'var(--text-muted)'; fontWeight = '400';
+          }
+          const label = i < activeIdx ? s.doneText : s.text;
+          return `<div style="display:flex;align-items:center;gap:8px;color:${color};font-weight:${fontWeight};padding:4px 8px;border-radius:6px;${i === activeIdx ? 'background:rgba(59,130,246,0.08)' : ''}">
+            <span style="font-size:14px;width:20px;text-align:center">${statusIcon}</span>
+            <span>${s.icon} ${label}</span>
+            ${i < activeIdx ? '<span style="margin-left:auto;font-size:10px;color:var(--success, #16a34a)">✓</span>' : ''}
+          </div>`;
+        }).join('');
+      }
+
+      async function setStep(idx) {
+        renderSteps(idx);
+        const step = steps[idx];
+        progressBar.style.width = step.pct + '%';
+        titleEl.textContent = step.text;
+        if (idx === steps.length - 1) {
+          subtitleEl.textContent = 'Sayfa yenileniyor...';
+        }
+        await new Promise(r => setTimeout(r, 400));
+      }
+
+      if (btn) btn.style.display = 'none';
+      overlay.style.display = 'block';
+      progressBar.style.width = '0%';
+
+      try {
+        await setStep(0);
+        if (!file.name.endsWith('.db')) throw new Error('Sadece .db uzantılı dosyalar kabul edilir.');
+        if (file.size < 100) throw new Error('Dosya çok küçük, geçerli bir veritabanı dosyası değil.');
+        await new Promise(r => setTimeout(r, 300));
+
+        await setStep(1);
+        const response = await API.restoreBackup(file);
+
+        await setStep(2); await new Promise(r => setTimeout(r, 300));
+        await setStep(3); await new Promise(r => setTimeout(r, 300));
+        await setStep(4);
+
+        titleEl.textContent = '🎉 Geri yükleme tamamlandı!';
+        subtitleEl.textContent = 'Sayfa yenileniyor...';
+        spinnerEl.style.animation = 'none';
+        spinnerEl.style.border = 'none';
+        spinnerEl.innerHTML = '<span style="font-size:22px">🎉</span>';
+        progressBar.style.background = 'linear-gradient(90deg, #16a34a, #22c55e)';
+
+        UI.toast('Veritabanı başarıyla geri yüklendi!', 'success');
+
+        let countdown = 10;
+        const countdownInterval = setInterval(() => {
+          countdown--;
+          subtitleEl.textContent = `Sayfa ${countdown} saniye içinde yenilenecek...`;
+          if (countdown <= 0) {
+            clearInterval(countdownInterval);
+            window.location.reload();
+          }
+        }, 1000);
+
+      } catch (err) {
+        progressBar.style.background = 'linear-gradient(90deg, #ef4444, #f87171)';
+        titleEl.textContent = '❌ Geri yükleme başarısız!';
+        subtitleEl.textContent = err.message;
+        spinnerEl.style.animation = 'none';
+        spinnerEl.style.border = 'none';
+        spinnerEl.innerHTML = '<span style="font-size:22px">❌</span>';
+        
+        UI.toast('Geri yükleme hatası: ' + err.message, 'error');
+
+        const resetBtn = document.createElement('button');
+        resetBtn.className = 'btn btn-primary btn-sm';
+        resetBtn.style.marginTop = '12px';
+        resetBtn.textContent = 'Tekrar Dene';
+        resetBtn.onclick = () => {
+           overlay.style.display = 'none';
+           if(btn) btn.style.display = 'flex';
+        };
+        subtitleEl.appendChild(document.createElement('br'));
+        subtitleEl.appendChild(resetBtn);
+      }
+    }, { title: 'Yedeği Geri Yükle', icon: '⚠️', okText: 'Evet, Geri Yükle', okClass: 'btn-danger' });
   }
 
   /* ── Icon helpers ── */
@@ -1163,6 +1357,7 @@ const SettingsPage = (() => {
     
     openPackageModal, deletePackage, savePackage,
     checkUpdate, applyUpdate,
+    handleBackup, handleRestore,
     changePassword
   };
 })();

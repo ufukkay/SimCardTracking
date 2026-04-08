@@ -12,7 +12,7 @@ const UI = (() => {
     setTimeout(() => {
       el.classList.add('hide');
       el.addEventListener('animationend', () => el.remove());
-    }, 3500);
+    }, 5000);
   }
 
   // ─── Confirm Dialog ───

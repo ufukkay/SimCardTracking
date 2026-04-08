@@ -159,5 +159,31 @@ const API = (() => {
     
     // Transfer (Tip Değiştirme)
     transferSim: (id, currentType, targetType) => request('POST', '/sim/transfer', { id, currentType, targetType }),
+
+    // System Backup & Restore
+    downloadBackup: async () => {
+      const res = await fetch(`${BASE}/system/backup`, {
+        headers: { 'Authorization': `Bearer ${getToken()}` }
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.message || 'Yedek indirme başarısız.');
+      }
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `simcard_backup_${new Date().toISOString().slice(0, 10)}.db`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    },
+
+    restoreBackup: async (file) => {
+      const fd = new FormData();
+      fd.append('db_file', file);
+      return API.postFile('/system/restore', fd);
+    }
   };
 })();
