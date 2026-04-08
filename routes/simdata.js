@@ -45,43 +45,55 @@ router.get('/:id', canView('data'), (req, res) => {
 });
 // POST /api/data
 router.post('/', canEdit('data'), (req, res) => {
-  const { iccid, phone_no, operator, status, location, notes, package_id } = req.body;
+  const { iccid, phone_no, operator, status, location, company, notes, package_id } = req.body;
   if (!operator) return res.status(400).json({ message: 'Operatör zorunludur.' });
 
+  let cleanPhone = phone_no || null;
+  if (cleanPhone) {
+    const digits = cleanPhone.toString().replace(/\D/g, '').slice(-10);
+    cleanPhone = digits.length === 10 ? '0' + digits : cleanPhone;
+  }
+
   // Duplicate check
-  if (phone_no) {
+  if (cleanPhone) {
     const exists = db.prepare(`
       SELECT 1 FROM sim_m2m   WHERE phone_no = ? UNION ALL
       SELECT 1 FROM sim_data  WHERE phone_no = ? UNION ALL
       SELECT 1 FROM sim_voice WHERE phone_no = ?
       LIMIT 1
-    `).get(phone_no, phone_no, phone_no);
+    `).get(cleanPhone, cleanPhone, cleanPhone);
     if (exists) return res.status(400).json({ message: 'Bu telefon numarası zaten kayıtlı.' });
   }
 
   syncLocation(location);
 
   const result = db.prepare(`
-    INSERT INTO sim_data (iccid, phone_no, operator, status, location, notes, package_id)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
-  `).run(iccid || null, phone_no || null, operator, status || 'active', 
-         location || null, notes || null, package_id || null);
+    INSERT INTO sim_data (iccid, phone_no, operator, status, location, company, notes, package_id)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(iccid || null, cleanPhone, operator, status || 'active', 
+         location || null, company || null, notes || null, package_id || null);
   
   logActivity(req, 'CREATE', 'DATA', result.lastInsertRowid, { iccid, phone_no, location });
   res.status(201).json({ id: result.lastInsertRowid, message: 'Data hattı eklendi.' });
 });
 // PUT /api/data/:id
 router.put('/:id', canEdit('data'), (req, res) => {
-  const { iccid, phone_no, operator, status, location, notes, package_id } = req.body;
+  const { iccid, phone_no, operator, status, location, company, notes, package_id } = req.body;
+
+  let cleanPhone = phone_no || null;
+  if (cleanPhone) {
+    const digits = cleanPhone.toString().replace(/\D/g, '').slice(-10);
+    cleanPhone = digits.length === 10 ? '0' + digits : cleanPhone;
+  }
 
   // Duplicate check
-  if (phone_no) {
+  if (cleanPhone) {
     const exists = db.prepare(`
       SELECT 1 FROM sim_m2m   WHERE phone_no = ? UNION ALL
       SELECT 1 FROM sim_data  WHERE phone_no = ? AND id != ? UNION ALL
       SELECT 1 FROM sim_voice WHERE phone_no = ?
       LIMIT 1
-    `).get(phone_no, phone_no, req.params.id, phone_no);
+    `).get(cleanPhone, cleanPhone, req.params.id, cleanPhone);
     if (exists) return res.status(400).json({ message: 'Bu telefon numarası zaten kayıtlı.' });
   }
 
@@ -89,10 +101,10 @@ router.put('/:id', canEdit('data'), (req, res) => {
 
   const result = db.prepare(`
     UPDATE sim_data 
-    SET iccid=?, phone_no=?, operator=?, status=?, location=?, notes=?, package_id=?,
+    SET iccid=?, phone_no=?, operator=?, status=?, location=?, company=?, notes=?, package_id=?,
     updated_at=CURRENT_TIMESTAMP WHERE id=?
-  `).run(iccid || null, phone_no || null, operator, status,
-         location || null, notes || null, package_id || null, req.params.id);
+  `).run(iccid || null, cleanPhone, operator, status,
+         location || null, company || null, notes || null, package_id || null, req.params.id);
   if (result.changes === 0) return res.status(404).json({ message: 'Kayıt bulunamadı.' });
   
   logActivity(req, 'UPDATE', 'DATA', req.params.id, { iccid, phone_no, location });
@@ -127,7 +139,7 @@ router.post('/bulk-update', canEdit('data'), (req, res) => {
 
   const fields = [];
   const params = [];
-  const allowedFields = ['operator', 'status', 'location', 'notes', 'package_id'];
+  const allowedFields = ['operator', 'status', 'location', 'company', 'notes', 'package_id'];
   Object.keys(data).forEach(key => {
     if (allowedFields.includes(key) && data[key] !== undefined) {
       fields.push(`${key} = ?`);

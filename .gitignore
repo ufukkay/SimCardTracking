@@ -2,10 +2,10 @@ node_modules/
 bin/
 logs/
 .env
-*.db
-*.db-shm
-*.db-wal
+data/*.db*
 
 # macOS
 .DS_Store
- 
+# Sandbox (Deneme Alanı)
+sandbox/*
+!sandbox/README.md

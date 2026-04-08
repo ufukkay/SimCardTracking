@@ -9,6 +9,10 @@ const DataPage = (() => {
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
         <span data-i18n="export_excel">${i18n.t('export_excel')}</span>
       </button>
+      <button class="btn btn-primary" onclick="DataPage.openAdd()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        <span data-i18n="new_record">${i18n.t('new_record')}</span>
+      </button>
     `;
     document.getElementById('pageContent').innerHTML = `
       <div class="card">
@@ -56,6 +60,7 @@ const DataPage = (() => {
                 <th data-i18n="col_package">${i18n.t('col_package')}</th>
                 <th data-i18n="col_status">${i18n.t('col_status')}</th>
                 <th data-i18n="col_location">${i18n.t('col_location')}</th>
+                <th data-i18n="col_company">${i18n.t('col_company')}</th>
                 <th data-i18n="label_notes">${i18n.t('label_notes')}</th>
                 <th style="width:90px" data-i18n="col_action">${i18n.t('col_action')}</th>
               </tr>
@@ -99,6 +104,10 @@ const DataPage = (() => {
                 <select name="package_id" class="form-control" id="dataPagePkgSel">
                   <option value="" data-i18n="select_option">${i18n.t('select_option')}</option>
                 </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label" data-i18n="col_company">${i18n.t('col_company')}</label>
+                <input name="company" class="form-control" placeholder="Şirket Adı">
               </div>
                <div class="form-group">
                 <label class="form-label" data-i18n="label_location">${i18n.t('label_location')}</label>
@@ -161,6 +170,10 @@ const DataPage = (() => {
                 <input name="location" class="form-control" list="locationsList" placeholder="Tüm seçilenlere bu lokasyonu ekle..." autocomplete="off">
               </div>
               <div class="form-group">
+                <label class="form-label">Şirket</label>
+                <input name="company" class="form-control" placeholder="Tüm seçilenlerin şirketini güncelle...">
+              </div>
+              <div class="form-group">
                 <label class="form-label">Notlar</label>
                 <input name="notes" class="form-control" placeholder="Tüm seçilenlere bu notu ekle...">
               </div>
@@ -214,6 +227,7 @@ const DataPage = (() => {
         'package_name': { label: i18n.t('col_package'), getVal: r => r.package_name || '—' },
         'status':     { label: i18n.t('col_status'),   getVal: r => r.status || '—' },
         'location':   { label: i18n.t('col_location'), getVal: r => r.location || '—' },
+        'company':    { label: i18n.t('col_company'),  getVal: r => r.company || '—' },
         'notes':      { label: i18n.t('label_notes'),  getVal: r => r.notes || '—' }
       };
 
@@ -237,6 +251,7 @@ const DataPage = (() => {
           <td class="td-muted">${r.package_name ? `<span class="badge badge-package">${r.package_name}</span>` : '—'}</td>
           <td>${UI.statusBadge(r.status)}</td>
           <td><strong>${r.location || '—'}</strong></td>
+          <td>${r.company || '—'}</td>
           <td class="td-notes">${r.notes || '—'}</td>
           <td class="td-actions">
             <div class="action-buttons">
@@ -410,6 +425,7 @@ const DataPage = (() => {
         'Paket': r.package_name || '',
         'Durum': r.status === 'active' ? 'Aktif' : r.status === 'spare' ? 'Yedek' : 'Pasif',
         'Lokasyon': r.location || '',
+        'Şirket': r.company || '',
         'Notlar': r.notes || '',
         'Kayıt Tarihi': new Date(r.created_at).toLocaleString('tr-TR')
       }));

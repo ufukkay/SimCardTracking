@@ -18,12 +18,12 @@ router.get("/template/:type", (req, res) => {
   const templates = {
     m2m: {
       filename: 'M2M_Sablon.xlsx',
-      headers: ['ICCID', 'Telefon No', 'Operatör', 'Araç Tipi / Kullanım Amacı', 'Durum', 'Plaka', 'Notlar'],
+      headers: ['ICCID', 'Telefon No', 'Operatör', 'Şirket', 'Araç Tipi / Kullanım Amacı', 'Durum', 'Plaka', 'Notlar'],
       example: [
-        ['8990011234567890', '05301234567', 'Vodafone', 'Binek',       'active', '34 ABC 001', 'Araç 1'],
-        ['8990017654321098', '05301234568', 'Turkcell', 'Yol Kamerası','spare',  '',           'Yedek'],
+        ['8990011234567890', '05301234567', 'Vodafone', 'ABC Lojistik', 'Binek',       'active', '34 ABC 001', 'Araç 1'],
+        ['8990017654321098', '05301234568', 'Turkcell', 'XYZ Nakliyat', 'Yol Kamerası','spare',  '',           'Yedek'],
       ],
-      note: 'Durum değerleri: active (Aktif), spare (Yedek), passive (Pasif)\nAraç Tipi / Kullanım Amacı örnekleri: Binek, Çekici, Yol Kamerası, IoT Cihazı, vb. (Cihazın nerede kullanıldığını belirtmek içindir)'
+      note: 'Durum değerleri: active (Aktif), spare (Yedek), passive (Pasif)\nAraç Tipi / Kullanım Amacı örnekleri: Binek, Çekici, Yol Kamerası, IoT Cihazı, vb.'
     },
     data: {
       filename: "Data_Sablon.xlsx",
@@ -31,6 +31,7 @@ router.get("/template/:type", (req, res) => {
         "ICCID",
         "Telefon No",
         "Operatör",
+        "Şirket",
         "Durum",
         "Lokasyon",
         "Notlar",
@@ -40,6 +41,7 @@ router.get("/template/:type", (req, res) => {
           "8990011234567890",
           "05301234567",
           "Vodafone",
+          "ABC Ofisleri",
           "active",
           "A Ofisi",
           "",
@@ -156,6 +158,11 @@ router.post("/excel/:type", authMiddleware, upload.single("file"), (req, res) =>
       m2m: (r) => {
         const plateNo   = r['Plaka'] || null;
         const vehicleType = r['Araç Tipi / Kullanım Amacı'] || r['Araç Tipi'] || null;
+        let phoneNo = r['Telefon No'] || '';
+        if (phoneNo) {
+          const digits = phoneNo.toString().replace(/\D/g, '').slice(-10);
+          phoneNo = digits.length === 10 ? '0' + digits : phoneNo;
+        }
         // Auto-sync to vehicles table
         if (plateNo && plateNo.toString().trim() !== '') {
           db.prepare(`
@@ -167,31 +174,39 @@ router.post("/excel/:type", authMiddleware, upload.single("file"), (req, res) =>
         }
         return db
           .prepare(
-            `INSERT INTO sim_m2m (iccid,phone_no,operator,status,plate_no,vehicle_type,notes) VALUES (?,?,?,?,?,?,?)`,
+            `INSERT INTO sim_m2m (iccid,phone_no,operator,status,company,plate_no,vehicle_type,notes) VALUES (?,?,?,?,?,?,?,?)`,
           )
           .run(
             r['ICCID'] || null,
-            r['Telefon No'] || null,
+            phoneNo || null,
             r['Operatör'] || null,
             r['Durum'] || 'active',
+            r['Şirket'] || null,
             plateNo,
             vehicleType,
             r['Notlar'] || null,
           );
       },
-      data: (r) =>
-        db
+      data: (r) => {
+        let phoneNo = r['Telefon No'] || '';
+        if (phoneNo) {
+          const digits = phoneNo.toString().replace(/\D/g, '').slice(-10);
+          phoneNo = digits.length === 10 ? '0' + digits : phoneNo;
+        }
+        return db
           .prepare(
-            `INSERT INTO sim_data (iccid,phone_no,operator,status,location,notes) VALUES (?,?,?,?,?,?)`,
+            `INSERT INTO sim_data (iccid,phone_no,operator,status,company,location,notes) VALUES (?,?,?,?,?,?,?)`,
           )
           .run(
             r["ICCID"] || null,
-            r["Telefon No"] || null,
+            phoneNo || null,
             r["Operatör"] || null,
             r["Durum"] || "active",
+            r["Şirket"] || null,
             r["Lokasyon"] || null,
             r["Notlar"] || null,
-          ),
+          );
+      },
       voice: (r) => {
         // Personel verisini de eş zamanlı güncellemeye (varsa) çalışabiliriz, veya sadece fatura importu için saklayabiliriz.
         // Şimdilik import sırasında sadece ses hattına ekliyoruz.
@@ -199,7 +214,12 @@ router.post("/excel/:type", authMiddleware, upload.single("file"), (req, res) =>
         // Let's also sync to personnel just like vehicle sync for m2m
         const assignedTo = r["Personel Adı"] || null;
         const costCenter = r["Masraf Kalemi"] || null;
-        const phoneNo = r["Telefon No"] || null;
+        let phoneNo = r["Telefon No"] || null;
+        
+        if (phoneNo) {
+          const digits = phoneNo.toString().replace(/\D/g, '').slice(-10);
+          phoneNo = digits.length === 10 ? '0' + digits : phoneNo;
+        }
         
         if (assignedTo && assignedTo.toString().trim() !== '') {
            db.prepare(`

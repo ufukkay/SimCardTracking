@@ -2,7 +2,7 @@ const Database = require('better-sqlite3');
 const bcrypt = require('bcryptjs');
 const path = require('path');
 
-const db = new Database(path.join(__dirname, '..', 'simcardtracking.db'));
+const db = new Database(path.join(__dirname, '..', 'data', 'simcardtracking.db'));
 
 // WAL modu performans için
 db.pragma('journal_mode = WAL');
@@ -51,6 +51,7 @@ db.exec(`
     status TEXT NOT NULL DEFAULT 'active',
     plate_no TEXT,
     vehicle_type TEXT,
+    company TEXT,
     notes TEXT,
     package_id INTEGER REFERENCES packages(id),
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -64,6 +65,7 @@ db.exec(`
     operator TEXT NOT NULL,
     status TEXT NOT NULL DEFAULT 'active',
     location TEXT,
+    company TEXT,
     notes TEXT,
     package_id INTEGER REFERENCES packages(id),
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -131,18 +133,35 @@ db.exec(`
     period TEXT NOT NULL,
     phone_no TEXT,
     personnel_name TEXT,
+    cost_center TEXT,
+    company_name TEXT,
     tariff TEXT,
     amount REAL DEFAULT 0,
     tax_kdv REAL DEFAULT 0,
     tax_oiv REAL DEFAULT 0,
     total_amount REAL DEFAULT 0,
+    source_file TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
 `);
 
-// ─── Performance Indexes ───
-// These prevent full table scans on the most common search / filter columns.
-// CREATE INDEX IF NOT EXISTS → safe to run multiple times (idempotent).
+// ─── Schema Migrations ─── (Kolon eklemeleri önce gelmeli)
+try { db.exec(`ALTER TABLE users ADD COLUMN permissions TEXT DEFAULT NULL`); } catch (_) {}
+try { db.exec(`ALTER TABLE sim_m2m ADD COLUMN package_id INTEGER REFERENCES packages(id)`); } catch (_) {}
+try { db.exec(`ALTER TABLE sim_m2m ADD COLUMN company TEXT DEFAULT NULL`); } catch (_) {}
+try { db.exec(`ALTER TABLE sim_data ADD COLUMN package_id INTEGER REFERENCES packages(id)`); } catch (_) {}
+try { db.exec(`ALTER TABLE sim_data ADD COLUMN company TEXT DEFAULT NULL`); } catch (_) {}
+try { db.exec(`ALTER TABLE sim_voice ADD COLUMN package_id INTEGER REFERENCES packages(id)`); } catch (_) {}
+try { db.exec(`ALTER TABLE packages ADD COLUMN data_limit REAL DEFAULT NULL`); } catch (_) {}
+try { db.exec(`ALTER TABLE packages ADD COLUMN sms_limit INTEGER DEFAULT NULL`); } catch (_) {}
+try { db.exec(`ALTER TABLE packages ADD COLUMN minutes_limit INTEGER DEFAULT NULL`); } catch (_) {}
+try { db.exec(`ALTER TABLE personnel ADD COLUMN cost_center TEXT DEFAULT NULL`); } catch (_) {}
+try { db.exec(`ALTER TABLE invoices ADD COLUMN cost_center TEXT DEFAULT NULL`); } catch (_) {}
+try { db.exec(`ALTER TABLE invoices ADD COLUMN company_name TEXT DEFAULT NULL`); } catch (_) {}
+try { db.exec(`ALTER TABLE invoices ADD COLUMN is_matched INTEGER DEFAULT 0`); } catch (_) {}
+try { db.exec(`ALTER TABLE invoices ADD COLUMN source_file TEXT DEFAULT NULL`); } catch (_) {}
+
+// ─── Performance Indexes ─── (Kolonlar eklendikten sonra indeksler oluşturulabilir)
 db.exec(`
   CREATE INDEX IF NOT EXISTS idx_m2m_plate_no     ON sim_m2m  (plate_no);
   CREATE INDEX IF NOT EXISTS idx_m2m_phone_no     ON sim_m2m  (phone_no);
@@ -150,12 +169,14 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_m2m_operator     ON sim_m2m  (operator);
   CREATE INDEX IF NOT EXISTS idx_m2m_status       ON sim_m2m  (status);
   CREATE INDEX IF NOT EXISTS idx_m2m_vehicle_type ON sim_m2m  (vehicle_type);
+  CREATE INDEX IF NOT EXISTS idx_m2m_company      ON sim_m2m  (company);
 
   CREATE INDEX IF NOT EXISTS idx_data_phone_no    ON sim_data (phone_no);
   CREATE INDEX IF NOT EXISTS idx_data_iccid       ON sim_data (iccid);
   CREATE INDEX IF NOT EXISTS idx_data_operator    ON sim_data (operator);
   CREATE INDEX IF NOT EXISTS idx_data_status      ON sim_data (status);
   CREATE INDEX IF NOT EXISTS idx_data_location    ON sim_data (location);
+  CREATE INDEX IF NOT EXISTS idx_data_company     ON sim_data (company);
 
   CREATE INDEX IF NOT EXISTS idx_voice_phone_no   ON sim_voice (phone_no);
   CREATE INDEX IF NOT EXISTS idx_voice_iccid      ON sim_voice (iccid);
@@ -168,25 +189,13 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_logs_action       ON activity_logs (action);
   CREATE INDEX IF NOT EXISTS idx_logs_module       ON activity_logs (module);
   CREATE INDEX IF NOT EXISTS idx_logs_created_at   ON activity_logs (created_at);
+  CREATE INDEX IF NOT EXISTS idx_invoices_period   ON invoices (period);
+  CREATE INDEX IF NOT EXISTS idx_invoices_phone    ON invoices (phone_no);
+  CREATE INDEX IF NOT EXISTS idx_invoices_source   ON invoices (source_file);
 `);
 
-// ─── Schema Migrations ───
-// Safely add new columns to existing databases (try/catch = idempotent)
-try { db.exec(`ALTER TABLE users ADD COLUMN permissions TEXT DEFAULT NULL`); } catch (_) {}
-try { db.exec(`ALTER TABLE sim_m2m ADD COLUMN package_id INTEGER REFERENCES packages(id)`); } catch (_) {}
-try { db.exec(`ALTER TABLE sim_data ADD COLUMN package_id INTEGER REFERENCES packages(id)`); } catch (_) {}
-try { db.exec(`ALTER TABLE sim_voice ADD COLUMN package_id INTEGER REFERENCES packages(id)`); } catch (_) {}
-try { db.exec(`ALTER TABLE packages ADD COLUMN data_limit REAL DEFAULT NULL`); } catch (_) {}
-try { db.exec(`ALTER TABLE packages ADD COLUMN sms_limit INTEGER DEFAULT NULL`); } catch (_) {}
-try { db.exec(`ALTER TABLE packages ADD COLUMN minutes_limit INTEGER DEFAULT NULL`); } catch (_) {}
-try { db.exec(`ALTER TABLE personnel ADD COLUMN cost_center TEXT DEFAULT NULL`); } catch (_) {}
-try { db.exec(`ALTER TABLE invoices ADD COLUMN cost_center TEXT DEFAULT NULL`); } catch (_) {}
-
-
-// ─── Packages type kısıtlaması migration: 'general' tipini destekle ───
-// SQLite'ta ALTER TABLE ile CHECK kısıtlaması değiştirilemez; recreate yapılır.
+// ─── Packages type kısıtlaması migration ───
 try {
-  // Mevcut kısıtlamayı kontrol et — 'general' yoksa tabloyu yeniden yarat
   const tableInfo = db.prepare(`SELECT sql FROM sqlite_master WHERE type='table' AND name='packages'`).get();
   if (tableInfo && tableInfo.sql && !tableInfo.sql.includes("'general'")) {
     db.exec(`
@@ -211,9 +220,8 @@ try {
     `);
     console.log('[DB] packages tablosu güncellendi: general tipi eklendi.');
   }
-} catch (migErr) { console.warn('[DB] packages migration hatası (görmezden gelindi):', migErr.message); }
+} catch (migErr) { console.warn('[DB] packages migration hatası:', migErr.message); }
 
-// ─── Package_id Indexes (after migration so column exists) ───
 try { db.exec(`CREATE INDEX IF NOT EXISTS idx_m2m_package_id   ON sim_m2m  (package_id)`); } catch (_) {}
 try { db.exec(`CREATE INDEX IF NOT EXISTS idx_data_package_id  ON sim_data (package_id)`); } catch (_) {}
 try { db.exec(`CREATE INDEX IF NOT EXISTS idx_voice_package_id ON sim_voice (package_id)`); } catch (_) {}
@@ -233,4 +241,4 @@ if (!existingAdmin) {
   console.log('Default admin oluşturuldu: admin / admin123');
 }
 
-module.exports = db; 
+module.exports = db;
