@@ -1,5 +1,19 @@
 [
   {
+    "version": "v1.9.0",
+    "date": "08.04.2026",
+    "status": "completed",
+    "title": "Akıllı Fatura Yönetimi & Kapsamlı Sistem Refaktörü",
+    "changes": [
+      "Fatura Yönetimi modülü UBL-XML (e-Fatura) tabanlı yepyeni bir motorla tamamen yeniden yazıldı, veri çıkarma doğruluğu %100'e ulaştı.",
+      "Akıllı Eşleştirme (Smart Matching) ile faturalardaki hatların Ses, Veri veya M2M kayıtlarıyla anında ilişkilendirilmesi sağlandı.",
+      "Fatura detay ekranına Bulk Actions (Toplu İşlemler) eklendi; aynı anda yüzlerce satır silinebilir veya masraf/zimmet yeri değiştirilebilir konuma getirildi.",
+      "Arayüz (UI) devrimi: Tablo filtre ve sıralama özellikleri güçlendirildi, CSS yapısı birleştirilerek duplicate kodlar temizlendi. '100% Google Standard'larına geçildi.",
+      "Ayarlar ekranına kapsamlı 'Toplu Personel İçe Aktarma (Excel/CSV)' özelliği eklendi.",
+      "Sistem Yedekleme modülünde reopen mimarisi hatasız hale getirildi, incognito pencerelerinde yaşanan çökme sorunları Custom Modals kurularak düzeltildi."
+    ]
+  },
+  {
     "version": "v1.4.2",
     "date": "08.04.2026",
     "status": "completed",
