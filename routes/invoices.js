@@ -47,6 +47,11 @@ router.get('/list', canView('invoices'), (req, res) => {
       operator: req.query.operator,
       sourceFile: req.query.source_file,
       isMatched: req.query.is_matched,
+      phoneNo: req.query.phone_no,
+      personnelName: req.query.personnel_name,
+      companyName: req.query.company_name,
+      costCenter: req.query.cost_center,
+      search: req.query.search
     });
     res.json(data);
   } catch (error) {
@@ -209,7 +214,7 @@ router.post('/bulk-delete-summaries', canEdit('invoices'), (req, res) => {
   }
 });
 
-function fetchInvoices({ period, operator, sourceFile, isMatched } = {}) {
+function fetchInvoices({ period, operator, sourceFile, isMatched, phoneNo, personnelName, companyName, costCenter, search } = {}) {
   let query = 'SELECT * FROM invoices WHERE 1=1';
   const params = [];
 
@@ -228,6 +233,29 @@ function fetchInvoices({ period, operator, sourceFile, isMatched } = {}) {
   if (isMatched !== undefined && isMatched !== '') {
     query += ' AND is_matched = ?';
     params.push(isMatched === 'true' || isMatched === '1' ? 1 : 0);
+  }
+  
+  if (phoneNo) {
+    query += ' AND phone_no LIKE ?';
+    params.push(`%${phoneNo}%`);
+  }
+  if (personnelName) {
+    query += ' AND personnel_name LIKE ?';
+    params.push(`%${personnelName}%`);
+  }
+  if (companyName) {
+    query += ' AND company_name LIKE ?';
+    params.push(`%${companyName}%`);
+  }
+  if (costCenter) {
+    query += ' AND cost_center LIKE ?';
+    params.push(`%${costCenter}%`);
+  }
+  
+  if (search) {
+    query += ' AND (phone_no LIKE ? OR personnel_name LIKE ? OR company_name LIKE ? OR cost_center LIKE ? OR tariff LIKE ?)';
+    const searchParam = `%${search}%`;
+    params.push(searchParam, searchParam, searchParam, searchParam, searchParam);
   }
 
   query += ' ORDER BY total_amount DESC';

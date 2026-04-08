@@ -11,6 +11,9 @@ const InvoicesPage = (() => {
   let selectedInvoiceIds = new Set();
   let selectedSummaryKeys = new Set();
 
+  let detailColFilters = {};
+  let detailSearchDebounce = null;
+
   function render() {
     canEditInvoices = window.AppPerms?.canEdit ? window.AppPerms.canEdit('invoices') : true;
     document.getElementById('pageTitle').textContent = i18n.t('nav_invoices') || 'Faturalar';
@@ -64,7 +67,8 @@ const InvoicesPage = (() => {
              <h3 class="card-title" id="detailTitle">Fatura İçeriği</h3>
              
              <div style="display:flex; align-items:center; gap:10px;">
-                <select id="isMatchedFilter" class="form-control" style="width:160px; padding:4px 8px;" onchange="InvoicesPage.filterDetail(this.value)">
+                <input type="text" id="detailSearchInput" class="form-control" style="width:200px; padding:4px 8px;" placeholder="Detaylarda ara..." oninput="InvoicesPage.debounceSearch()">
+                <select id="isMatchedFilter" class="form-control" style="width:160px; padding:4px 8px;" onchange="InvoicesPage.loadDetail(null, null, null, this.value)">
                   <option value="">Tüm Satırlar</option>
                   <option value="1">Eşleşen (Kayıtlı) Hatlar</option>
                   <option value="0">Eşleşmeyen (Sahipsiz) Hatlar</option>
@@ -91,13 +95,13 @@ const InvoicesPage = (() => {
               <thead>
                  <tr>
                     <th style="width:32px"><input type="checkbox" id="invoiceSelectAll" onclick="InvoicesPage.toggleAll(this)"></th>
-                    <th>Telefon No</th>
-                    <th>Zimmetli / Personel / Konum</th>
-                    <th>Şirket</th>
-                    <th>Masraf Kalemi</th>
-                    <th>Tarife</th>
+                    <th data-col-key="phone_no">Telefon No</th>
+                    <th data-col-key="personnel_name">Zimmetli / Personel / Konum</th>
+                    <th data-col-key="company_name">Şirket</th>
+                    <th data-col-key="cost_center">Masraf Kalemi</th>
+                    <th data-col-key="tariff">Tarife</th>
                     <th>Vergiler (KDV/ÖİV)</th>
-                    <th>Ödenecek Tutar</th>
+                    <th data-col-key="total_amount">Ödenecek Tutar</th>
                  </tr>
               </thead>
               <tbody id="invoicesDetailList">
@@ -176,35 +180,48 @@ const InvoicesPage = (() => {
     }
   }
 
-  async function loadDetail(period, operator, sourceFileEncoded, isMatchedFilter = '') {
+  async function loadDetail(period, operator, sourceFile = null, isMatchedFilter = null) {
     try {
       const card = document.getElementById('invoiceDetailCard');
       const tbody = document.getElementById('invoicesDetailList');
-      const sourceFile = decodeURIComponent(sourceFileEncoded);
+      if (period) activePeriod = period;
+      if (operator) activeOperator = operator;
+      if (sourceFile) activeSourceFile = decodeURIComponent(sourceFile);
       
-      activePeriod = period;
-      activeOperator = operator;
-      activeSourceFile = sourceFile;
-      
-      if (document.getElementById('isMatchedFilter')) {
-        document.getElementById('isMatchedFilter').value = isMatchedFilter;
-      }
-      
-      document.getElementById('detailTitle').innerHTML = `<span style="color:var(--text-muted)">${period} ></span> ${sourceFile}`;
+      const currentMatchedFilter = isMatchedFilter !== null ? isMatchedFilter : (document.getElementById('isMatchedFilter')?.value || '');
+
+      document.getElementById('detailTitle').innerHTML = `<span style="color:var(--text-muted)">${activePeriod} ></span> ${activeSourceFile}`;
       tbody.innerHTML = `<tr><td colspan="8" style="text-align:center">${UI.loading()}</td></tr>`;
       card.style.display = 'block';
-      card.scrollIntoView({ behavior: 'smooth' });
+      if (period) card.scrollIntoView({ behavior: 'smooth' });
 
-      let url = `/invoices/list?period=${period}&operator=${operator}&source_file=${encodeURIComponent(sourceFile)}`;
-      if (isMatchedFilter !== '') url += `&is_matched=${isMatchedFilter}`;
+      let url = `/invoices/list?period=${activePeriod}&operator=${activeOperator}&source_file=${encodeURIComponent(activeSourceFile)}`;
+      if (currentMatchedFilter !== '') url += `&is_matched=${currentMatchedFilter}`;
+      
+      const search = document.getElementById('detailSearchInput')?.value;
+      if (search) url += `&search=${encodeURIComponent(search)}`;
+
       const res = await API.get(url);
       
-      if (!res.length) {
-          tbody.innerHTML = `<tr><td colspan="8" style="text-align:center">Bu filtreye uygun kayıt bulunamadı.</td></tr>`;
+      const colDefs = {
+        'phone_no': { label: 'Telefon No', getVal: r => r.phone_no || '' },
+        'personnel_name': { label: 'Zimmetli / Personel / Konum', getVal: r => r.personnel_name || '' },
+        'company_name': { label: 'Şirket', getVal: r => r.company_name || '' },
+        'cost_center': { label: 'Masraf Kalemi', getVal: r => r.cost_center || '' },
+        'tariff': { label: 'Tarife', getVal: r => r.tariff || '' },
+        'total_amount': { label: 'Ödenecek Tutar', getVal: r => r.total_amount || 0 }
+      };
+
+      let rows = UI.filterRows(res, detailColFilters, colDefs);
+      rows = UI.sortRows(rows, detailColFilters._sort, colDefs);
+
+      if (!rows.length) {
+          tbody.innerHTML = `<tr><td colspan="8" style="text-align:center">Seçili filtrelere uygun kayıt bulunamadı.</td></tr>`;
+          UI.setupTableFilters('invoicesDetailList', res, detailColFilters, colDefs, () => loadDetail());
           return;
       }
 
-      tbody.innerHTML = res.map(row => `
+      tbody.innerHTML = rows.map(row => `
          <tr data-id="${row.id}">
            <td><input type="checkbox" class="row-select" value="${row.id}" onchange="InvoicesPage.toggleSelection(${row.id}, this.checked)"></td>
            <td>
@@ -226,6 +243,8 @@ const InvoicesPage = (() => {
          </tr>
       `).join('');
       
+      UI.setupTableFilters('invoicesDetailList', res, detailColFilters, colDefs, () => loadDetail());
+
       selectedInvoiceIds.clear();
       document.getElementById('invoiceSelectAll').checked = false;
       updateBulkBtn();
@@ -399,7 +418,7 @@ const InvoicesPage = (() => {
   }
 
   function filterDetail(val) {
-    loadDetail(activePeriod, activeOperator, encodeURIComponent(activeSourceFile), val);
+    loadDetail(null, null, null, val);
   }
 
   /* --- UPLOAD FLOW --- */
@@ -587,5 +606,12 @@ const InvoicesPage = (() => {
     }
   }
 
-  return { render, loadSummary, openUploadModal, submitUpload, loadDetail, filterDetail, downloadExcel, downloadActiveDetail, showHistory, toggleAllSummaries, toggleSummarySelection, bulkDeleteSummaries, toggleAll, toggleSelection, bulkDelete, openBulkEdit };
+  function debounceSearch() {
+    if (detailSearchDebounce) clearTimeout(detailSearchDebounce);
+    detailSearchDebounce = setTimeout(() => {
+      loadDetail();
+    }, 400);
+  }
+
+  return { render, loadSummary, openUploadModal, submitUpload, loadDetail, filterDetail, downloadExcel, downloadActiveDetail, showHistory, toggleAllSummaries, toggleSummarySelection, bulkDeleteSummaries, toggleAll, toggleSelection, bulkDelete, openBulkEdit, debounceSearch };
 })();
