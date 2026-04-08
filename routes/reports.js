@@ -9,9 +9,9 @@ router.use(authMiddleware);
 router.post('/advanced', (req, res) => {
   const { startDate, endDate, operator, status } = req.body;
   
-  let qM2m = 'SELECT * FROM sim_m2m WHERE 1=1';
-  let qData = 'SELECT * FROM sim_data WHERE 1=1';
-  let qVoice = 'SELECT * FROM sim_voice WHERE 1=1';
+  let qM2m = 'SELECT r.*, p.name as package_name FROM sim_m2m r LEFT JOIN packages p ON r.package_id = p.id WHERE 1=1';
+  let qData = 'SELECT r.*, p.name as package_name FROM sim_data r LEFT JOIN packages p ON r.package_id = p.id WHERE 1=1';
+  let qVoice = 'SELECT r.*, p.name as package_name FROM sim_voice r LEFT JOIN packages p ON r.package_id = p.id WHERE 1=1';
   const p = [];
 
   if (startDate) {
@@ -23,23 +23,23 @@ router.post('/advanced', (req, res) => {
     p.push(endDate + ' 23:59:59', endDate + ' 23:59:59', endDate + ' 23:59:59');
   }
   if (operator) {
-    qM2m += ` AND operator = '${operator}'`; qData += ` AND operator = '${operator}'`; qVoice += ` AND operator = '${operator}'`;
+    qM2m += ` AND r.operator = ?`; qData += ` AND r.operator = ?`; qVoice += ` AND r.operator = ?`;
   }
   if (status) {
-    qM2m += ` AND status = '${status}'`; qData += ` AND status = '${status}'`; qVoice += ` AND status = '${status}'`;
+    qM2m += ` AND r.status = ?`; qData += ` AND r.status = ?`; qVoice += ` AND r.status = ?`;
   }
 
-  qM2m += ' ORDER BY created_at DESC';
-  qData += ' ORDER BY created_at DESC';
-  qVoice += ' ORDER BY created_at DESC';
+  qM2m += ' ORDER BY r.created_at DESC';
+  qData += ' ORDER BY r.created_at DESC';
+  qVoice += ' ORDER BY r.created_at DESC';
 
-  // For the parameters, we need to pass them to each query. SQLite prepare doesn't support array spread easily for 3 duplicated parameter sets in one go if they vary, but here the params are identical if we do them sequentially.
-  
-  // Extract params per query (since p has 3x duplicates, we just slice them or rebuild)
+  // Extract params per query
   const buildParams = () => {
     let cp = [];
     if (startDate) cp.push(startDate + ' 00:00:00');
     if (endDate) cp.push(endDate + ' 23:59:59');
+    if (operator) cp.push(operator);
+    if (status) cp.push(status);
     return cp;
   };
   const qParams = buildParams();

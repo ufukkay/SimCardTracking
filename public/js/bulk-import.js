@@ -64,6 +64,18 @@ const BulkImport = (() => {
         { key: "features", label: "Özellikler", placeholder: "" },
       ],
     },
+    personnel: {
+      label: "Personel",
+      fields: [
+        { key: "first_name", label: "Ad", placeholder: "Ahmet" },
+        { key: "last_name", label: "Soyad", placeholder: "Yılmaz" },
+        { key: "department", label: "Departman", placeholder: "IT" },
+        { key: "company", label: "Şirket", placeholder: "ABC A.Ş." },
+        { key: "cost_center", label: "Masraf Kalemi", placeholder: "IT-123" },
+        { key: "phone", label: "Telefon", placeholder: "05xx" },
+        { key: "notes", label: "Notlar", placeholder: "" },
+      ],
+    },
   };
 
   const STATUS_OPTS = [
@@ -380,6 +392,12 @@ const BulkImport = (() => {
       if (result.errors?.length) {
         result.errors.forEach((e) => UI.toast(e, "error"));
       }
+      if (currentType === 'personnel') {
+        const pane = document.getElementById('tab-personnelTab');
+        if (pane && pane.classList.contains('active')) {
+             if (window.SettingsPage) window.SettingsPage.loadPersonnel();
+        }
+      }
       UI.closeModal("bulkModal");
       onSuccess?.();
     } catch (err) {
@@ -409,6 +427,9 @@ const BulkImport = (() => {
           ${result.errors?.length ? `<div style="font-size:12px;color:var(--danger);margin-top:6px">${result.errors.slice(0, 5).join("<br>")}</div>` : ""}
         </div>`;
       UI.toast(`${result.inserted} kayıt eklendi.`, "success");
+      if (currentType === 'personnel') {
+        if (window.SettingsPage) window.SettingsPage.loadPersonnel();
+      }
       onSuccess?.();
     } catch (err) {
       UI.toast(err.message, "error");

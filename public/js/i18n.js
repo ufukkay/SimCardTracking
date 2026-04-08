@@ -14,9 +14,14 @@ const i18n = (() => {
       'nav_system': 'Sistem',
       'nav_logs': 'İşlem Geçmişi',
 
-      // Reports Missing specific keys
-      'REPORTS_M2M_SUMMARY': 'M2M Hat Özeti',
-      'REPORTS_PACKAGE_DIST': 'Paket Dağılımı',
+      // Reports
+      'nav_reports': 'Raporlar',
+      'reports_status_dist': 'Durum Dağılımı',
+      'reports_package_dist': 'Paket Kullanımı (Top 10)',
+      'reports_m2m_summary': 'M2M Hat Özeti',
+      'reports_data_summary': 'Data Hat Özeti',
+      'reports_voice_summary': 'Ses Hat Özeti',
+      'total': 'Toplam',
       'col_count': 'Adet',
 
       // Topbar
@@ -179,6 +184,16 @@ const i18n = (() => {
       'nav_invoices': 'Invoices',
       'nav_system': 'System',
       'nav_logs': 'Activity Logs',
+      
+      // Reports
+      'nav_reports': 'Reports',
+      'reports_status_dist': 'Status Distribution',
+      'reports_package_dist': 'Package Usage (Top 10)',
+      'reports_m2m_summary': 'M2M Summary',
+      'reports_data_summary': 'Data Summary',
+      'reports_voice_summary': 'Voice Summary',
+      'total': 'Total',
+      'col_count': 'Count',
 
       // Topbar
       'logout': 'Logout',

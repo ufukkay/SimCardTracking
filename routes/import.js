@@ -105,6 +105,15 @@ router.get("/template/:type", (req, res) => {
         ["Kurumsal Ses", "voice", "Türk Telekom", 10, 5000, 2000, 250, "Full iletişim"],
       ],
       note: "Tip değerleri: m2m, data, voice\nOperatör adı mevcut operatörlerden biri olmalıdır."
+    },
+    personnel: {
+      filename: "Personel_Sablon.xlsx",
+      headers: ["Ad", "Soyad", "Departman", "Şirket", "Masraf Kalemi", "Telefon", "Notlar"],
+      example: [
+        ["Ahmet", "Yılmaz", "IT", "ABC A.Ş.", "IT-123", "05301234567", "Sistem Sorumlusu"],
+        ["Ayşe", "Kaya", "Muhasebe", "ABC A.Ş.", "MUH-456", "05301234568", ""],
+      ],
+      note: "Ad ve Soyad zorunludur."
     }
   };
 
@@ -261,6 +270,20 @@ router.post("/excel/:type", authMiddleware, upload.single("file"), (req, res) =>
           r["Fiyat"] || r["price"] || 0,
           r["Özellikler"] || r["features"] || null
         );
+      },
+      personnel: (r) => {
+        return db.prepare(`
+          INSERT INTO personnel (first_name, last_name, department, company, cost_center, phone, notes)
+          VALUES (?, ?, ?, ?, ?, ?, ?)
+        `).run(
+          r["Ad"] || r["first_name"] || null,
+          r["Soyad"] || r["last_name"] || null,
+          r["Departman"] || r["department"] || null,
+          r["Şirket"] || r["company"] || null,
+          r["Masraf Kalemi"] || r["cost_center"] || null,
+          r["Telefon"] || r["phone"] || null,
+          r["Notlar"] || r["notes"] || null
+        );
       }
     };
 
@@ -270,12 +293,24 @@ router.post("/excel/:type", authMiddleware, upload.single("file"), (req, res) =>
     const insertMany = db.transaction((rows) => {
       rows.forEach((r, i) => {
         try {
-          if (!r["Operatör"]) {
+          if (type !== 'personnel' && !r["Operatör"] && !r["operator"]) {
             results.errors.push(`Satır ${i + 2}: Operatör zorunludur.`);
             return;
           }
-          const pno = r["Telefon No"] || r["phone_no"] || null;
-          if (pno) {
+          if (type === 'personnel') {
+            const firstName = r["Ad"] || r["first_name"];
+            const lastName = r["Soyad"] || r["last_name"];
+            if (!firstName || firstName.toString().trim() === "") {
+               results.errors.push(`Satır ${i + 2}: Ad zorunludur.`);
+               return;
+            }
+            if (!lastName || lastName.toString().trim() === "") {
+               results.errors.push(`Satır ${i + 2}: Soyad zorunludur.`);
+               return;
+            }
+          }
+          const pno = r["Telefon No"] || r["phone_no"] || r["Telefon"] || r["phone"] || null;
+          if (pno && type !== 'personnel') {
             const exists = db.prepare(`
               SELECT 1 FROM sim_m2m   WHERE phone_no = ? UNION ALL
               SELECT 1 FROM sim_data  WHERE phone_no = ? UNION ALL
@@ -387,24 +422,38 @@ router.post("/json/:type", authMiddleware, (req, res) => {
           r.notes || null,
         )
     },
-      packages: (r) => {
-        const opName = r.operator;
-        const op = db.prepare('SELECT id FROM operators WHERE name = ?').get(opName);
-        return db.prepare(`
-          INSERT INTO packages (name, type, operator_id, data_limit, sms_limit, minutes_limit, price, features)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        `).run(
-          r.name || null,
-          r.type || "m2m",
-          op ? op.id : null,
-          r.data_limit || null,
-          r.sms_limit || null,
-          r.minutes_limit || null,
-          r.price || 0,
-          r.features || null
-        );
-      }
-    };
+    packages: (r) => {
+      const opName = r.operator;
+      const op = db.prepare('SELECT id FROM operators WHERE name = ?').get(opName);
+      return db.prepare(`
+        INSERT INTO packages (name, type, operator_id, data_limit, sms_limit, minutes_limit, price, features)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        r.name || null,
+        r.type || "m2m",
+        op ? op.id : null,
+        r.data_limit || null,
+        r.sms_limit || null,
+        r.minutes_limit || null,
+        r.price || 0,
+        r.features || null
+      );
+    },
+    personnel: (r) => {
+      return db.prepare(`
+        INSERT INTO personnel (first_name, last_name, department, company, cost_center, phone, notes)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        r.first_name || null,
+        r.last_name || null,
+        r.department || null,
+        r.company || null,
+        r.cost_center || null,
+        r.phone || null,
+        r.notes || null
+      );
+    }
+  };
 
   if (!insertFns[type])
     return res.status(400).json({ message: "Geçersiz tip." });
@@ -414,11 +463,21 @@ router.post("/json/:type", authMiddleware, (req, res) => {
   const insertMany = db.transaction((rows) => {
     rows.forEach((r, i) => {
       try {
-        if (!r.operator) {
+        if (type !== 'personnel' && !r.operator) {
           errors.push(`Satır ${i + 1}: Operatör zorunludur.`);
           return;
         }
-        if (r.phone_no) {
+        if (type === 'personnel') {
+          if (!r.first_name || r.first_name.trim() === "") {
+            errors.push(`Satır ${i + 1}: Ad zorunludur.`);
+            return;
+          }
+          if (!r.last_name || r.last_name.trim() === "") {
+            errors.push(`Satır ${i + 1}: Soyad zorunludur.`);
+            return;
+          }
+        }
+        if (r.phone_no && type !== 'personnel') {
           const exists = db.prepare(`
             SELECT 1 FROM sim_m2m   WHERE phone_no = ? UNION ALL
             SELECT 1 FROM sim_data  WHERE phone_no = ? UNION ALL

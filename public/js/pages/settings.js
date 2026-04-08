@@ -95,6 +95,10 @@ window.SettingsPage = (() => {
                   </button>
                 </div>
               </div>
+              <button class="btn btn-secondary" onclick="SettingsPage.openImportPersonnel()">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Toplu Personel Ekle
+              </button>
               <button class="btn btn-primary" onclick="SettingsPage.openAddPersonnel()">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                 Yeni Personel
@@ -794,6 +798,9 @@ window.SettingsPage = (() => {
   function deletePersonnel(id, name) {
     UI.confirm(`"${name}" silinecek.`, async()=>{ try{await API.deletePersonnel(id); UI.toast('Silindi.','success'); loadPersonnel();}catch(e){UI.toast(e.message,'error');} });
   }
+  function openImportPersonnel() {
+    BulkImport.open('personnel', loadPersonnel);
+  }
 
   function updatePersonnelBulkBtn() {
     const count = selectedPersonnelIds.size;
@@ -1349,7 +1356,7 @@ window.SettingsPage = (() => {
     onRoleChange, onPermViewChange, onPermEditChange,
     loadVehicles, openAddVehicle, openEditVehicle, saveVehicle, deleteVehicle,
     loadLocations, openAddLocation, openEditLocation, deleteLocation, saveLocation,
-    loadPersonnel, openAddPersonnel, openEditPersonnel, deletePersonnel, savePersonnel,
+    loadPersonnel, openAddPersonnel, openEditPersonnel, deletePersonnel, savePersonnel, openImportPersonnel,
     togglePersonnelSelection, toggleAllPersonnel, openBulkEditPersonnel, saveBulkPersonnel, bulkDeletePersonnel,
     loadOperators, addOperator, deleteOperator,
     loadPackages, onOperatorChange,

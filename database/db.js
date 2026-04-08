@@ -119,6 +119,7 @@ function initializeDb(database) {
       last_name TEXT NOT NULL,
       department TEXT,
       company TEXT,
+      cost_center TEXT,
       phone TEXT,
       notes TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP

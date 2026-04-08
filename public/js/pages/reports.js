@@ -61,9 +61,15 @@ const ReportsPage = (() => {
         allOps[r.key] = (allOps[r.key] || 0) + r.count;
       });
 
+      // Status helper
+      const getStatusCount = (type, status) => {
+        const found = byStatus[type].find(s => s.key === status);
+        return found ? found.count : 0;
+      };
+
       container.innerHTML = `
         <!-- Özet Kartlar -->
-        <div class="stat-grid">
+        <div class="stat-grid" style="margin-bottom:24px">
           <div class="stat-card">
             <div class="stat-label">Toplam Hat</div>
             <div class="stat-value" style="color:var(--accent)">${totals.all}</div>
@@ -92,172 +98,137 @@ const ReportsPage = (() => {
           </div>`).join('')}
         </div>
 
-        <div class="card">
-            <div class="card-header"><h3 class="card-title" data-i18n="reports_m2m_summary">${i18n.t('reports_m2m_summary')}</h3></div>
-            <div class="card-body">
-              <div class="stats-grid">
-                <div class="stat-card">
-                  <div class="stat-label" data-i18n="status_active">${i18n.t('status_active')}</div>
-                  <div class="stat-value" id="activeM2M">-</div>
-                </div>
-                <div class="stat-card">
-                  <div class="stat-label" data-i18n="status_spare">${i18n.t('status_spare')}</div>
-                  <div class="stat-value" id="spareM2M">-</div>
-                </div>
-                <div class="stat-card">
-                  <div class="stat-label" data-i18n="status_passive">${i18n.t('status_passive')}</div>
-                  <div class="stat-value" id="passiveM2M">-</div>
-                </div>
-              </div>
-            </div>
-          </div>
-
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px; margin-bottom:20px">
+          <!-- Durum Dağılımı Tablosu -->
           <div class="card">
-            <div class="card-header"><h3 class="card-title" data-i18n="reports_package_dist">${i18n.t('reports_package_dist')}</h3></div>
+            <div class="card-header"><span class="card-title" data-i18n="reports_status_dist">${i18n.t('reports_status_dist')}</span></div>
             <div class="card-body">
               <div class="table-container">
                 <table>
                   <thead>
                     <tr>
-                      <th data-i18n="col_package">${i18n.t('col_package')}</th>
-                      <th data-i18n="col_operator">${i18n.t('col_operator')}</th>
-                      <th data-i18n="col_count">${i18n.t('col_count')}</th>
+                      <th data-i18n="label_status">${i18n.t('label_status')}</th>
+                      <th data-i18n="nav_m2m">${i18n.t('nav_m2m')}</th>
+                      <th data-i18n="nav_data">${i18n.t('nav_data')}</th>
+                      <th data-i18n="nav_voice">${i18n.t('nav_voice')}</th>
+                      <th data-i18n="total">${i18n.t('total')}</th>
                     </tr>
                   </thead>
-                  <tbody id="packageStatsTable"></tbody>
+                  <tbody>
+                    <tr>
+                      <td><span class="badge badge-success">${i18n.t('status_active')}</span></td>
+                      <td>${getStatusCount('m2m', 'active')}</td>
+                      <td>${getStatusCount('data', 'active')}</td>
+                      <td>${getStatusCount('voice', 'active')}</td>
+                      <td style="font-weight:bold">${getStatusCount('m2m', 'active') + getStatusCount('data', 'active') + getStatusCount('voice', 'active')}</td>
+                    </tr>
+                    <tr>
+                      <td><span class="badge badge-warning">${i18n.t('status_spare')}</span></td>
+                      <td>${getStatusCount('m2m', 'spare')}</td>
+                      <td>${getStatusCount('data', 'spare')}</td>
+                      <td>${getStatusCount('voice', 'spare')}</td>
+                      <td style="font-weight:bold">${getStatusCount('m2m', 'spare') + getStatusCount('data', 'spare') + getStatusCount('voice', 'spare')}</td>
+                    </tr>
+                    <tr>
+                      <td><span class="badge badge-muted">${i18n.t('status_passive')}</span></td>
+                      <td>${getStatusCount('m2m', 'passive')}</td>
+                      <td>${getStatusCount('data', 'passive')}</td>
+                      <td>${getStatusCount('voice', 'passive')}</td>
+                      <td style="font-weight:bold">${getStatusCount('m2m', 'passive') + getStatusCount('data', 'passive') + getStatusCount('voice', 'passive')}</td>
+                    </tr>
+                  </tbody>
                 </table>
               </div>
             </div>
           </div>
 
-        <!-- Durum Tablosu -->
-        <div class="card" style="margin-bottom:20px">
-          <div class="card-header"><span class="card-title" data-i18n="reports_status_dist">${i18n.t('reports_status_dist')}</span></div>
-          <div class="card-body">
+          <!-- Paket Dağılımı -->
+          <div class="card">
+            <div class="card-header"><span class="card-title">📦 Paket Dağılımı (Top 10)</span></div>
+            <div class="card-body">
+              <div class="table-container">
+                <table>
+                  <thead><tr><th>Paket Adı</th><th>Operatör</th><th>Hat Sayısı</th></tr></thead>
+                  <tbody>
+                    ${(summary.byPackage || []).length ? (summary.byPackage || []).slice(0, 10).map(p => `
+                    <tr>
+                      <td><span style="font-size:12px; font-weight:600">${p.package_name}</span></td>
+                      <td>${UI.operatorBadge(p.operator_name)}</td>
+                      <td><span class="badge badge-info">${p.count} hat</span></td>
+                    </tr>`).join('') : `<tr><td colspan="3">${UI.emptyState('📦', 'Veri yok')}</td></tr>`}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:24px">
+          <!-- M2M Detay -->
+          <div class="card">
+            <div class="card-header"><span class="card-title">🚗 M2M — Plaka Bazlı Liste (${lists.m2m.length})</span></div>
             <div class="table-container">
               <table>
-                <thead>
+                <thead><tr><th>Plaka</th><th>Araç Tipi</th><th>Telefon No</th><th>Operatör</th><th>Paket</th><th>Durum</th></tr></thead>
+                <tbody>
+                  ${lists.m2m.length ? lists.m2m.map(r => `
                   <tr>
-                    <th data-i18n="label_status">${i18n.t('label_status')}</th>
-                    <th data-i18n="nav_m2m">${i18n.t('nav_m2m')}</th>
-                    <th data-i18n="nav_data">${i18n.t('nav_data')}</th>
-                    <th data-i18n="nav_voice">${i18n.t('nav_voice')}</th>
-                    <th data-i18n="total">${i18n.t('total')}</th>
-                  </tr>
-                </thead>
-                <tbody id="statusStatsTable">
-                   <tr>
-                      <td data-i18n="status_active">${i18n.t('status_active')}</td>
-                      <td id="m2m_active">-</td>
-                      <td id="data_active">-</td>
-                      <td id="voice_active">-</td>
-                      <td id="total_active" style="font-weight:bold">-</td>
-                   </tr>
-                   <tr>
-                      <td data-i18n="status_spare">${i18n.t('status_spare')}</td>
-                      <td id="m2m_spare">-</td>
-                      <td id="data_spare">-</td>
-                      <td id="voice_spare">-</td>
-                      <td id="total_spare" style="font-weight:bold">-</td>
-                   </tr>
-                   <tr>
-                      <td data-i18n="status_passive">${i18n.t('status_passive')}</td>
-                      <td id="m2m_passive">-</td>
-                      <td id="data_passive">-</td>
-                      <td id="voice_passive">-</td>
-                      <td id="total_passive" style="font-weight:bold">-</td>
-                   </tr>
+                    <td><strong>${r.plate_no || '—'}</strong></td>
+                    <td>${r.vehicle_type || '—'}</td>
+                    <td>${r.phone_no || '—'}</td>
+                    <td>${UI.operatorBadge(r.operator)}</td>
+                    <td style="font-size:11px">${r.package_name || '—'}</td>
+                    <td>${UI.statusBadge(r.status)}</td>
+                  </tr>`).join('') : `<tr><td colspan="6">${UI.emptyState('🚗', 'M2M kaydı yok')}</td></tr>`}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Data Detay -->
+          <div class="card">
+            <div class="card-header"><span class="card-title">🌐 Data — Lokasyon Bazlı Liste (${lists.data.length})</span></div>
+            <div class="table-container">
+              <table>
+                <thead><tr><th>Lokasyon</th><th>Telefon No</th><th>Operatör</th><th>Paket</th><th>Durum</th></tr></thead>
+                <tbody>
+                  ${lists.data.length ? lists.data.map(r => `
+                  <tr>
+                    <td><strong>${r.location || '—'}</strong></td>
+                    <td>${r.phone_no || '—'}</td>
+                    <td>${UI.operatorBadge(r.operator)}</td>
+                    <td style="font-size:11px">${r.package_name || '—'}</td>
+                    <td>${UI.statusBadge(r.status)}</td>
+                  </tr>`).join('') : `<tr><td colspan="5">${UI.emptyState('🌐', 'Data kaydı yok')}</td></tr>`}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Ses Detay -->
+          <div class="card">
+            <div class="card-header"><span class="card-title">📞 Ses — Personel Bazlı Liste (${lists.voice.length})</span></div>
+            <div class="table-container">
+              <table>
+                <thead><tr><th>Personel</th><th>Departman</th><th>Şirket</th><th>Telefon No</th><th>Operatör</th><th>Durum</th></tr></thead>
+                <tbody>
+                  ${lists.voice.length ? lists.voice.map(r => `
+                  <tr>
+                    <td><strong>${r.assigned_to || '—'}</strong></td>
+                    <td class="td-muted" style="font-size:12px">${r.department || '—'}</td>
+                    <td class="td-muted" style="font-size:12px">${r.assigned_company || '—'}</td>
+                    <td>${r.phone_no || '—'}</td>
+                    <td>${UI.operatorBadge(r.operator)}</td>
+                    <td>${UI.statusBadge(r.status)}</td>
+                  </tr>`).join('') : `<tr><td colspan="6">${UI.emptyState('📞', 'Ses kaydı yok')}</td></tr>`}
                 </tbody>
               </table>
             </div>
           </div>
         </div>
-
-        <!-- M2M Detay -->
-        <div class="card report-section">
-          <div class="card-header"><span class="card-title">🚗 M2M — Plaka Bazlı</span></div>
-          <div class="table-container">
-            <table>
-              <thead><tr><th>Plaka</th><th>Araç Tipi</th><th>Telefon No</th><th>ICCID</th><th>Operatör</th><th>Durum</th><th>Kayıt Tarihi</th></tr></thead>
-              <tbody>
-                ${lists.m2m.length ? lists.m2m.map(r => `
-                <tr>
-                  <td><strong>${r.plate_no || '—'}</strong></td>
-                  <td>${r.vehicle_type || '—'}</td>
-                  <td>${r.phone_no || '—'}</td>
-                  <td class="td-muted" style="font-size:12px;font-family:monospace">${r.iccid || '—'}</td>
-                  <td>${UI.operatorBadge(r.operator)}</td>
-                  <td>${UI.statusBadge(r.status)}</td>
-                  <td class="td-muted">${new Date(r.created_at).toLocaleDateString()}</td>
-                </tr>`).join('') : `<tr><td colspan="7">${UI.emptyState('🚗', 'M2M kaydı yok')}</td></tr>`}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- Data Detay -->
-        <div class="card report-section">
-          <div class="card-header"><span class="card-title">🌐 Data — Lokasyon Bazlı</span></div>
-          <div class="table-container">
-            <table>
-              <thead><tr><th>Lokasyon</th><th>Telefon No</th><th>ICCID</th><th>Operatör</th><th>Durum</th><th>Kayıt Tarihi</th></tr></thead>
-              <tbody>
-                ${lists.data.length ? lists.data.map(r => `
-                <tr>
-                  <td><strong>${r.location || '—'}</strong></td>
-                  <td>${r.phone_no || '—'}</td>
-                  <td class="td-muted" style="font-size:12px;font-family:monospace">${r.iccid || '—'}</td>
-                  <td>${UI.operatorBadge(r.operator)}</td>
-                  <td>${UI.statusBadge(r.status)}</td>
-                  <td class="td-muted">${new Date(r.created_at).toLocaleDateString()}</td>
-                </tr>`).join('') : `<tr><td colspan="6">${UI.emptyState('🌐', 'Data kaydı yok')}</td></tr>`}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- Ses Detay -->
-        <div class="card report-section">
-          <div class="card-header"><span class="card-title">📞 Ses — Personel Bazlı</span></div>
-          <div class="table-container">
-            <table>
-              <thead><tr><th>Personel</th><th>Departman</th><th>Şirket</th><th>Telefon No</th><th>Operatör</th><th>Durum</th><th>Kayıt Tarihi</th></tr></thead>
-              <tbody>
-                ${lists.voice.length ? lists.voice.map(r => `
-                <tr>
-                  <td><strong>${r.assigned_to || '—'}</strong></td>
-                  <td class="td-muted">${r.department || '—'}</td>
-                  <td class="td-muted">${r.assigned_company || '—'}</td>
-                  <td>${r.phone_no || '—'}</td>
-                  <td>${UI.operatorBadge(r.operator)}</td>
-                  <td>${UI.statusBadge(r.status)}</td>
-                  <td class="td-muted">${new Date(r.created_at).toLocaleDateString()}</td>
-                </tr>`).join('') : `<tr><td colspan="7">${UI.emptyState('📞', 'Ses kaydı yok')}</td></tr>`}
-              </tbody>
-            </table>
-          </div>
-        </div>
-        <!-- Paket Dağılımı -->
-        <div class="card report-section">
-          <div class="card-header"><span class="card-title">📦 Paket Dağılımı</span></div>
-          <div class="table-container">
-            <table>
-              <thead><tr><th>Paket Adı</th><th>Operatör</th><th>Tip</th><th>Hat Sayısı</th></tr></thead>
-              <tbody>
-                ${(summary.byPackage || []).length ? (summary.byPackage || []).map(p => `
-                <tr>
-                  <td><strong>${p.package_name || '—'}</strong></td>
-                  <td>${UI.operatorBadge(p.operator_name || '—')}</td>
-                  <td>${p.type === 'm2m' ? '🚗 M2M' : p.type === 'data' ? '🌐 Data' : '📞 Ses'}</td>
-                  <td><span class="badge badge-info">${p.count} hat</span></td>
-                </tr>`).join('') : `<tr><td colspan="4">${UI.emptyState('📦', 'Paket ataması yok', 'Hatlara Ayarlar bölümünden paket atayabilirsiniz.')}</td></tr>`}
-              </tbody>
-            </table>
-          </div>
-        </div>
       `;
     } catch (err) {
-      container.innerHTML = `<p style="color:var(--danger)">${err.message}</p>`;
+      container.innerHTML = `<div class="card"><div class="card-body" style="color:var(--danger)">Hata: ${err.message}</div></div>`;
     }
   }
 
