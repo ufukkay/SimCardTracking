@@ -2,7 +2,7 @@ node_modules/
 bin/
 logs/
 .env
-data/*.db*
+data/
 database/*.db*
 
 # macOS
