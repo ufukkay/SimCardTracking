@@ -400,6 +400,7 @@ const BulkImport = (() => {
       }
       UI.closeModal("bulkModal");
       onSuccess?.();
+      UI.emit('REFRESH_DATA');
     } catch (err) {
       UI.toast(err.message, "error");
     } finally {
@@ -431,6 +432,7 @@ const BulkImport = (() => {
         if (window.SettingsPage) window.SettingsPage.loadPersonnel();
       }
       onSuccess?.();
+      UI.emit('REFRESH_DATA');
     } catch (err) {
       UI.toast(err.message, "error");
     } finally {
@@ -773,6 +775,7 @@ const BulkImport = (() => {
       UI.toast(type === 'packages' ? "Paket eklendi." : "Hat eklendi.", "success");
       form.reset();
       onSuccess?.();
+      UI.emit('REFRESH_DATA');
     } catch (err) {
       UI.toast(err.message, "error");
     } finally {
@@ -831,6 +834,7 @@ const BulkImport = (() => {
       manualRows = Array.from({ length: 5 }, () => ({}));
       refreshInlineTable(type);
       onSuccess?.();
+      UI.emit('REFRESH_DATA');
     } catch (err) {
       UI.toast(err.message, "error");
     } finally {
@@ -896,6 +900,7 @@ const BulkImport = (() => {
       UI.toast(`${result.inserted} kayıt eklendi.`, "success");
       clearFileInline(type);
       onSuccess?.();
+      UI.emit('REFRESH_DATA');
     } catch (err) {
       UI.toast(err.message, "error");
     } finally {

@@ -2,6 +2,11 @@
 const VoicePage = (() => {
   let editingId = null;
   let personnelCache = []; // for auto-fill
+  
+  // ─── Listen for Global Refresh ───
+  UI.on('REFRESH_DATA', () => {
+    if (window.App?.currentPage === 'voice') load();
+  });
 
   function render() {
     document.getElementById('pageTitle').textContent = i18n.t('voice_lines');
@@ -376,13 +381,14 @@ const VoicePage = (() => {
       else { await API.addVoice(data); UI.toast('Ses hattı eklendi.', 'success'); }
       UI.closeModal('voiceModal');
       load();
+      UI.emit('REFRESH_DATA');
     } catch (err) { UI.toast(err.message, 'error'); }
     finally { saveBtn.disabled = false; }
   }
 
   function del(id, label) {
     UI.confirm(`"${label}" kaydı silinecek. Bu işlem geri alınamaz.`, async () => {
-      try { await API.deleteVoice(id); UI.toast('Kayıt silindi.', 'success'); load(); }
+      try { await API.deleteVoice(id); UI.toast('Kayıt silindi.', 'success'); load(); UI.emit('REFRESH_DATA'); }
       catch (err) { UI.toast(err.message, 'error'); }
     });
   }
@@ -415,6 +421,7 @@ const VoicePage = (() => {
       UI.toast(`${ids.length} kayıt başarıyla güncellendi.`, 'success');
       UI.closeModal('voiceBulkModal');
       load();
+      UI.emit('REFRESH_DATA');
     } catch (err) { UI.toast(err.message, 'error'); }
     finally { saveBtn.disabled = false; }
   }
@@ -426,6 +433,7 @@ const VoicePage = (() => {
         await API.bulkDelete('voice', ids);
         UI.toast(`${ids.length} kayıt silindi.`, 'success');
         load();
+        UI.emit('REFRESH_DATA');
       } catch (err) { UI.toast(err.message, 'error'); }
     });
   }

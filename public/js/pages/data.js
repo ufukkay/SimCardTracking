@@ -1,6 +1,11 @@
 /* ─── DATA HATLAR SAYFASI ─── */
 const DataPage = (() => {
   let editingId = null;
+  
+  // ─── Listen for Global Refresh ───
+  UI.on('REFRESH_DATA', () => {
+    if (window.App?.currentPage === 'data') load();
+  });
 
   function render() {
     document.getElementById('pageTitle').textContent = i18n.t('nav_data');
@@ -350,13 +355,14 @@ const DataPage = (() => {
       else { await API.addData(data); UI.toast('Data hattı eklendi.', 'success'); }
       UI.closeModal('dataModal');
       load();
+      UI.emit('REFRESH_DATA');
     } catch (err) { UI.toast(err.message, 'error'); }
     finally { saveBtn.disabled = false; }
   }
 
   function del(id, label) {
     UI.confirm(`"${label}" kaydı silinecek. Bu işlem geri alınamaz.`, async () => {
-      try { await API.deleteData(id); UI.toast('Kayıt silindi.', 'success'); load(); }
+      try { await API.deleteData(id); UI.toast('Kayıt silindi.', 'success'); load(); UI.emit('REFRESH_DATA'); }
       catch (err) { UI.toast(err.message, 'error'); }
     });
   }
@@ -389,6 +395,7 @@ const DataPage = (() => {
       UI.toast(`${ids.length} kayıt başarıyla güncellendi.`, 'success');
       UI.closeModal('dataBulkModal');
       load();
+      UI.emit('REFRESH_DATA');
     } catch (err) { UI.toast(err.message, 'error'); }
     finally { saveBtn.disabled = false; }
   }
@@ -400,6 +407,7 @@ const DataPage = (() => {
         await API.bulkDelete('data', ids);
         UI.toast(`${ids.length} kayıt silindi.`, 'success');
         load();
+        UI.emit('REFRESH_DATA');
       } catch (err) { UI.toast(err.message, 'error'); }
     });
   }

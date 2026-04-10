@@ -28,12 +28,19 @@ function findPersonnelByPhone(phoneNo) {
       // Bulunan isme göre masraf kalemini personellerden bulmaya çalış
       let p = null;
       if (res.name) {
-         p = db.prepare(`SELECT cost_center, company FROM personnel WHERE (first_name || ' ' || last_name) = ? OR first_name = ? OR last_name = ? LIMIT 1`).get(res.name, res.name, res.name);
+        p = db.prepare(`
+          SELECT cost_center, company 
+          FROM personnel 
+          WHERE LOWER(TRIM(first_name || ' ' || last_name)) = LOWER(TRIM(?)) 
+             OR LOWER(TRIM(first_name)) = LOWER(TRIM(?)) 
+             OR LOWER(TRIM(last_name)) = LOWER(TRIM(?)) 
+          LIMIT 1
+        `).get(res.name, res.name, res.name);
       }
       
       return {
         name: res.name || res.assigned_company || '',
-        costCenter: res.department || (p ? (p.cost_center || '') : ''),
+        costCenter: (p && p.cost_center) ? p.cost_center : (res.department || ''),
         company: res.assigned_company || (p ? (p.company || '') : ''),
         tariff: res.package_name || '',
         isMatched: true
@@ -47,7 +54,7 @@ function findPersonnelByPhone(phoneNo) {
       LEFT JOIN packages p ON m.package_id = p.id
       WHERE ${M2M_PHONE_EXPR} = ? LIMIT 1
     `).get(cleanPhone);
-    if (res) return { name: res.name || res.company || '', costCenter: 'LOJİSTİK', company: res.company || '', tariff: res.package_name || '', isMatched: true };
+    if (res) return { name: res.name || res.company || '', costCenter: res.company || '', company: res.company || '', tariff: res.package_name || '', isMatched: true };
 
     // 3. Data hatlarında ara (Lokasyon + Paket bilgisi)
     res = db.prepare(`

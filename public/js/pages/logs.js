@@ -7,6 +7,11 @@ const LogsPage = (() => {
     action: ''
   };
 
+  // ─── Listen for Global Refresh ───
+  UI.on('REFRESH_DATA', () => {
+    if (window.App?.currentPage === 'logs') refresh();
+  });
+
   function render() {
     const pageContent = document.getElementById('pageContent');
     document.getElementById('pageTitle').textContent = i18n.t('nav_logs');

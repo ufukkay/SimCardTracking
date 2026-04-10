@@ -20,7 +20,9 @@
     // Apply sidebar visibility based on permissions
     applySidebarPermissions(currentUser);
 
-    document.getElementById('appLayout').style.display = 'flex';
+    const appLayout = document.getElementById('appLayout');
+    appLayout.classList.remove('app-layout-hidden');
+    appLayout.style.display = 'flex';
     i18n.updateUI(); // Dil desteğini uygula
   } catch {
     localStorage.clear();
@@ -79,12 +81,16 @@
     logs:     { title: 'nav_logs', render: () => (currentUser.role === 'admin') ? LogsPage.render() : renderAccessDenied('nav_logs') },
   };
 
+  // ─── Global State ─────────────────────────────────────────────────────────
+  window.App = {
+    currentPage: null
+  };
+
   // ─── Navigate ─────────────────────────────────────────────────────────────
-  let currentPage = null;
   function navigate(page, push = true) {
     if (!pages[page]) page = 'm2m';
-    if (currentPage === page) return; // Don't re-render if already on this page
-    currentPage = page;
+    if (window.App.currentPage === page) return; // Don't re-render if already on this page
+    window.App.currentPage = page;
 
     // Update active nav
     document.querySelectorAll('.nav-item').forEach(el => {

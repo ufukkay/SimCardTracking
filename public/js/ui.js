@@ -404,13 +404,31 @@ const UI = (() => {
     }, { title: i18n.t('tooltip_transfer'), icon: '🔄', okText: i18n.t('confirm_ok'), okClass: 'btn-primary' });
   }
 
-  function debounce(func, wait) {
+  function debounce(fn, delay) {
     let timeout;
-    return function(...args) {
+    return (...args) => {
       clearTimeout(timeout);
-      timeout = setTimeout(() => func.apply(this, args), wait);
+      timeout = setTimeout(() => fn(...args), delay);
     };
   }
 
-  return { toast, confirm, openModal, closeModal, statusBadge, operatorBadge, emptyState, loading, fillOperatorSelect, formData, setForm, sortRows, setupTableFilters, filterRows, initSelection, getSelectedIds, openTransfer, debounce };
+  const listeners = {};
+
+  function on(event, callback) {
+    if (!listeners[event]) listeners[event] = [];
+    listeners[event].push(callback);
+  }
+
+  function emit(event, data) {
+    if (!listeners[event]) return;
+    listeners[event].forEach(cb => cb(data));
+  }
+
+  return { 
+    toast, confirm, openModal, closeModal, statusBadge, 
+    operatorBadge, emptyState, loading, fillOperatorSelect, 
+    formData, setForm, sortRows, setupTableFilters, 
+    filterRows, initSelection, getSelectedIds, 
+    openTransfer, debounce, on, emit 
+  };
 })();

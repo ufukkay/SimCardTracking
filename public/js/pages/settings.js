@@ -7,6 +7,22 @@ window.SettingsPage = (() => {
   let editingLocationId = null;
   let editingPersonnelId = null;
   const selectedPersonnelIds = new Set();
+  let personnelColFilters = {};
+  
+  // ─── Listen for Global Refresh ───
+  UI.on('REFRESH_DATA', () => {
+    if (window.App?.currentPage === 'settings') {
+      const activeTab = document.querySelector('.tab-btn.active');
+      if (!activeTab) return;
+      
+      if (activeTab.getAttribute('onclick').includes('personnelTab')) loadPersonnel();
+      if (activeTab.getAttribute('onclick').includes('vehicles')) loadVehicles();
+      if (activeTab.getAttribute('onclick').includes('locations')) loadLocations();
+      if (activeTab.getAttribute('onclick').includes('operators')) loadOperators();
+      if (activeTab.getAttribute('onclick').includes('packages')) loadPackages();
+      if (activeTab.getAttribute('onclick').includes('users')) loadUsers();
+    }
+  });
 
   /* ════════════ RENDER ════════════ */
   function render() {
@@ -104,6 +120,13 @@ window.SettingsPage = (() => {
                 Yeni Personel
               </button>
             </div>
+          </div>
+          <div class="filters">
+            <input type="text" id="personnelSearch" class="form-control search-input" placeholder="Personel ara (Ad, Soyad, Dept, Masraf)...">
+            <button class="btn btn-secondary" onclick="SettingsPage.loadPersonnel()">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.26"/></svg>
+              Yenile
+            </button>
           </div>
           <div class="table-container">
             <table><thead><tr><th style="width:32px"><input type="checkbox" id="personnelSelectAll" onclick="SettingsPage.toggleAllPersonnel(this)"></th><th>#</th><th>Ad Soyad</th><th>Departman</th><th>Şirket</th><th>Masraf Kalemi</th><th>Telefon</th><th>Notlar</th><th>İşlem</th></tr></thead>
@@ -459,6 +482,16 @@ window.SettingsPage = (() => {
     loadPersonnel();
     loadOperators();
     
+    // Personnel search debounce
+    const pSearch = document.getElementById('personnelSearch');
+    if (pSearch) {
+      let pDebounce;
+      pSearch.oninput = () => {
+        clearTimeout(pDebounce);
+        pDebounce = setTimeout(() => loadPersonnel(), 250);
+      };
+    }
+
     // Show admin-only tabs
     const userStr = localStorage.getItem('simtrack_user');
     if (userStr) {
@@ -630,6 +663,7 @@ window.SettingsPage = (() => {
       if (editingUserId) { await API.updateUser(editingUserId, data); UI.toast('Kullanıcı güncellendi.', 'success'); }
       else { await API.addUser(data); UI.toast('Kullanıcı oluşturuldu.', 'success'); }
       UI.closeModal('userModal'); loadUsers();
+      UI.emit('REFRESH_DATA');
     } catch (err) { UI.toast(err.message, 'error'); }
     finally { btn.disabled = false; }
   }
@@ -696,6 +730,7 @@ window.SettingsPage = (() => {
       if (editingVehicleId) { await API.updateVehicle(editingVehicleId,d); UI.toast('Araç güncellendi.','success'); }
       else { await API.addVehicle(d); UI.toast('Araç eklendi.','success'); }
       UI.closeModal('vehicleModal'); loadVehicles();
+      UI.emit('REFRESH_DATA');
     } catch(e){UI.toast(e.message,'error');} finally{btn.disabled=false;}
   }
   function deleteVehicle(id, plate) {
@@ -733,6 +768,7 @@ window.SettingsPage = (() => {
       if(editingLocationId){await API.updateLocation(editingLocationId,d); UI.toast('Lokasyon güncellendi.','success');}
       else{await API.addLocation(d); UI.toast('Lokasyon eklendi.','success');}
       UI.closeModal('locationModal'); loadLocations();
+      UI.emit('REFRESH_DATA');
     }catch(e){UI.toast(e.message,'error');}finally{btn.disabled=false;}
   }
   function deleteLocation(id, name) {
@@ -752,15 +788,36 @@ window.SettingsPage = (() => {
       const curUser = JSON.parse(userStr);
       const isAdmin = curUser.role === 'admin';
 
-      const rows = await API.getPersonnel();
-      tbody.innerHTML = rows.length ? rows.map((r,i) => {
+      const search = document.getElementById('personnelSearch')?.value || '';
+      const qs = search ? `?search=${encodeURIComponent(search)}` : '';
+
+      let rows = await API.getPersonnel(qs);
+
+      const colDefs = {
+        'name': { label: 'Ad Soyad', getVal: r => `${r.first_name} ${r.last_name}` },
+        'department': { label: 'Departman', getVal: r => r.department || '—' },
+        'company': { label: 'Şirket', getVal: r => r.company || '—' },
+        'cost_center': { label: 'Masraf Kalemi', getVal: r => r.cost_center || '—' },
+        'phone': { label: 'Telefon', getVal: r => r.phone || '—' },
+        'notes': { label: 'Notlar', getVal: r => r.notes || '—' }
+      };
+
+      const unfilteredRows = rows;
+      rows = UI.filterRows(rows, personnelColFilters, colDefs);
+      rows = UI.sortRows(rows, personnelColFilters._sort, colDefs);
+
+      if (!rows.length) {
+        tbody.innerHTML = `<tr><td colspan="9">${UI.emptyState('👤','Personel bulunamadı','Arama kriterlerini değiştirin veya yeni personel ekleyin.')}</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = rows.map((r,i) => {
         const fullName = `${r.first_name} ${r.last_name}`;
-        // Escape single quotes for the onclick handler
         const escapedName = fullName.replace(/'/g, "\\'");
         
         return `
         <tr>
-          <td><input type="checkbox" class="personnel-check" data-id="${r.id}" onclick="SettingsPage.togglePersonnelSelection(${r.id}, this.checked)"></td>
+          <td style="width:32px"><input type="checkbox" class="row-select" value="${r.id}" onclick="SettingsPage.togglePersonnelSelection(${r.id}, this.checked)"></td>
           <td class="td-muted">${i+1}</td>
           <td><strong>${fullName}</strong></td>
           <td class="td-muted">${r.department || '—'}</td>
@@ -771,13 +828,31 @@ window.SettingsPage = (() => {
           <td>
             <div class="action-buttons">
               ${isAdmin ? `
-                <button class="btn btn-secondary btn-sm btn-icon" onclick="SettingsPage.openEditPersonnel(${r.id})" title="Düzenle">${editIcon()}</button>
-                <button class="btn btn-danger btn-sm btn-icon" onclick="SettingsPage.deletePersonnel(${r.id},'${escapedName}')" title="Sil">${delIcon()}</button>
+                <button class="btn btn-secondary btn-sm btn-icon" title="Düzenle" onclick="SettingsPage.openEditPersonnel(${r.id})">${editIcon()}</button>
+                <button class="btn btn-danger btn-sm btn-icon" title="Sil" onclick="SettingsPage.deletePersonnel(${r.id},'${escapedName}')">${delIcon()}</button>
               ` : '<span class="td-muted" style="font-size:11px">Yetki Yok</span>'}
             </div>
           </td>
         </tr>`;
-      }).join('') : `<tr><td colspan="9">${UI.emptyState('👤','Personel kaydı yok','Yeni personel ekleyerek başlayın.')}</td></tr>`;
+      }).join('');
+
+      UI.setupTableFilters('personnelTableBody', unfilteredRows, personnelColFilters, colDefs, () => loadPersonnel());
+
+      // Selection re-init for personnel
+      const selectAll = document.getElementById('personnelSelectAll');
+      if (selectAll) {
+        selectAll.checked = false;
+        selectAll.onchange = () => {
+          const cbs = tbody.querySelectorAll('input[type="checkbox"].row-select');
+          cbs.forEach(cb => {
+            cb.checked = selectAll.checked;
+            if (cb.checked) selectedPersonnelIds.add(parseInt(cb.value));
+            else selectedPersonnelIds.delete(parseInt(cb.value));
+          });
+          updatePersonnelBulkBtn();
+        };
+      }
+
     } catch(err){if(tbody)tbody.innerHTML=`<tr><td colspan="9" style="color:var(--danger);padding:16px">${err.message}</td></tr>`;}
   }
 
@@ -793,6 +868,7 @@ window.SettingsPage = (() => {
       if(editingPersonnelId){await API.updatePersonnel(editingPersonnelId,d); UI.toast('Personel güncellendi.','success');}
       else{await API.addPersonnel(d); UI.toast('Personel eklendi.','success');}
       UI.closeModal('personnelModal'); loadPersonnel();
+      UI.emit('REFRESH_DATA');
     }catch(e){UI.toast(e.message,'error');}finally{btn.disabled=false;}
   }
   function deletePersonnel(id, name) {
@@ -861,6 +937,7 @@ window.SettingsPage = (() => {
       UI.toast('Seçili personeller güncellendi.', 'success');
       UI.closeModal('personnelBulkModal');
       loadPersonnel();
+      UI.emit('REFRESH_DATA');
     } catch (err) {
       UI.toast(err.message, 'error');
     } finally {
@@ -875,6 +952,7 @@ window.SettingsPage = (() => {
         await API.bulkDelete('personnel', Array.from(selectedPersonnelIds));
         UI.toast('Seçili personeller silindi.', 'success');
         loadPersonnel();
+        UI.emit('REFRESH_DATA');
       } catch (err) {
         UI.toast(err.message, 'error');
       }
@@ -898,11 +976,11 @@ window.SettingsPage = (() => {
   async function addOperator() {
     const name = document.getElementById('newOperatorName').value.trim();
     if (!name) return UI.toast('Operatör adı girin.','error');
-    try { await API.addOperator({name}); UI.toast('Operatör eklendi.','success'); document.getElementById('newOperatorName').value=''; loadOperators(); }
+    try { await API.addOperator({name}); UI.toast('Operatör eklendi.','success'); document.getElementById('newOperatorName').value=''; loadOperators(); UI.emit('REFRESH_DATA'); }
     catch(e){UI.toast(e.message,'error');}
   }
   function deleteOperator(id, name) {
-    UI.confirm(`"${name}" silinecek.`, async()=>{ try{await API.deleteOperator(id); UI.toast('Silindi.','success'); loadOperators();}catch(e){UI.toast(e.message,'error');} });
+    UI.confirm(`"${name}" silinecek.`, async()=>{ try{await API.deleteOperator(id); UI.toast('Silindi.','success'); loadOperators(); UI.emit('REFRESH_DATA'); }catch(e){UI.toast(e.message,'error');} });
   }
 
   /* ════════════ PACKAGES ════════════ */
@@ -961,11 +1039,12 @@ window.SettingsPage = (() => {
       else { await API.addPackage(d); UI.toast('Paket eklendi.', 'success'); }
       _pkgsCache = null; // Cache'i temizle — dropdown'lar güncel paketi görsün
       UI.closeModal('packageModal'); loadPackages();
+      UI.emit('REFRESH_DATA');
     } catch(err) { UI.toast(err.message, 'error'); } finally { btn.disabled = false; }
   }
 
   function deletePackage(id, name) {
-    UI.confirm(`"${name}" silinecek. Emin misiniz?`, async()=>{ try{await API.deletePackage(id); _pkgsCache = null; UI.toast('Paket silindi.','success'); loadPackages();}catch(e){UI.toast(e.message,'error');} });
+    UI.confirm(`"${name}" silinecek. Emin misiniz?`, async()=>{ try{await API.deletePackage(id); _pkgsCache = null; UI.toast('Paket silindi.','success'); loadPackages(); UI.emit('REFRESH_DATA'); }catch(e){UI.toast(e.message,'error');} });
   }
 
   async function openCombinedPackageModal() {

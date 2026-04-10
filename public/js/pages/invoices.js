@@ -10,6 +10,17 @@ const InvoicesPage = (() => {
   
   let selectedInvoiceIds = new Set();
   let selectedSummaryKeys = new Set();
+  
+  // ─── Listen for Global Refresh ───
+  UI.on('REFRESH_DATA', () => {
+    if (window.App?.currentPage === 'invoices') {
+      loadSummary();
+      const detailCard = document.getElementById('invoiceDetailCard');
+      if (detailCard && detailCard.style.display !== 'none') {
+        loadDetail();
+      }
+    }
+  });
 
   let detailColFilters = {};
   let detailSearchDebounce = null;
@@ -333,6 +344,7 @@ const InvoicesPage = (() => {
         UI.toast('Belgeler başarıyla silindi.');
         document.getElementById('invoiceDetailCard').style.display = 'none';
         loadSummary();
+        UI.emit('REFRESH_DATA');
       } catch (err) { UI.toast(err.message, 'error'); }
     });
   }
@@ -374,6 +386,7 @@ const InvoicesPage = (() => {
         UI.toast('Satırlar silindi.');
         loadDetail(activePeriod, activeOperator, encodeURIComponent(activeSourceFile));
         loadSummary();
+        UI.emit('REFRESH_DATA');
       } catch (err) { UI.toast(err.message, 'error'); }
     });
   }
@@ -413,6 +426,7 @@ const InvoicesPage = (() => {
         await API.post('/invoices/bulk-edit', { ids, ...updates });
         UI.toast('Seçili satırlar güncellendi.');
         loadDetail(activePeriod, activeOperator, encodeURIComponent(activeSourceFile));
+        UI.emit('REFRESH_DATA');
       } catch (err) { UI.toast(err.message, 'error'); }
     }, { title: 'Satırları Manuel Düzenle', okText: 'Uygula' });
   }
@@ -537,6 +551,7 @@ const InvoicesPage = (() => {
       UI.toast(res.message);
       UI.closeModal('invoiceUploadModal');
       loadSummary();
+      UI.emit('REFRESH_DATA');
     } catch (err) {
       UI.toast(err.message, 'error');
     }

@@ -2,6 +2,11 @@
 const M2MPage = (() => {
   let editingId   = null;
   let vehicleList = [];   // cached for auto-fill
+  
+  // ─── Listen for Global Refresh ───
+  UI.on('REFRESH_DATA', () => {
+    if (window.App?.currentPage === 'm2m') load();
+  });
 
   function render() {
     document.getElementById('pageTitle').textContent = i18n.t('nav_m2m');
@@ -413,6 +418,7 @@ const M2MPage = (() => {
       }
       UI.closeModal('m2mModal');
       load();
+      UI.emit('REFRESH_DATA');
     } catch (err) {
       UI.toast(err.message, 'error');
     } finally {
@@ -426,6 +432,7 @@ const M2MPage = (() => {
         await API.deleteM2M(id);
         UI.toast('Kayıt silindi.', 'success');
         load();
+        UI.emit('REFRESH_DATA');
       } catch (err) { UI.toast(err.message, 'error'); }
     });
   }
@@ -464,6 +471,7 @@ const M2MPage = (() => {
       UI.toast(`${ids.length} kayıt başarıyla güncellendi.`, 'success');
       UI.closeModal('m2mBulkModal');
       load();
+      UI.emit('REFRESH_DATA');
     } catch (err) {
       UI.toast(err.message, 'error');
     } finally {
@@ -478,6 +486,7 @@ const M2MPage = (() => {
         await API.bulkDelete('m2m', ids);
         UI.toast(`${ids.length} kayıt silindi.`, 'success');
         load();
+        UI.emit('REFRESH_DATA');
       } catch (err) { UI.toast(err.message, 'error'); }
     });
   }

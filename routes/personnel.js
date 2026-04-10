@@ -10,9 +10,9 @@ router.get('/', (req, res) => {
   let q = 'SELECT * FROM personnel WHERE 1=1';
   const p = [];
   if (req.query.search) {
-    q += ' AND (first_name LIKE ? OR last_name LIKE ? OR department LIKE ? OR company LIKE ?)';
+    q += ' AND (first_name LIKE ? OR last_name LIKE ? OR department LIKE ? OR company LIKE ? OR cost_center LIKE ?)';
     const s = `%${req.query.search}%`;
-    p.push(s, s, s, s);
+    p.push(s, s, s, s, s);
   }
   q += ' ORDER BY last_name, first_name';
   res.json(db.prepare(q).all(...p));
