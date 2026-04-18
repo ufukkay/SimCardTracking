@@ -233,6 +233,14 @@
     }
   };
 
+  // ─── ESC key closes open modals ──────────────────────────────────────────
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      const openModal = document.querySelector('.modal-overlay.open');
+      if (openModal) UI.closeModal(openModal.id);
+    }
+  });
+
   // ─── Global Input Cleanups ────────────────────────────────────────────────
   document.addEventListener('input', (e) => {
     const isSearch = e.target.classList.contains('search-input');

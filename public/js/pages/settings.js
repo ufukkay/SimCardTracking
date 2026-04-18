@@ -45,15 +45,24 @@ window.SettingsPage = (() => {
       <div class="tab-pane active" id="tab-users">
         <div class="card">
           <div class="card-header">
-            <span class="card-title">Kullanıcı Yönetimi</span>
-            <button class="btn btn-primary" id="addUserBtn" onclick="SettingsPage.openAddUser()">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-              Yeni Kullanıcı
-            </button>
+            <span class="card-title">👥 Kullanıcı Yönetimi</span>
           </div>
-          <div class="table-container">
-            <table><thead><tr><th>#</th><th>Ad Soyad</th><th>Kullanıcı Adı</th><th>Şirket</th><th>E-posta</th><th>Tel</th><th>Rol</th><th>İşlem</th></tr></thead>
-              <tbody id="usersTableBody"></tbody></table>
+
+          <div class="sub-tabs-container">
+            <div class="sub-tabs">
+              <button class="btn sub-tab-btn active" onclick="SettingsPage.switchSubTab('users', 'list', this)">📋 Kullanıcı Listesi</button>
+              <button class="btn btn-ghost sub-tab-btn" onclick="SettingsPage.switchSubTab('users', 'add', this)">➕ Yeni Kullanıcı Ekle</button>
+            </div>
+          </div>
+
+          <div id="users-subpane-list" class="sub-pane active">
+            <div class="table-container">
+              <table><thead><tr><th>#</th><th>Ad Soyad</th><th>Kullanıcı Adı</th><th>Şirket</th><th>E-posta</th><th>Tel</th><th>Rol</th><th>İşlem</th></tr></thead>
+                <tbody id="usersTableBody"></tbody></table>
+            </div>
+          </div>
+          <div id="users-subpane-add" class="sub-pane" style="display:none">
+            <div id="users-import-container"></div>
           </div>
         </div>
       </div>
@@ -62,15 +71,24 @@ window.SettingsPage = (() => {
       <div class="tab-pane" id="tab-vehicles">
         <div class="card">
           <div class="card-header">
-            <span class="card-title">Araç / Plaka Yönetimi</span>
-            <button class="btn btn-primary" onclick="SettingsPage.openAddVehicle()">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-              Yeni Araç
-            </button>
+            <span class="card-title">🚗 Araç / Plaka Yönetimi</span>
           </div>
-          <div class="table-container">
-            <table><thead><tr><th>#</th><th>Plaka</th><th>Araç Tipi</th><th>Notlar</th><th>İşlem</th></tr></thead>
-              <tbody id="vehiclesTableBody"></tbody></table>
+
+          <div class="sub-tabs-container">
+            <div class="sub-tabs">
+              <button class="btn sub-tab-btn active" onclick="SettingsPage.switchSubTab('vehicles', 'list', this)">📋 Araç Listesi</button>
+              <button class="btn btn-ghost sub-tab-btn" onclick="SettingsPage.switchSubTab('vehicles', 'add', this)">➕ Yeni Araç Ekle</button>
+            </div>
+          </div>
+
+          <div id="vehicles-subpane-list" class="sub-pane active">
+            <div class="table-container">
+              <table><thead><tr><th>#</th><th>Plaka</th><th>Araç Tipi</th><th>Notlar</th><th>İşlem</th></tr></thead>
+                <tbody id="vehiclesTableBody"></tbody></table>
+            </div>
+          </div>
+          <div id="vehicles-subpane-add" class="sub-pane" style="display:none">
+            <div id="vehicles-import-container"></div>
           </div>
         </div>
       </div>
@@ -79,15 +97,24 @@ window.SettingsPage = (() => {
       <div class="tab-pane" id="tab-locations">
         <div class="card">
           <div class="card-header">
-            <span class="card-title">Lokasyon Yönetimi</span>
-            <button class="btn btn-primary" onclick="SettingsPage.openAddLocation()">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-              Yeni Lokasyon
-            </button>
+            <span class="card-title">📍 Lokasyon Yönetimi</span>
           </div>
-          <div class="table-container">
-            <table><thead><tr><th>#</th><th>Lokasyon Adı</th><th>Adres</th><th>Notlar</th><th>İşlem</th></tr></thead>
-              <tbody id="locationsTableBody"></tbody></table>
+
+          <div class="sub-tabs-container">
+            <div class="sub-tabs">
+              <button class="btn sub-tab-btn active" onclick="SettingsPage.switchSubTab('locations', 'list', this)">📋 Lokasyon Listesi</button>
+              <button class="btn btn-ghost sub-tab-btn" onclick="SettingsPage.switchSubTab('locations', 'add', this)">➕ Yeni Lokasyon Ekle</button>
+            </div>
+          </div>
+
+          <div id="locations-subpane-list" class="sub-pane active">
+            <div class="table-container">
+              <table><thead><tr><th>#</th><th>Lokasyon Adı</th><th>Adres</th><th>Notlar</th><th>İşlem</th></tr></thead>
+                <tbody id="locationsTableBody"></tbody></table>
+            </div>
+          </div>
+          <div id="locations-subpane-add" class="sub-pane" style="display:none">
+            <div id="locations-import-container"></div>
           </div>
         </div>
       </div>
@@ -96,41 +123,44 @@ window.SettingsPage = (() => {
       <div class="tab-pane" id="tab-personnelTab">
         <div class="card">
           <div class="card-header">
-            <span class="card-title">Personel Yönetimi</span>
-            <div style="display:flex; gap:10px; align-items:center; margin-left:auto">
-              <div id="personnelBulkActionsBar" class="bulk-actions-bar" style="display:none">
-                <span id="personnelSelectedCount">0 kayıt seçildi</span>
-                <div class="bulk-buttons">
-                  <button class="btn btn-secondary btn-sm" id="personnelBulkBtn" onclick="SettingsPage.openBulkEditPersonnel()" disabled>
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                    <span>Toplu Düzenle</span>
-                  </button>
-                  <button class="btn btn-danger btn-sm" id="personnelBulkDeleteBtn" onclick="SettingsPage.bulkDeletePersonnel()" disabled>
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
-                    <span>Toplu Sil</span>
-                  </button>
-                </div>
+            <span class="card-title">👤 Personel Yönetimi</span>
+            <div id="personnelBulkActionsBar" class="bulk-actions-bar" style="display:none; margin-left:auto">
+              <span id="personnelSelectedCount">0 kayıt seçildi</span>
+              <div class="bulk-buttons">
+                <button class="btn btn-secondary btn-sm" id="personnelBulkBtn" onclick="SettingsPage.openBulkEditPersonnel()" disabled>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                  <span>Toplu Düzenle</span>
+                </button>
+                <button class="btn btn-danger btn-sm" id="personnelBulkDeleteBtn" onclick="SettingsPage.bulkDeletePersonnel()" disabled>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                  <span>Toplu Sil</span>
+                </button>
               </div>
-              <button class="btn btn-secondary" onclick="SettingsPage.openImportPersonnel()">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                Toplu Personel Ekle
-              </button>
-              <button class="btn btn-primary" onclick="SettingsPage.openAddPersonnel()">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                Yeni Personel
-              </button>
             </div>
           </div>
-          <div class="filters">
-            <input type="text" id="personnelSearch" class="form-control search-input" placeholder="Personel ara (Ad, Soyad, Dept, Masraf)...">
-            <button class="btn btn-secondary" onclick="SettingsPage.loadPersonnel()">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.26"/></svg>
-              Yenile
-            </button>
+
+          <div class="sub-tabs-container">
+            <div class="sub-tabs">
+              <button class="btn sub-tab-btn active" onclick="SettingsPage.switchSubTab('personnel', 'list', this)">📋 Personel Listesi</button>
+              <button class="btn btn-ghost sub-tab-btn" onclick="SettingsPage.switchSubTab('personnel', 'add', this)">➕ Yeni Personel / Toplu Ekle</button>
+            </div>
           </div>
-          <div class="table-container">
-            <table><thead><tr><th style="width:32px"><input type="checkbox" id="personnelSelectAll" onclick="SettingsPage.toggleAllPersonnel(this)"></th><th>#</th><th>Ad Soyad</th><th>Departman</th><th>Şirket</th><th>Masraf Kalemi</th><th>Telefon</th><th>Notlar</th><th>İşlem</th></tr></thead>
-              <tbody id="personnelTableBody"></tbody></table>
+
+          <div id="personnel-subpane-list" class="sub-pane active">
+            <div class="filters">
+              <input type="text" id="personnelSearch" class="form-control search-input" placeholder="Personel ara (Ad, Soyad, Dept, Masraf)...">
+              <button class="btn btn-secondary" onclick="SettingsPage.loadPersonnel()">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.26"/></svg>
+                Yenile
+              </button>
+            </div>
+            <div class="table-container">
+              <table><thead><tr><th style="width:32px"><input type="checkbox" id="personnelSelectAll" onclick="SettingsPage.toggleAllPersonnel(this)"></th><th>#</th><th>Ad Soyad</th><th>Departman</th><th>Şirket</th><th>Masraf Kalemi</th><th>Telefon</th><th>Notlar</th><th>İşlem</th></tr></thead>
+                <tbody id="personnelTableBody"></tbody></table>
+            </div>
+          </div>
+          <div id="personnel-subpane-add" class="sub-pane" style="display:none">
+            <div id="personnel-import-container"></div>
           </div>
         </div>
       </div>
@@ -138,12 +168,21 @@ window.SettingsPage = (() => {
       <!-- OPERATÖRLER -->
       <div class="tab-pane" id="tab-operators">
         <div class="card">
-          <div class="card-header"><span class="card-title">Operatör Yönetimi</span></div>
-          <div style="display:flex;gap:10px;margin-bottom:16px">
-            <input type="text" id="newOperatorName" class="form-control" placeholder="Yeni operatör adı..." style="max-width:260px">
-            <button class="btn btn-primary" onclick="SettingsPage.addOperator()">Ekle</button>
+          <div class="card-header"><span class="card-title">📡 Operatör Yönetimi</span></div>
+          
+          <div class="sub-tabs-container">
+            <div class="sub-tabs">
+              <button class="btn sub-tab-btn active" onclick="SettingsPage.switchSubTab('operators', 'list', this)">📋 Operatör Listesi</button>
+              <button class="btn btn-ghost sub-tab-btn" onclick="SettingsPage.switchSubTab('operators', 'add', this)">➕ Yeni Operatör Ekle</button>
+            </div>
           </div>
-          <div id="operatorList"></div>
+
+          <div id="operators-subpane-list" class="sub-pane active">
+            <div id="operatorList" style="padding-top:10px"></div>
+          </div>
+          <div id="operators-subpane-add" class="sub-pane" style="display:none">
+            <div id="operators-import-container"></div>
+          </div>
         </div>
       </div>
 
@@ -503,14 +542,24 @@ window.SettingsPage = (() => {
     }
   }
 
-    function switchTab(tab, btn) {
-      document.querySelectorAll('#pageContent .tab-btn').forEach(b => b.classList.remove('active'));
-      document.querySelectorAll('#pageContent .tab-pane').forEach(p => p.classList.remove('active'));
-      btn.classList.add('active');
-      document.getElementById(`tab-${tab}`).classList.add('active');
-      
-      // Lazy-render import tabs
-      if (tab === 'importAll') {
+  /* ─── TAB NAVIGATION ─── */
+  function switchTab(tab, btn) {
+    document.querySelectorAll('#pageContent .tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('#pageContent .tab-pane').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    const pane = document.getElementById(`tab-${tab}`);
+    if (pane) pane.classList.add('active');
+
+    // Reset sub-tabs to "list" view when switching main tabs
+    resetSubTabs(tab);
+
+    if (tab === 'users') loadUsers();
+    else if (tab === 'vehicles') loadVehicles();
+    else if (tab === 'locations') loadLocations();
+    else if (tab === 'personnelTab') loadPersonnel();
+    else if (tab === 'operators') loadOperators();
+    else if (tab === 'packages') loadPackages();
+    else if (tab === 'importAll') {
         const activeSubBtn = document.querySelector('.sub-tab-btn.active');
         if (activeSubBtn) {
           const subType = activeSubBtn.textContent.toLowerCase().includes('m2m') ? 'm2m' : 
@@ -521,16 +570,59 @@ window.SettingsPage = (() => {
             BulkImport.renderTab(subType, containerId, null);
           }
         }
-      }
-
-      if (tab === 'update') {
-        loadChangelog();
-        SettingsPage.checkUpdate();
-      }
-      if (tab === 'packages') {
-        loadPackages();
-      }
     }
+    else if (tab === 'update') {
+      loadChangelog();
+      SettingsPage.checkUpdate();
+    }
+  }
+
+  function resetSubTabs(tabId) {
+    const pane = document.getElementById(`tab-${tabId}`);
+    if (!pane) return;
+    const firstSubTab = pane.querySelector('.sub-tab-btn');
+    if (firstSubTab) {
+        const category = tabId.replace('tab-', '').replace('Tab', '');
+        switchSubTab(category, 'list', firstSubTab);
+    }
+  }
+
+  async function switchSubTab(category, type, btn) {
+    const pane = btn.closest('.tab-pane');
+    if (!pane) return;
+
+    // UI Toggle
+    pane.querySelectorAll('.sub-tab-btn').forEach(b => {
+        b.classList.remove('active', 'btn-primary');
+        b.classList.add('btn-ghost');
+    });
+    btn.classList.add('active', 'btn-primary');
+    btn.classList.remove('btn-ghost');
+
+    pane.querySelectorAll('.sub-pane').forEach(p => p.style.display = 'none');
+    const target = document.getElementById(`${category}-subpane-${type}`);
+    if (target) target.style.display = 'block';
+
+    // Lazy load logic
+    if (type === 'add') {
+        const containerId = `${category}-import-container`;
+        const container = document.getElementById(containerId);
+        if (container && !container.dataset.loaded) {
+            container.innerHTML = '<div style="padding:40px;text-align:center"><div class="spinner"></div></div>';
+            let bulkType = category;
+            
+            await BulkImport.renderTab(bulkType, containerId, () => {
+                // Refresh list after successful add
+                if (category === 'users') loadUsers();
+                if (category === 'vehicles') loadVehicles();
+                if (category === 'locations') loadLocations();
+                if (category === 'personnel') loadPersonnel();
+                if (category === 'operators') loadOperators();
+            });
+            container.dataset.loaded = "true";
+        }
+    }
+  }
 
   function switchImportType(type, btn) {
     document.querySelectorAll('.sub-tab-btn').forEach(b => {
@@ -1430,7 +1522,7 @@ window.SettingsPage = (() => {
   }
 
   return {
-    render, switchTab, switchImportType, loadChangelog,
+    render, switchTab, switchSubTab, switchImportType, loadChangelog,
     loadUsers, openAddUser, openEditUser, saveUser, deleteUser,
     onRoleChange, onPermViewChange, onPermEditChange,
     loadVehicles, openAddVehicle, openEditVehicle, saveVehicle, deleteVehicle,

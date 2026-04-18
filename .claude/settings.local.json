@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node server.js)",
+      "Bash(curl -s http://localhost:3000/api/auth/login -X POST -H \"Content-Type: application/json\" -d '{\"username\":\"admin\",\"password\":\"admin123\"}')",
+      "Bash(curl -s http://localhost:3000/api/m2m -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwidXNlcm5hbWUiOiJhZG1pbiIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTc3NjUyOTk0NSwiZXhwIjoxNzc2NTU4NzQ1fQ.veIWlm5zGIkBTwbHeQ_uqWlvmbnYiShKYSgGmEtqYhE')",
+      "Bash(curl -s http://localhost:3000/api/personnel -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwidXNlcm5hbWUiOiJhZG1pbiIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTc3NjUyOTk0NSwiZXhwIjoxNzc2NTU4NzQ1fQ.veIWlm5zGIkBTwbHeQ_uqWlvmbnYiShKYSgGmEtqYhE')",
+      "Bash(curl -s http://localhost:3000/api/import/template/m2m -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwidXNlcm5hbWUiOiJhZG1pbiIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTc3NjUyOTk0NSwiZXhwIjoxNzc2NTU4NzQ1fQ.veIWlm5zGIkBTwbHeQ_uqWlvmbnYiShKYSgGmEtqYhE')"
+    ]
+  }
+}

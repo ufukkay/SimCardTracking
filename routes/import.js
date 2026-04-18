@@ -284,6 +284,51 @@ router.post("/excel/:type", authMiddleware, upload.single("file"), (req, res) =>
           r["Telefon"] || r["phone"] || null,
           r["Notlar"] || r["notes"] || null
         );
+      },
+      users: (r) => {
+        const bcrypt = require('bcryptjs');
+        const username = r["Kullanıcı Adı"] || r["username"];
+        const password = r["Şifre"] || r["password"] || "123456"; // Default password if not provided in excel
+        const hash = bcrypt.hashSync(password, 10);
+        return db.prepare(`
+          INSERT INTO users (username, first_name, last_name, company, email, phone, role, password_hash)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `).run(
+          username,
+          r["Ad"] || r["first_name"] || null,
+          r["Soyad"] || r["last_name"] || null,
+          r["Şirket"] || r["company"] || null,
+          r["E-posta"] || r["email"] || null,
+          r["Telefon"] || r["phone"] || null,
+          r["Rol"] || r["role"] || "user",
+          hash
+        );
+      },
+      vehicles: (r) => {
+        return db.prepare(`
+          INSERT INTO vehicles (plate_no, vehicle_type, notes)
+          VALUES (?, ?, ?)
+        `).run(
+          r["Plaka"] || r["plate_no"] || null,
+          r["Araç Tipi"] || r["vehicle_type"] || null,
+          r["Notlar"] || r["notes"] || null
+        );
+      },
+      locations: (r) => {
+        return db.prepare(`
+          INSERT INTO locations (name, address, notes)
+          VALUES (?, ?, ?)
+        `).run(
+          r["Lokasyon Adı"] || r["name"] || null,
+          r["Adres"] || r["address"] || null,
+          r["Notlar"] || r["notes"] || null
+        );
+      },
+      operators: (r) => {
+        return db.prepare(`
+          INSERT INTO operators (name)
+          VALUES (?)
+        `).run(r["Operatör Adı"] || r["name"] || null);
       }
     };
 
@@ -439,21 +484,64 @@ router.post("/json/:type", authMiddleware, (req, res) => {
         r.features || null
       );
     },
-    personnel: (r) => {
-      return db.prepare(`
-        INSERT INTO personnel (first_name, last_name, department, company, cost_center, phone, notes)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-      `).run(
-        r.first_name || null,
-        r.last_name || null,
-        r.department || null,
-        r.company || null,
-        r.cost_center || null,
-        r.phone || null,
-        r.notes || null
-      );
-    }
-  };
+      personnel: (r) => {
+        return db.prepare(`
+          INSERT INTO personnel (first_name, last_name, department, company, cost_center, phone, notes)
+          VALUES (?, ?, ?, ?, ?, ?, ?)
+        `).run(
+          r.first_name || null,
+          r.last_name || null,
+          r.department || null,
+          r.company || null,
+          r.cost_center || null,
+          r.phone || null,
+          r.notes || null
+        );
+      },
+      users: (r) => {
+        const bcrypt = require('bcryptjs');
+        const hash = bcrypt.hashSync(r.password || "123456", 10);
+        return db.prepare(`
+          INSERT INTO users (username, first_name, last_name, company, email, phone, role, password_hash)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `).run(
+          r.username,
+          r.first_name || null,
+          r.last_name || null,
+          r.company || null,
+          r.email || null,
+          r.phone || null,
+          r.role || "user",
+          hash
+        );
+      },
+      vehicles: (r) => {
+        return db.prepare(`
+          INSERT INTO vehicles (plate_no, vehicle_type, notes)
+          VALUES (?, ?, ?)
+        `).run(
+          r.plate_no || null,
+          r.vehicle_type || null,
+          r.notes || null
+        );
+      },
+      locations: (r) => {
+        return db.prepare(`
+          INSERT INTO locations (name, address, notes)
+          VALUES (?, ?, ?)
+        `).run(
+          r.name || null,
+          r.address || null,
+          r.notes || null
+        );
+      },
+      operators: (r) => {
+        return db.prepare(`
+          INSERT INTO operators (name)
+          VALUES (?)
+        `).run(r.name || null);
+      }
+    };
 
   if (!insertFns[type])
     return res.status(400).json({ message: "Geçersiz tip." });

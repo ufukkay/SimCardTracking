@@ -1,7 +1,8 @@
 /* ─── SES HATLAR SAYFASI ─── */
 const VoicePage = (() => {
   let editingId = null;
-  let personnelCache = []; // for auto-fill
+  let personnelCache = [];
+  let lastRows      = [];
   
   // ─── Listen for Global Refresh ───
   UI.on('REFRESH_DATA', () => {
@@ -10,30 +11,13 @@ const VoicePage = (() => {
 
   function render() {
     document.getElementById('pageTitle').textContent = i18n.t('voice_lines');
-    document.getElementById('topbarActions').innerHTML = `
-      <button class="btn btn-secondary" onclick="VoicePage.exportExcel()">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-        <span data-i18n="export_excel">${i18n.t('export_excel')}</span>
-      </button>
-    `;
+    SimPageBase.setNormalTopbar();
     document.getElementById('pageContent').innerHTML = `
       <div class="card">
         <div class="card-header">
           <span class="card-title" data-i18n="voice_list_title">${i18n.t('voice_list_title')}</span>
-          <div id="bulkActionsBar" class="bulk-actions-bar" style="display:none">
-            <span id="selectedCount">0 ${i18n.t('selected_count')}</span>
-            <div class="bulk-buttons">
-              <button class="btn btn-secondary btn-sm" onclick="VoicePage.openBulkEdit()">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                <span data-i18n="bulk_edit">${i18n.t('bulk_edit')}</span>
-              </button>
-              <button class="btn btn-danger btn-sm" onclick="VoicePage.bulkDel()">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
-                <span data-i18n="bulk_delete">${i18n.t('bulk_delete')}</span>
-              </button>
-            </div>
-          </div>
         </div>
+        <div id="voiceStats" class="stat-strip"></div>
         <div class="filters">
           <input type="text" id="voiceSearch" class="form-control search-input" data-i18n="search_sim_placeholder" placeholder="${i18n.t('search_sim_placeholder')}">
           <select id="voiceOpFilter" class="form-control filter-select">
@@ -69,6 +53,7 @@ const VoicePage = (() => {
             </thead>
             <tbody id="voiceTableBody"></tbody>
           </table>
+          <div id="voicePagination"></div>
         </div>
       </div>
 
@@ -230,7 +215,7 @@ const VoicePage = (() => {
     load();
   }
 
-  async function load() {
+  async function load(page = 1) {
     const search = document.getElementById('voiceSearch')?.value || '';
     const operator = document.getElementById('voiceOpFilter')?.value || '';
     const status = document.getElementById('voiceStatusFilter')?.value || '';
@@ -238,12 +223,21 @@ const VoicePage = (() => {
     if (search) params.append('search', search);
     if (operator) params.append('operator', operator);
     if (status) params.append('status', status);
+    
+    // Pagination params
+    params.append('page', page);
+    params.append('limit', 50);
+
     const qs = params.toString() ? '?' + params.toString() : '';
 
     const tbody = document.getElementById('voiceTableBody');
     try {
-      let rows = await API.getVoice(qs);
+      const response = await API.getVoice(qs);
       
+      const isPaginated = !Array.isArray(response);
+      let rows = isPaginated ? (response.data || []) : response;
+      lastRows = rows;
+
       const colDefs = {
         'iccid': { label: 'ICCID', getVal: r => r.iccid || '—' },
         'phone_no': { label: 'Telefon No', getVal: r => r.phone_no || '—' },
@@ -257,15 +251,43 @@ const VoicePage = (() => {
 
       if (!VoicePage.colFilters) VoicePage.colFilters = {};
       const unfilteredRows = rows;
+
+      // Stat strip
+      const statEl = document.getElementById('voiceStats');
+      if (statEl) {
+        const active  = rows.filter(r => r.status === 'active').length;
+        const spare   = rows.filter(r => r.status === 'spare').length;
+        const passive = rows.filter(r => r.status === 'passive').length;
+        statEl.innerHTML = `
+          <span class="stat-chip stat-chip-total">Toplam: <strong>${rows.length}</strong></span>
+          <span class="stat-chip stat-chip-active">Aktif: <strong>${active}</strong></span>
+          ${spare   ? `<span class="stat-chip stat-chip-spare">Yedek: <strong>${spare}</strong></span>` : ''}
+          ${passive ? `<span class="stat-chip stat-chip-passive">Pasif: <strong>${passive}</strong></span>` : ''}
+        `;
+      }
+
       rows = UI.filterRows(rows, VoicePage.colFilters, colDefs);
       rows = UI.sortRows(rows, VoicePage.colFilters._sort, colDefs);
 
       if (!rows.length) {
-        tbody.innerHTML = `<tr><td colspan="10">${UI.emptyState('📞', 'Ses hattı bulunamadı', 'Yeni hat eklemek için butona tıklayın.')}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="11">
+          <div style="text-align:center;padding:40px;color:var(--text-muted)">
+            <div style="font-size:40px;margin-bottom:12px">📞</div>
+            <div style="font-size:14px;font-weight:600;color:var(--text-secondary);margin-bottom:6px">Ses hattı bulunamadı</div>
+            <div style="font-size:12.5px;margin-bottom:16px">Yeni hat eklemek veya toplu içeri aktarmak için butonları kullanın.</div>
+            ${window.AppPerms?.canEdit('voice') ? `<div style="display:flex;gap:8px;justify-content:center">
+              <button class="btn btn-primary btn-sm" onclick="VoicePage.openAdd()">+ Yeni Hat Ekle</button>
+              <button class="btn btn-secondary btn-sm" onclick="BulkImport.open('voice', () => VoicePage.load())">Toplu İçeri Aktar</button>
+            </div>` : ''}
+          </div>
+        </td></tr>`;
+        document.getElementById('voicePagination').innerHTML = '';
         return;
       }
+
+      const canEdit = window.AppPerms?.canEdit('voice');
       tbody.innerHTML = rows.map((r, i) => `
-        <tr>
+        <tr class="${canEdit ? 'row-clickable' : ''}" data-id="${r.id}">
           <td style="width:40px"><input type="checkbox" class="row-select" value="${r.id}"></td>
           <td class="td-muted">${i + 1}</td>
           <td class="td-muted" style="font-family:monospace;font-size:12px">${r.iccid || '—'}</td>
@@ -296,20 +318,81 @@ const VoicePage = (() => {
       
       UI.setupTableFilters('voiceTableBody', unfilteredRows, VoicePage.colFilters, colDefs, () => load());
 
+      // Row click to edit
+      if (canEdit) {
+        tbody.addEventListener('click', (e) => {
+          if (e.target.closest('button, input, label, .btn')) return;
+          const row = e.target.closest('tr[data-id]');
+          if (row) VoicePage.openEdit(parseInt(row.dataset.id));
+        });
+      }
+
       UI.initSelection('voiceTableBody', 'voiceSelectAll', (ids) => {
-        const bar = document.getElementById('bulkActionsBar');
-        const countEl = document.getElementById('selectedCount');
-        if (ids.length > 0) {
-          bar.style.display = 'flex';
-          countEl.textContent = `${ids.length} kayıt seçildi`;
-        } else {
-          bar.style.display = 'none';
-        }
+        if (ids.length > 0) SimPageBase.setBulkTopbar(ids, 'VoicePage', 'voice');
+        else SimPageBase.setNormalTopbar();
       });
 
+      if (isPaginated && response.totalPages > 1) {
+        SimPageBase.renderPagination('voicePagination', response, 'VoicePage.load');
+      } else {
+        document.getElementById('voicePagination').innerHTML = '';
+      }
+      
     } catch (err) {
       tbody.innerHTML = `<tr><td colspan="10" style="color:var(--danger);padding:20px">${err.message}</td></tr>`;
     }
+  }
+
+  function setNormalTopbar() {
+    document.getElementById('topbarActions').innerHTML = '';
+  }
+
+  function setBulkTopbar(ids) {
+    document.getElementById('topbarActions').innerHTML = `
+      <span style="font-size:13px;font-weight:600;color:var(--accent);background:var(--accent-light);padding:4px 12px;border-radius:20px;border:1px solid rgba(26,115,232,0.2);white-space:nowrap">${ids.length} kayıt seçildi</span>
+      ${window.AppPerms?.canEdit('voice') ? `
+        <button class="btn btn-secondary btn-sm" onclick="VoicePage.openBulkEdit()">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          Toplu Düzenle
+        </button>
+      ` : ''}
+      <button class="btn btn-secondary btn-sm" onclick="VoicePage.exportSelectedExcel()">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        Excel İndir
+      </button>
+      ${window.AppPerms?.canEdit('voice') ? `
+        <button class="btn btn-danger btn-sm" onclick="VoicePage.bulkDel()">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+          Toplu Sil
+        </button>
+      ` : ''}
+      <button class="btn btn-ghost btn-sm" onclick="VoicePage.clearSelection()" style="color:var(--text-muted)">✕ Temizle</button>`;
+  }
+
+  function clearSelection() {
+    document.querySelectorAll('#voiceTableBody .row-select').forEach(cb => cb.checked = false);
+    const sa = document.getElementById('voiceSelectAll');
+    if (sa) sa.checked = false;
+    setNormalTopbar();
+  }
+
+  function exportSelectedExcel() {
+    const ids = UI.getSelectedIds('voiceTableBody');
+    const selected = lastRows.filter(r => ids.includes(r.id));
+    if (!selected.length) return UI.toast('Seçili kayıt bulunamadı.', 'info');
+    if (typeof XLSX === 'undefined') return UI.toast('Excel kütüphanesi yüklenemedi.', 'error');
+    const data = selected.map(r => ({
+      'ICCID': r.iccid || '', 'Telefon No': r.phone_no || '', 'Operatör': r.operator || '',
+      'Paket': r.package_name || '', 'Durum': r.status === 'active' ? 'Aktif' : r.status === 'spare' ? 'Yedek' : 'Pasif',
+      'Personel': r.assigned_to || '', 'Departman': r.department || '',
+      'Şirket': r.assigned_company || '', 'Masraf Kalemi': r.cost_center || '', 'Notlar': r.notes || ''
+    }));
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(data);
+    ws['!cols'] = [{wch:22},{wch:15},{wch:15},{wch:20},{wch:10},{wch:25},{wch:20},{wch:30},{wch:20},{wch:20}];
+    XLSX.utils.book_append_sheet(wb, ws, 'Ses Seçilenler');
+    XLSX.writeFile(wb, `Ses_Secili_${new Date().toISOString().slice(0,10)}.xlsx`);
+    UI.toast(`${selected.length} kayıt Excel'e aktarıldı.`, 'success');
   }
 
   function openAdd() {
@@ -438,13 +521,11 @@ const VoicePage = (() => {
       const search = document.getElementById('voiceSearch')?.value || '';
       const operator = document.getElementById('voiceOpFilter')?.value || '';
       const status = document.getElementById('voiceStatusFilter')?.value || '';
-      const params = new URLSearchParams();
-      if (search) params.append('search', search);
-      if (operator) params.append('operator', operator);
-      if (status) params.append('status', status);
-      const qs = params.toString() ? '?' + params.toString() : '';
+      const qs = new URLSearchParams({ search, operator, status, export: 'true' }).toString();
 
-      const rows = await API.getVoice(qs);
+      const response = await API.getVoice(qs ? '?' + qs : '');
+      const rows = response.data || response;
+
       if (!rows.length) return UI.toast('Dışa aktarılacak veri bulunamadı.', 'info');
       if (typeof XLSX === 'undefined') return UI.toast('Excel kütüphanesi yüklenemedi.', 'error');
 
@@ -470,5 +551,5 @@ const VoicePage = (() => {
     } catch (err) { UI.toast(err.message, 'error'); }
   }
 
-  return { render, load, openAdd, openEdit, save, del, openBulkEdit, saveBulk, bulkDel, exportExcel, openTransferFromEdit, onTypeChange };
+  return { render, load, openAdd, openEdit, save, del, openBulkEdit, saveBulk, bulkDel, exportExcel, exportSelectedExcel, clearSelection, openTransferFromEdit, onTypeChange };
 })();

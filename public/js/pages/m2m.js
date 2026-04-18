@@ -1,7 +1,8 @@
 /* ─── M2M HATLAR SAYFASI ─── */
 const M2MPage = (() => {
   let editingId   = null;
-  let vehicleList = [];   // cached for auto-fill
+  let vehicleList = [];
+  let lastRows    = [];   // son yüklenen satırlar (seçili excel için)
   
   // ─── Listen for Global Refresh ───
   UI.on('REFRESH_DATA', () => {
@@ -10,30 +11,13 @@ const M2MPage = (() => {
 
   function render() {
     document.getElementById('pageTitle').textContent = i18n.t('nav_m2m');
-    document.getElementById('topbarActions').innerHTML = `
-      <button class="btn btn-secondary" onclick="M2MPage.exportExcel()">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-        <span data-i18n="export_excel">${i18n.t('export_excel')}</span>
-      </button>
-    `;
+    SimPageBase.setNormalTopbar();
     document.getElementById('pageContent').innerHTML = `
       <div class="card">
         <div class="card-header">
           <span class="card-title" data-i18n="m2m_list_title">${i18n.t('m2m_list_title')}</span>
-          <div id="bulkActionsBar" class="bulk-actions-bar" style="display:none">
-            <span id="selectedCount">0 ${i18n.t('selected_count')}</span>
-            <div class="bulk-buttons">
-              <button class="btn btn-secondary btn-sm" onclick="M2MPage.openBulkEdit()">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                <span data-i18n="bulk_edit">${i18n.t('bulk_edit')}</span>
-              </button>
-              <button class="btn btn-danger btn-sm" onclick="M2MPage.bulkDel()">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
-                <span data-i18n="bulk_delete">${i18n.t('bulk_delete')}</span>
-              </button>
-            </div>
-          </div>
         </div>
+        <div id="m2mStats" class="stat-strip"></div>
         <div class="filters">
           <input type="text" id="m2mSearch" class="form-control search-input" data-i18n="search_sim_placeholder" placeholder="${i18n.t('search_sim_placeholder')}">
           <select id="m2mOpFilter" class="form-control" style="width:160px">
@@ -76,6 +60,7 @@ const M2MPage = (() => {
             </thead>
             <tbody id="m2mTableBody"></tbody>
           </table>
+          <div id="m2mPagination"></div>
         </div>
       </div>
 
@@ -260,7 +245,7 @@ const M2MPage = (() => {
     load();
   }
 
-  async function load() {
+  async function load(page = 1) {
     const search = document.getElementById('m2mSearch')?.value || '';
     const operator = document.getElementById('m2mOpFilter')?.value || '';
     const vehicleType = document.getElementById('m2mTypeFilter')?.value || '';
@@ -270,12 +255,23 @@ const M2MPage = (() => {
     if (operator) params.append('operator', operator);
     if (vehicleType) params.append('vehicle_type', vehicleType);
     if (status) params.append('status', status);
+    
+    // Pagination params
+    params.append('page', page);
+    params.append('limit', 50);
+
     const qs = params.toString() ? '?' + params.toString() : '';
 
     const tbody = document.getElementById('m2mTableBody');
     try {
-      let rows = await API.getM2M(qs);
+      const response = await API.getM2M(qs);
       
+      // If server returned array (old API) fallback to it, else use paginated structure
+      const isPaginated = !Array.isArray(response);
+      let rows = isPaginated ? (response.data || []) : response;
+      lastRows = rows;
+
+
       const colDefs = {
         'iccid': { label: 'ICCID', getVal: r => r.iccid || '—' },
         'phone_no': { label: 'Telefon No', getVal: r => r.phone_no || '—' },
@@ -289,16 +285,43 @@ const M2MPage = (() => {
 
       if (!M2MPage.colFilters) M2MPage.colFilters = {};
       const unfilteredRows = rows;
+
+      // Stat strip
+      const statEl = document.getElementById('m2mStats');
+      if (statEl) {
+        const active = rows.filter(r => r.status === 'active').length;
+        const spare  = rows.filter(r => r.status === 'spare').length;
+        const passive = rows.filter(r => r.status === 'passive').length;
+        statEl.innerHTML = `
+          <span class="stat-chip stat-chip-total">Toplam: <strong>${rows.length}</strong></span>
+          <span class="stat-chip stat-chip-active">Aktif: <strong>${active}</strong></span>
+          ${spare  ? `<span class="stat-chip stat-chip-spare">Yedek: <strong>${spare}</strong></span>` : ''}
+          ${passive ? `<span class="stat-chip stat-chip-passive">Pasif: <strong>${passive}</strong></span>` : ''}
+        `;
+      }
+
       rows = UI.filterRows(rows, M2MPage.colFilters, colDefs);
       rows = UI.sortRows(rows, M2MPage.colFilters._sort, colDefs);
 
       if (!rows.length) {
-        tbody.innerHTML = `<tr><td colspan="10">${UI.emptyState('🚗', 'M2M hattı bulunamadı', 'Yeni hat eklemek için butona tıklayın.')}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="11">
+          <div style="text-align:center;padding:40px;color:var(--text-muted)">
+            <div style="font-size:40px;margin-bottom:12px">🚗</div>
+            <div style="font-size:14px;font-weight:600;color:var(--text-secondary);margin-bottom:6px">M2M hattı bulunamadı</div>
+            <div style="font-size:12.5px;margin-bottom:16px">Yeni hat eklemek veya toplu içeri aktarmak için butonları kullanın.</div>
+            ${window.AppPerms?.canEdit('m2m') ? `<div style="display:flex;gap:8px;justify-content:center">
+              <button class="btn btn-primary btn-sm" onclick="M2MPage.openAdd()">+ Yeni Hat Ekle</button>
+              <button class="btn btn-secondary btn-sm" onclick="BulkImport.open('m2m', () => M2MPage.load())">Toplu İçeri Aktar</button>
+            </div>` : ''}
+          </div>
+        </td></tr>`;
+        document.getElementById('m2mPagination').innerHTML = '';
         return;
       }
 
+      const canEdit = window.AppPerms?.canEdit('m2m');
       tbody.innerHTML = rows.map((r, i) => `
-        <tr>
+        <tr class="${canEdit ? 'row-clickable' : ''}" data-id="${r.id}">
           <td style="width:40px"><input type="checkbox" class="row-select" value="${r.id}"></td>
           <td class="td-muted">${i + 1}</td>
           <td class="td-muted" style="font-family:monospace;font-size:12px">${r.iccid || '—'}</td>
@@ -328,18 +351,28 @@ const M2MPage = (() => {
       `).join('');
       
       UI.setupTableFilters('m2mTableBody', unfilteredRows, M2MPage.colFilters, colDefs, () => load());
-      
+
+      // Row click to edit
+      if (canEdit) {
+        tbody.addEventListener('click', (e) => {
+          if (e.target.closest('button, input, label, .btn')) return;
+          const row = e.target.closest('tr[data-id]');
+          if (row) M2MPage.openEdit(parseInt(row.dataset.id));
+        });
+      }
+
       // Selection init
       UI.initSelection('m2mTableBody', 'm2mSelectAll', (ids) => {
-        const bar = document.getElementById('bulkActionsBar');
-        const countEl = document.getElementById('selectedCount');
-        if (ids.length > 0) {
-          bar.style.display = 'flex';
-          countEl.textContent = `${ids.length} kayıt seçildi`;
-        } else {
-          bar.style.display = 'none';
-        }
+        if (ids.length > 0) SimPageBase.setBulkTopbar(ids, 'M2MPage', 'm2m');
+        else SimPageBase.setNormalTopbar();
       });
+
+      // Render Pagination
+      if (isPaginated && response.totalPages > 1) {
+        SimPageBase.renderPagination('m2mPagination', response, 'M2MPage.load');
+      } else {
+        document.getElementById('m2mPagination').innerHTML = '';
+      }
 
     } catch (err) {
       tbody.innerHTML = `<tr><td colspan="10" style="color:var(--danger);padding:20px">${err.message}</td></tr>`;
@@ -353,28 +386,21 @@ const M2MPage = (() => {
     UI.openModal('m2mModal');
   }
 
-
   async function openEdit(id) {
     editingId = id;
     document.getElementById('m2mModalTitle').textContent = 'M2M Hattını Düzenle';
     try {
       const row = await API.get(`/m2m/${id}`);
-      // First populate operator selects (needed for pre-fill)
       await UI.fillOperatorSelect(document.getElementById('m2mOperatorSel'));
-      // Then populate packages for the operator
       if (row.operator && typeof SettingsPage !== 'undefined') {
         await SettingsPage.onOperatorChange(row.operator, 'm2m', 'm2mPagePkgSel');
       }
-      // Then set form values (including package_id)
       UI.setForm('m2mForm', row);
       UI.openModal('m2mModal');
     } catch (err) { UI.toast(err.message, 'error'); }
   }
 
-  function onTypeChange(newType) {
-    // Sadece görsel geri bildirim için veya gerekirse tip bazlı alanları gizle/göster için kullanılabilir.
-    // Şimdilik sadece tip değişimini takip etmek yeterli.
-  }
+  function onTypeChange(newType) {}
 
   function openTransferFromEdit() {
     if (!editingId) return;
@@ -421,109 +447,39 @@ const M2MPage = (() => {
     }
   }
 
-  function del(id, label) {
-    UI.confirm(`"${label}" kaydı silinecek. Bu işlem geri alınamaz.`, async () => {
-      try {
-        await API.deleteM2M(id);
-        UI.toast('Kayıt silindi.', 'success');
-        load();
-        UI.emit('REFRESH_DATA');
-      } catch (err) { UI.toast(err.message, 'error'); }
-    });
-  }
+  const exportMapFn = r => ({
+    'ICCID': r.iccid || '',
+    'Telefon No': r.phone_no || '',
+    'Operatör': r.operator || r.operator_name || '',
+    'Paket': r.package_name || '',
+    'Araç Tipi': r.vehicle_type || '',
+    'Durum': r.status === 'active' ? 'Aktif' : r.status === 'spare' ? 'Yedek' : 'Pasif',
+    'Plaka': r.plate_no || '',
+    'Şirket': r.company || '',
+    'Notlar': r.notes || '',
+    'Kayıt Tarihi': r.created_at ? new Date(r.created_at).toLocaleString('tr-TR') : ''
+  });
 
-  function openBulkEdit() {
-    const ids = UI.getSelectedIds('m2mTableBody');
-    document.getElementById('m2mBulkForm').reset();
-    document.getElementById('bulkSelectedCountText').textContent = ids.length;
-    UI.openModal('m2mBulkModal');
-  }
-
-  async function saveBulk(e) {
-    e.preventDefault();
-    const ids = UI.getSelectedIds('m2mTableBody');
-    const formData = UI.formData('m2mBulkForm');
-    
-    // Sadece doldurulan alanları veya __CLEAR__ olanları gönder
-    const data = {};
-    Object.keys(formData).forEach(key => {
-      if (formData[key] === '__CLEAR__') {
-        data[key] = null; // Paketi kaldır
-      } else if (formData[key]) {
-        data[key] = formData[key];
-      }
-    });
-
-    if (Object.keys(data).length === 0) {
-      UI.toast('Güncellenecek herhangi bir alan doldurmadınız.', 'info');
-      return;
-    }
-
-    const saveBtn = document.getElementById('m2mBulkSaveBtn');
-    saveBtn.disabled = true;
-    try {
-      await API.bulkUpdate('m2m', ids, data);
-      UI.toast(`${ids.length} kayıt başarıyla güncellendi.`, 'success');
-      UI.closeModal('m2mBulkModal');
-      load();
-      UI.emit('REFRESH_DATA');
-    } catch (err) {
-      UI.toast(err.message, 'error');
-    } finally {
-      saveBtn.disabled = false;
-    }
-  }
-
-  function bulkDel() {
-    const ids = UI.getSelectedIds('m2mTableBody');
-    UI.confirm(`Seçilen ${ids.length} kayıt silinecek. Bu işlem geri alınamaz.`, async () => {
-      try {
-        await API.bulkDelete('m2m', ids);
-        UI.toast(`${ids.length} kayıt silindi.`, 'success');
-        load();
-        UI.emit('REFRESH_DATA');
-      } catch (err) { UI.toast(err.message, 'error'); }
-    });
-  }
-
-  async function exportExcel() {
+  const clearSelection = () => SimPageBase.clearSelection('m2mTableBody', 'm2mSelectAll');
+  const exportSelectedExcel = () => SimPageBase.exportToExcel(lastRows.filter(r => UI.getSelectedIds('m2mTableBody').includes(r.id)), exportMapFn, 'M2M_Secili', 'M2M');
+  const exportExcel = async () => {
     try {
       const search = document.getElementById('m2mSearch')?.value || '';
       const operator = document.getElementById('m2mOpFilter')?.value || '';
       const vehicleType = document.getElementById('m2mTypeFilter')?.value || '';
       const status = document.getElementById('m2mStatusFilter')?.value || '';
-      const params = new URLSearchParams();
-      if (search) params.append('search', search);
-      if (operator) params.append('operator', operator);
-      if (vehicleType) params.append('vehicle_type', vehicleType);
-      if (status) params.append('status', status);
-      const qs = params.toString() ? '?' + params.toString() : '';
-
-      const rows = await API.getM2M(qs);
-      if (!rows.length) return UI.toast('Dışa aktarılacak veri bulunamadı.', 'info');
-      if (typeof XLSX === 'undefined') return UI.toast('Excel kütüphanesi yüklenemedi.', 'error');
-
-      const data = rows.map(r => ({
-        'ICCID': r.iccid || '',
-        'Telefon No': r.phone_no || '',
-        'Operatör': r.operator || r.operator_name || '',
-        'Paket': r.package_name || '',
-        'Araç Tipi': r.vehicle_type || '',
-        'Durum': r.status === 'active' ? 'Aktif' : r.status === 'spare' ? 'Yedek' : 'Pasif',
-        'Plaka': r.plate_no || '',
-        'Şirket': r.company || '',
-        'Notlar': r.notes || '',
-        'Kayıt Tarihi': new Date(r.created_at).toLocaleString('tr-TR')
-      }));
-
-      const wb = XLSX.utils.book_new();
-      const ws = XLSX.utils.json_to_sheet(data);
-      ws['!cols'] = [{wch:22}, {wch:15}, {wch:15}, {wch:20}, {wch:15}, {wch:10}, {wch:15}, {wch:30}, {wch:20}];
-      XLSX.utils.book_append_sheet(wb, ws, 'M2M Hatları');
-      XLSX.writeFile(wb, `M2M_Hat_Listesi_${new Date().toISOString().slice(0,10)}.xlsx`);
-      UI.toast('Excel dosyası indiriliyor...', 'success');
+      const qs = new URLSearchParams({ search, operator, vehicle_type: vehicleType, status, export: 'true' }).toString();
+      
+      const response = await API.getM2M(qs ? '?' + qs : '');
+      const rows = response.data || response; // support paginated structure
+      SimPageBase.exportToExcel(rows, exportMapFn, 'M2M_Hat_Listesi', 'M2M Hatları');
     } catch (err) { UI.toast(err.message, 'error'); }
-  }
+  };
+  
+  const del = (id, label) => SimPageBase.del(id, label, API.deleteM2M, () => { load(); UI.emit('REFRESH_DATA'); });
+  const openBulkEdit = () => SimPageBase.openBulkEdit('m2mTableBody', 'm2mBulkForm', 'bulkSelectedCountText', 'm2mBulkModal');
+  const saveBulk = (e) => SimPageBase.saveBulk(e, 'm2mTableBody', 'm2mBulkForm', 'm2mBulkSaveBtn', 'm2mBulkModal', (ids, data) => API.bulkUpdate('m2m', ids, data), () => { load(); UI.emit('REFRESH_DATA'); });
+  const bulkDel = () => SimPageBase.bulkDel('m2mTableBody', (ids) => API.bulkDelete('m2m', ids), () => { load(); UI.emit('REFRESH_DATA'); });
 
-  return { render, load, openAdd, openEdit, save, del, openBulkEdit, saveBulk, bulkDel, exportExcel, openTransferFromEdit, onTypeChange };
+  return { render, load, openAdd, openEdit, save, del, openBulkEdit, saveBulk, bulkDel, exportExcel, exportSelectedExcel, clearSelection, openTransferFromEdit, onTypeChange };
 })();

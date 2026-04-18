@@ -76,6 +76,40 @@ const BulkImport = (() => {
         { key: "notes", label: "Notlar", placeholder: "" },
       ],
     },
+    users: {
+      label: "Kullanıcı",
+      fields: [
+        { key: "first_name", label: "Ad", placeholder: "Ad" },
+        { key: "last_name", label: "Soyad", placeholder: "Soyad" },
+        { key: "username", label: "Kullanıcı Adı", placeholder: "kadi" },
+        { key: "role", label: "Rol", type: "role" },
+        { key: "email", label: "E-posta", placeholder: "e@mail.com" },
+        { key: "phone", label: "Telefon", placeholder: "05xx" },
+        { key: "company", label: "Şirket", placeholder: "Şirket" },
+      ],
+    },
+    vehicles: {
+      label: "Araç",
+      fields: [
+        { key: "plate_no", label: "Plaka", placeholder: "34 ABC 123" },
+        { key: "vehicle_type", label: "Araç Tipi", type: "vehicle_type" },
+        { key: "notes", label: "Notlar", placeholder: "" },
+      ],
+    },
+    locations: {
+      label: "Lokasyon",
+      fields: [
+        { key: "name", label: "Lokasyon Adı", placeholder: "A Ofisi" },
+        { key: "address", label: "Adres", placeholder: "İstanbul..." },
+        { key: "notes", label: "Notlar", placeholder: "" },
+      ],
+    },
+    operators: {
+      label: "Operatör",
+      fields: [
+        { key: "name", label: "Operatör Adı", placeholder: "Türk Telekom" },
+      ],
+    },
   };
 
   const STATUS_OPTS = [
@@ -125,6 +159,12 @@ const BulkImport = (() => {
         <option value="m2m">M2M</option>
         <option value="data">Data</option>
         <option value="voice">Ses</option>
+      </select>`;
+    }
+    if (field.type === "role") {
+      return `<select class="form-control" data-row="${rowIdx}" data-key="${field.key}">
+        <option value="user">Kullanıcı</option>
+        <option value="admin">Admin</option>
       </select>`;
     }
     return `<input class="form-control" data-row="${rowIdx}" data-key="${field.key}" placeholder="${field.placeholder || ""}" value="${manualRows[rowIdx]?.[field.key] || ""}">`;
@@ -582,6 +622,89 @@ const BulkImport = (() => {
               </button>
             </div>
       `;
+    } else if (type === "personnel") {
+      addFormHtml = `
+            <div class="form-grid">
+              <div class="form-group"><label class="form-label">Ad *</label><input name="first_name" class="form-control" required></div>
+              <div class="form-group"><label class="form-label">Soyad *</label><input name="last_name" class="form-control" required></div>
+              <div class="form-group"><label class="form-label">Departman</label><input name="department" class="form-control" placeholder="IT, Muhasebe..."></div>
+              <div class="form-group"><label class="form-label">Şirket</label><input name="company" class="form-control"></div>
+              <div class="form-group"><label class="form-label">Masraf Kalemi</label><input name="cost_center" class="form-control" placeholder="Örn: IT123"></div>
+              <div class="form-group"><label class="form-label">Telefon</label><input name="phone" class="form-control"></div>
+              <div class="form-group col-span-2"><label class="form-label">Notlar</label><textarea name="notes" class="form-control"></textarea></div>
+            </div>
+            <div style="display:flex;justify-content:flex-end;margin-top:14px">
+              <button type="submit" class="btn btn-primary" id="s-add-btn-${type}">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Personel Ekle
+              </button>
+            </div>
+      `;
+    } else if (type === "users") {
+      addFormHtml = `
+            <div class="form-grid">
+              <div class="form-group"><label class="form-label">Ad *</label><input name="first_name" class="form-control" required></div>
+              <div class="form-group"><label class="form-label">Soyad *</label><input name="last_name" class="form-control" required></div>
+              <div class="form-group"><label class="form-label">Kullanıcı Adı *</label><input name="username" class="form-control" required></div>
+              <div class="form-group"><label class="form-label">Şifre *</label><input name="password" type="password" class="form-control" required minlength="6"></div>
+              <div class="form-group"><label class="form-label">Rol</label>
+                <select name="role" class="form-control"><option value="user">Kullanıcı</option><option value="admin">Admin</option></select>
+              </div>
+              <div class="form-group"><label class="form-label">E-posta</label><input name="email" type="email" class="form-control"></div>
+            </div>
+            <div style="display:flex;justify-content:flex-end;margin-top:14px">
+              <button type="submit" class="btn btn-primary" id="s-add-btn-${type}">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Kullanıcı Ekle
+              </button>
+            </div>
+      `;
+    } else if (type === "vehicles") {
+      addFormHtml = `
+            <div class="form-grid">
+              <div class="form-group"><label class="form-label">Plaka *</label><input name="plate_no" class="form-control" placeholder="34 ABC 001" required></div>
+              <div class="form-group"><label class="form-label">Araç Tipi</label>
+                <select name="vehicle_type" class="form-control">
+                  <option value="">Seçiniz...</option>
+                  ${VEHICLE_TYPE_OPTS.map(o => `<option value="${o.v}">${o.l}</option>`).join('')}
+                </select>
+              </div>
+              <div class="form-group col-span-2"><label class="form-label">Notlar</label><textarea name="notes" class="form-control"></textarea></div>
+            </div>
+            <div style="display:flex;justify-content:flex-end;margin-top:14px">
+              <button type="submit" class="btn btn-primary" id="s-add-btn-${type}">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Araç Ekle
+              </button>
+            </div>
+      `;
+    } else if (type === "locations") {
+      addFormHtml = `
+            <div class="form-grid">
+              <div class="form-group"><label class="form-label">Lokasyon Adı *</label><input name="name" class="form-control" placeholder="A Ofisi..." required></div>
+              <div class="form-group"><label class="form-label">Adres</label><input name="address" class="form-control"></div>
+              <div class="form-group col-span-2"><label class="form-label">Notlar</label><textarea name="notes" class="form-control"></textarea></div>
+            </div>
+            <div style="display:flex;justify-content:flex-end;margin-top:14px">
+              <button type="submit" class="btn btn-primary" id="s-add-btn-${type}">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Lokasyon Ekle
+              </button>
+            </div>
+      `;
+    } else if (type === "operators") {
+      addFormHtml = `
+            <div class="form-group">
+                <label class="form-label">Operatör Adı *</label>
+                <input name="name" class="form-control" placeholder="Yeni operatör adı..." required>
+            </div>
+            <div style="display:flex;justify-content:flex-end;margin-top:14px">
+              <button type="submit" class="btn btn-primary" id="s-add-btn-${type}">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Operatör Ekle
+              </button>
+            </div>
+      `;
     } else {
       addFormHtml = `
             <div class="form-grid-3">
@@ -772,7 +895,13 @@ const BulkImport = (() => {
       else if (type === "data") await API.addData(data);
       else if (type === "voice") await API.addVoice(data);
       else if (type === "packages") await API.addPackage(data);
-      UI.toast(type === 'packages' ? "Paket eklendi." : "Hat eklendi.", "success");
+      else if (type === "personnel") await API.addPersonnel(data);
+      else if (type === "users") await API.addUser(data);
+      else if (type === "vehicles") await API.addVehicle(data);
+      else if (type === "locations") await API.addLocation(data);
+      else if (type === "operators") await API.addOperator(data);
+
+      UI.toast(type === 'packages' ? "Paket eklendi." : (type === 'users' ? 'Kullanıcı eklendi.' : 'Kayıt eklendi.'), "success");
       form.reset();
       onSuccess?.();
       UI.emit('REFRESH_DATA');

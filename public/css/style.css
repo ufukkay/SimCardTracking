@@ -245,7 +245,15 @@ body {
   flex: 1;
 }
 .topbar-center {
-  display: none !important;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+}
+.topbar-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
 }
 .topbar-center-old {
   flex: 1;
@@ -750,6 +758,48 @@ th.has-filter .th-btn-group {
   background: #f1f3f4;
   color: var(--text-secondary);
   border: 1px solid #e0e0e0;
+}
+
+/* ─── SETTINGS & INTEGRATED TABS ─── */
+.sub-tabs-container {
+  padding: 0 20px;
+  background: #fff;
+  border-bottom: 1px solid var(--border-light);
+  margin-bottom: 20px;
+}
+.sub-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 4px 0;
+}
+.sub-tab-btn {
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: var(--transition);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.sub-tab-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+.sub-tab-btn.active {
+  background: var(--accent-light);
+  color: var(--accent);
+  border-color: rgba(26, 115, 232, 0.2);
+}
+.sub-pane {
+  padding: 0 20px 20px;
+}
+.sub-pane.active {
+  display: block;
 }
 
 /* ─────────────────────────────────────────────
@@ -1685,6 +1735,35 @@ input[type="checkbox"] {
 .report-section {
   margin-bottom: 20px;
 }
+
+/* ─── STAT STRIP (durum özeti) ─── */
+.stat-strip {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.stat-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  background: var(--bg-hover);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  white-space: nowrap;
+}
+.stat-chip strong { font-weight: 700; }
+.stat-chip-total  { background: var(--bg-hover); color: var(--text-primary); }
+.stat-chip-active { background: var(--success-light); color: var(--success); border-color: rgba(24,128,56,0.2); }
+.stat-chip-spare  { background: var(--warning-light); color: #e37400; border-color: rgba(249,171,0,0.2); }
+.stat-chip-passive{ background: var(--danger-light); color: var(--danger); border-color: rgba(217,48,37,0.2); }
+
+/* Clickable row */
+tr.row-clickable { cursor: pointer; }
+tr.row-clickable:hover { background: var(--accent-light) !important; }
 
 /* ─────────────────────────────────────────────
    20. DARK THEME (Single Unified Block)
