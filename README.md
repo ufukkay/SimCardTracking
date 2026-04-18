@@ -15,12 +15,14 @@
 
 ---
 
-## 🆕 Versiyon 1.5 - Yenilikler
+## 🆕 Versiyon 1.6 - Yenilikler & Mimari Refactoring
 
+- **Modüler Servis Mimarisi (Backend):** M2M, Data ve Ses hatlarındaki tüm veritabanı CRUD (Ekle/Sil/Güncelle) operasyonları `%90` oranında ortaklaştırılarak tek bir `SimService` yönetimi altına alındı. Hatalar ve log mekanizmaları merkezileştirildi.
+- **Server-Side Pagination (Sayfalama):** Tarayıcı kilitlenmelerini engellemek için API rotaları ve tasarımlar güncellendi. SQL sorgularına `LIMIT/OFFSET` eklenerek binlerce kayıt olsa dahi ekranın milisaniyeler içinde (50'şer kayıt olarak) açılması sağlandı. Excel çıktıları ise gizli limit kaldırma algoritmasıyla eskisi gibi tam liste indirilmeye devam ediyor.
+- **Ortaklaştırılan Arayüz Sınıfları (Frontend):** Frontend M2M, Data ve Voice sayfalarında yüzlerce satırlık tasarım kod hataları kaldırılarak yeni `SimPageBase` sınıfı oluşturuldu. Bu sayede Excel çıkarma, toplu silme ve UI etkileşimleri merkezi olarak daha hızlı hale geldi.
+- **Yardımcı Fonksiyonlar (simUtils):** Numara doğrulama, formatlama ve duplicate/kopyalanan numara arama testleri `simUtils.js` servisine aktarıldı. Otomatik Personel/Lokasyon senkronizasyon mantığı tüm SIM tipleri için standartlaştırıldı.
 - **Mükerrer Numara Engelleme:** M2M, Data ve Ses hatları arasında aynı numaranın kaydedilmesi tamamen engellendi.
 - **Akıllı Arama Kutusu:** Sayı ile başlayan aramalarda boşluklar otomatik temizlenirken, isim ile aramalarda boşluklara izin veriliyor.
-- **Toplu İçe Aktarma Geliştirmeleri:** Excel ve JSON import işlemlerinde numara çakışma kontrolleri eklendi.
-- **Performans ve Temizlik:** Kullanılmayan scriptler temizlendi ve veritabanı sorguları optimize edildi.
 
 ---
 

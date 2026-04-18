@@ -35,6 +35,11 @@ Uygulamanın tüm API uç noktaları burada tanımlanmıştır:
 ### 📂 `database/` (Veritabanı Yönetimi)
 *   `db.js`: Veritabanı bağlantısını kurar, tablo şemalarını oluşturur ve veritabanı fonksiyonlarını yönetir.
 
+### 📂 `services/` (İş Mantığı ve Ortak Servisler)
+*   `simService.js`: Sınıf tabanlı olan bu servis, tüm SIM rotalarının (M2M, Data, Voice) veritabanı (CRUD) sorgularını, loglama (activity logs) işlemlerini ve sayfalama / SQL Limit işlemlerini merkezden yürütür.
+*   `simUtils.js`: Telefon temizleme (`cleanPhone`), Mükerrer Numara Check ve dış lokasyon / personel tablosu senkronizasyon araçları gibi fonksiyonları barındırır.
+*   `invoiceMatcher.js`: Faturalar ve mevcut SIM hatlarını eşleştirerek (telefon bazlı) maliyet merkezi atama kontrollerini yapar.
+
 ### 📂 `middleware/` (Ara Yazılımlar)
 *   `auth.js`: İsteklerin yetkili olup olmadığını kontrol eden JWT doğrulama mekanizması.
 *   `logger.js`: Uygulama içindeki işlemleri (log) kaydeden sistem.
@@ -43,8 +48,11 @@ Uygulamanın tüm API uç noktaları burada tanımlanmıştır:
 Kullanıcının tarayıcı üzerinden eriştiği tüm arayüz dosyalarını içerir:
 *   `index.html`: Ana kontrol paneli (Dashboard) arayüzü.
 *   `login.html`: Giriş sayfası.
-*   `css/`: Stil dosyaları.
-*   `js/`: Frontend mantığı ve API çağrılarını yöneten JavaScript dosyaları.
+*   `css/style.css`: Tüm UI ve karanlık / dinamik tema sistemini kapsayan ana CSS dosyamız.
+*   `js/app.js`: Tüm uygulamanın route mantığını (URL okuma, sayfa div değişimleri) yürüten ana dosya.
+*   `js/api.js`: İstekleri `fetch` yardımı ile arka plana proxy'nleyen köprü bileşeni.
+*   `js/pages/sim-page-base.js`: Sayfalama (Pagination), toplu listeleme, Excel indirme işlerini standartlaştıran "Base" frontend sınıfıdır. `m2m.js`, `data.js`, `voice.js` dosyaları bu taban koda bağımlı çalışır.
+*   `js/pages/`: SIM kart türleri (`m2m.js`, vb.) ve arayüz dosyaları (ayarlar, raporlar vb.) barınır.
 
 ### 📂 `data/` (Veri Depolama)
 *   `simcardtracking.db`: Uygulamanın ana veritabanı.
