@@ -5,7 +5,7 @@ const SimService = require('../services/simService');
 
 const simService = new SimService('VOICE', 'sim_voice', [
   'iccid', 'phone_no', 'operator', 'status', 'assigned_to', 
-  'first_name', 'last_name', 'department', 'assigned_company', 'notes', 'package_id'
+  'department', 'assigned_company', 'notes', 'package_id'
 ]);
 
 router.use(authMiddleware);

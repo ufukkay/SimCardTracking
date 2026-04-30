@@ -57,7 +57,7 @@ class SimService {
     }
 
     const page = Math.max(parseInt(queryParams.page) || 1, 1);
-    const limit = Math.max(parseInt(queryParams.limit) || 50, 1);
+    const limit = Math.max(parseInt(queryParams.limit) || 10000, 1);
     const offset = (page - 1) * limit;
 
     query += ` LIMIT ? OFFSET ?`;
@@ -82,8 +82,10 @@ class SimService {
 
     const formattedPhone = cleanPhone(data.phone_no);
     
-    if (checkDuplicatePhone(formattedPhone)) {
-      throw new Error('Bu telefon numarası zaten kayıtlı.');
+    const duplicateTable = checkDuplicatePhone(formattedPhone);
+    if (duplicateTable) {
+      const tableNames = { 'sim_m2m': 'M2M', 'sim_data': 'Data', 'sim_voice': 'Ses' };
+      throw new Error(`Bu telefon numarası zaten ${tableNames[duplicateTable] || duplicateTable} hatlarında kayıtlı.`);
     }
 
     const finalAssignedTo = data.assigned_to ||
@@ -124,8 +126,10 @@ class SimService {
   update(req, id, data) {
     const formattedPhone = cleanPhone(data.phone_no);
 
-    if (checkDuplicatePhone(formattedPhone, id, this.tableName)) {
-      throw new Error('Bu telefon numarası zaten kayıtlı.');
+    const duplicateTable = checkDuplicatePhone(formattedPhone, id, this.tableName);
+    if (duplicateTable) {
+      const tableNames = { 'sim_m2m': 'M2M', 'sim_data': 'Data', 'sim_voice': 'Ses' };
+      throw new Error(`Bu telefon numarası zaten ${tableNames[duplicateTable] || duplicateTable} hatlarında kayıtlı.`);
     }
 
     const finalAssignedTo = data.assigned_to ||

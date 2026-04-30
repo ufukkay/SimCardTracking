@@ -5,7 +5,7 @@ const SimService = require('../services/simService');
 
 const simService = new SimService('M2M', 'sim_m2m', [
   'iccid', 'phone_no', 'operator', 'status', 'company', 
-  'assigned_to', 'department', 'vehicle_plate', 'notes', 'package_id'
+  'plate_no', 'vehicle_type', 'notes', 'package_id'
 ]);
 
 router.use(authMiddleware);

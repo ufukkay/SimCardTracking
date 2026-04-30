@@ -258,7 +258,7 @@ const M2MPage = (() => {
     
     // Pagination params
     params.append('page', page);
-    params.append('limit', 50);
+    params.append('limit', 10000);
 
     const qs = params.toString() ? '?' + params.toString() : '';
 

@@ -16,9 +16,9 @@ const checkDuplicatePhone = (cleanPhone, excludeId = null, excludeTable = null) 
   
   const parts = tables.map(table => {
     if (excludeId && table === excludeTable) {
-      return `SELECT 1 FROM ${table} WHERE phone_no = ? AND id != ?`;
+      return `SELECT '${table}' as source_table FROM ${table} WHERE phone_no = ? AND id != ?`;
     }
-    return `SELECT 1 FROM ${table} WHERE phone_no = ?`;
+    return `SELECT '${table}' as source_table FROM ${table} WHERE phone_no = ?`;
   });
 
   const query = parts.join(' UNION ALL ') + ' LIMIT 1';
@@ -32,7 +32,7 @@ const checkDuplicatePhone = (cleanPhone, excludeId = null, excludeTable = null) 
   });
 
   const exists = db.prepare(query).get(...params);
-  return !!exists;
+  return exists ? exists.source_table : false;
 };
 
 const syncLocation = (location) => {
