@@ -130,6 +130,33 @@ router.get('/history/:phoneNo', canView('invoices'), (req, res) => {
   }
 });
 
+// GET /api/invoices/target/:phoneNo - Get ID and Type for editing
+router.get('/target/:phoneNo', canView('invoices'), (req, res) => {
+  try {
+    const { phoneNo } = req.params;
+    const cleanPhone = normalizePhone(phoneNo);
+    if (!cleanPhone) return res.json({ type: null, id: null });
+
+    const M2M_PHONE_EXPR = `'0' || substr(replace(replace(replace(replace(replace(COALESCE(phone_no, ''), ' ', ''), '-', ''), '(', ''), ')', ''), '+', ''), -10)`;
+    let row = db.prepare(`SELECT id FROM sim_voice WHERE ${M2M_PHONE_EXPR} = ? LIMIT 1`).get(cleanPhone);
+    if (row) return res.json({ type: 'voice', id: row.id });
+
+    row = db.prepare(`SELECT id FROM sim_m2m WHERE ${M2M_PHONE_EXPR} = ? LIMIT 1`).get(cleanPhone);
+    if (row) return res.json({ type: 'm2m', id: row.id });
+
+    row = db.prepare(`SELECT id FROM sim_data WHERE ${M2M_PHONE_EXPR} = ? LIMIT 1`).get(cleanPhone);
+    if (row) return res.json({ type: 'data', id: row.id });
+
+    const PER_PHONE_EXPR = `'0' || substr(replace(replace(replace(replace(replace(COALESCE(phone, ''), ' ', ''), '-', ''), '(', ''), ')', ''), '+', ''), -10)`;
+    row = db.prepare(`SELECT id FROM personnel WHERE ${PER_PHONE_EXPR} = ? LIMIT 1`).get(cleanPhone);
+    if (row) return res.json({ type: 'personnel', id: row.id });
+
+    res.json({ type: null, id: null });
+  } catch (error) {
+    res.status(500).json({ message: 'Hedef bulunurken hata', error: error.message });
+  }
+});
+
 // POST /api/invoices/bulk-delete - Delete multiple invoice IDs
 router.post('/bulk-delete', canEdit('invoices'), (req, res) => {
   try {

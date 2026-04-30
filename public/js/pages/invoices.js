@@ -237,13 +237,16 @@ const InvoicesPage = (() => {
            <td><input type="checkbox" class="row-select" value="${row.id}" onchange="InvoicesPage.toggleSelection(${row.id}, this.checked)"></td>
            <td>
              <div style="display:flex;align-items:center;gap:5px">
-               <a href="#" onclick="InvoicesPage.showHistory('${row.phone_no}'); return false;" style="text-decoration:none; color:var(--primary); font-weight:600; font-size:14px;">${row.phone_no || '—'}</a>
+               <a href="#" onclick="InvoicesPage.editSimOrPersonnel('${row.phone_no}'); return false;" style="text-decoration:none; color:var(--primary); font-weight:600; font-size:14px;" title="Hattı Düzenle">${row.phone_no || '—'}</a>
+               <button class="btn btn-secondary btn-sm btn-icon" style="padding:2px 4px; border:none; background:transparent" title="Fatura Geçmişi" onclick="InvoicesPage.showHistory('${row.phone_no}')">
+                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+               </button>
                ${!row.is_matched ? `<span class="badge badge-danger" style="font-size:10px;padding:1px 4px" title="Sistemde Kayıtlı Değil">!</span>` : ''}
              </div>
            </td>
            <td>
              <div style="display:flex;align-items:center;gap:5px">
-               <strong>${row.personnel_name || '—'}</strong>
+               ${row.personnel_name ? `<a href="#" onclick="InvoicesPage.editSimOrPersonnel('${row.phone_no}'); return false;" style="text-decoration:none; color:var(--text-main); font-weight:600;" title="Kaydı Düzenle">${row.personnel_name}</a>` : '<strong>—</strong>'}
              </div>
            </td>
            <td>${row.company_name || '—'}</td>
@@ -621,6 +624,27 @@ const InvoicesPage = (() => {
     }
   }
 
+  async function editSimOrPersonnel(phoneNo) {
+    if (!phoneNo) return;
+    try {
+      const res = await API.get(`/invoices/target/${encodeURIComponent(phoneNo)}`);
+      if (!res.type || !res.id) {
+         UI.toast('Bu numara sistemde aktif olarak kayıtlı değil.', 'info');
+         return;
+      }
+      
+      if (res.type === 'm2m' && typeof M2MPage !== 'undefined') M2MPage.openEdit(res.id);
+      else if (res.type === 'data' && typeof DataPage !== 'undefined') DataPage.openEdit(res.id);
+      else if (res.type === 'voice' && typeof VoicePage !== 'undefined') VoicePage.openEdit(res.id);
+      else if (res.type === 'personnel' && typeof SettingsPage !== 'undefined') SettingsPage.openPersonnelEdit(res.id);
+      else {
+        UI.toast('İlgili modül şu an yüklenmemiş olabilir.', 'error');
+      }
+    } catch (e) {
+      UI.toast('Kayıt bulunamadı veya hata oluştu.', 'error');
+    }
+  }
+
   function debounceSearch() {
     if (detailSearchDebounce) clearTimeout(detailSearchDebounce);
     detailSearchDebounce = setTimeout(() => {
@@ -628,5 +652,5 @@ const InvoicesPage = (() => {
     }, 400);
   }
 
-  return { render, loadSummary, openUploadModal, submitUpload, loadDetail, filterDetail, downloadExcel, downloadActiveDetail, showHistory, toggleAllSummaries, toggleSummarySelection, bulkDeleteSummaries, toggleAll, toggleSelection, bulkDelete, openBulkEdit, debounceSearch };
+  return { render, loadSummary, openUploadModal, submitUpload, loadDetail, filterDetail, downloadExcel, downloadActiveDetail, showHistory, editSimOrPersonnel, toggleAllSummaries, toggleSummarySelection, bulkDeleteSummaries, toggleAll, toggleSelection, bulkDelete, openBulkEdit, debounceSearch };
 })();
