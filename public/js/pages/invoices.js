@@ -641,15 +641,31 @@ const InvoicesPage = (() => {
          return;
       }
       
-      if (res.type === 'm2m' && typeof M2MPage !== 'undefined') M2MPage.openEdit(res.id);
-      else if (res.type === 'data' && typeof DataPage !== 'undefined') DataPage.openEdit(res.id);
-      else if (res.type === 'voice' && typeof VoicePage !== 'undefined') VoicePage.openEdit(res.id);
-      else if (res.type === 'personnel' && typeof SettingsPage !== 'undefined') SettingsPage.openPersonnelEdit(res.id);
-      else {
-        UI.toast('İlgili modül şu an yüklenmemiş olabilir.', 'error');
-      }
+      const type = res.type;
+      const pageType = type === 'personnel' ? 'settings' : type;
+      
+      // Menüden ilgili sayfaya geçiş yap (DOM'un yüklenmesi için gerekli)
+      const navItem = document.querySelector(`.nav-item[data-page="${pageType}"]`);
+      if (navItem) navItem.click();
+
+      // DOM'un render olması için ufak bir bekleme süresi
+      setTimeout(() => {
+        if (type === 'personnel' && typeof SettingsPage !== 'undefined') {
+          const btn = document.querySelector('.settings-sidebar-nav button[onclick*="personnelTab"]');
+          SettingsPage.switchTab('personnelTab', btn);
+          setTimeout(() => SettingsPage.openEditPersonnel(res.id), 150);
+        }
+        else if (type === 'm2m' && typeof M2MPage !== 'undefined') M2MPage.openEdit(res.id);
+        else if (type === 'data' && typeof DataPage !== 'undefined') DataPage.openEdit(res.id);
+        else if (type === 'voice' && typeof VoicePage !== 'undefined') VoicePage.openEdit(res.id);
+        else {
+          UI.toast('İlgili modül şu an yüklenmemiş olabilir.', 'error');
+        }
+      }, 150);
+      
     } catch (e) {
       UI.toast('Kayıt bulunamadı veya hata oluştu.', 'error');
+      console.error(e);
     }
   }
 
