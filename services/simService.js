@@ -33,8 +33,16 @@ class SimService {
         whereClause += ` OR ${this.tableName}.assigned_to LIKE ?`;
         params.push(s);
       }
-      if (this.allowedFields.includes('vehicle_plate') || this.allowedFields.includes('plate_no')) {
+      if (this.allowedFields.includes('plate_no')) {
         whereClause += ` OR ${this.tableName}.plate_no LIKE ?`;
+        params.push(s);
+      }
+      if (this.allowedFields.includes('location')) {
+        whereClause += ` OR ${this.tableName}.location LIKE ?`;
+        params.push(s);
+      }
+      if (this.allowedFields.includes('company')) {
+        whereClause += ` OR ${this.tableName}.company LIKE ?`;
         params.push(s);
       }
       whereClause += `)`;

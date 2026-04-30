@@ -202,6 +202,10 @@ router.post("/excel/:type", authMiddleware, upload.single("file"), (req, res) =>
           const digits = phoneNo.toString().replace(/\D/g, '').slice(-10);
           phoneNo = digits.length === 10 ? '0' + digits : phoneNo;
         }
+        const locationName = r["Lokasyon"] || null;
+        if (locationName && locationName.toString().trim() !== '') {
+          db.prepare(`INSERT OR IGNORE INTO locations (name) VALUES (?)`).run(locationName.toString().trim());
+        }
         return db
           .prepare(
             `INSERT INTO sim_data (iccid,phone_no,operator,status,company,location,notes) VALUES (?,?,?,?,?,?,?)`,
@@ -424,8 +428,12 @@ router.post("/json/:type", authMiddleware, (req, res) => {
           r.notes || null,
         );
     },
-    data: (r) =>
-      db
+    data: (r) => {
+      const locationName = r.location || null;
+      if (locationName && locationName.toString().trim() !== '') {
+        db.prepare(`INSERT OR IGNORE INTO locations (name) VALUES (?)`).run(locationName.toString().trim());
+      }
+      return db
         .prepare(
           `INSERT INTO sim_data (iccid,phone_no,operator,status,location,notes) VALUES (?,?,?,?,?,?)`,
         )
@@ -435,8 +443,9 @@ router.post("/json/:type", authMiddleware, (req, res) => {
           r.operator || null,
           r.status || "active",
           r.location || null,
-          r.notes || null,
-        ),
+          r.notes || null
+        );
+    },
     voice: (r) => {
       const assignedTo = r.assigned_to || null;
       const costCenter = r.cost_center || null;
