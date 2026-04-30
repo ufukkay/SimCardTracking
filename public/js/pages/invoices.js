@@ -236,20 +236,24 @@ const InvoicesPage = (() => {
          <tr data-id="${row.id}">
            <td><input type="checkbox" class="row-select" value="${row.id}" onchange="InvoicesPage.toggleSelection(${row.id}, this.checked)"></td>
            <td>
-             <div style="display:flex;align-items:center;gap:5px">
-               <strong style="font-size:14px; color:var(--text-main);">${row.phone_no || '—'}</strong>
-               <button class="btn btn-secondary btn-sm btn-icon" style="padding:2px 4px; border:none; background:transparent; color:var(--primary)" title="Hattı Düzenle" onclick="InvoicesPage.editSimOrPersonnel('${row.phone_no}')">
-                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-               </button>
-               <button class="btn btn-secondary btn-sm btn-icon" style="padding:2px 4px; border:none; background:transparent" title="Fatura Geçmişi" onclick="InvoicesPage.showHistory('${row.phone_no}')">
-                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-               </button>
-               ${!row.is_matched ? `<span class="badge badge-danger" style="font-size:10px;padding:1px 4px" title="Sistemde Kayıtlı Değil">!</span>` : ''}
+             <div style="display:flex;align-items:center;justify-content:space-between;gap:5px;width:100%">
+               <div style="display:flex;align-items:center;gap:5px">
+                 <strong style="font-size:14px; color:var(--text-main);">${row.phone_no || '—'}</strong>
+                 ${!row.is_matched ? `<span class="badge badge-danger" style="font-size:10px;padding:1px 4px" title="Sistemde Kayıtlı Değil">!</span>` : ''}
+               </div>
+               <div style="display:flex;align-items:center;gap:2px">
+                 <button class="btn btn-secondary btn-sm btn-icon" style="padding:2px 4px; border:none; background:transparent; color:var(--primary)" title="Hattı Düzenle" onclick="InvoicesPage.editSimOrPersonnel('${row.phone_no}')">
+                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                 </button>
+                 <button class="btn btn-secondary btn-sm btn-icon" style="padding:2px 4px; border:none; background:transparent" title="Fatura Geçmişi" onclick="InvoicesPage.showHistory('${row.phone_no}')">
+                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                 </button>
+               </div>
              </div>
            </td>
            <td>
-             <div style="display:flex;align-items:center;gap:5px">
-               <strong>${row.personnel_name || '—'}</strong>
+             <div style="display:flex;align-items:center;justify-content:space-between;gap:5px;width:100%">
+               <strong style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${row.personnel_name || '—'}</strong>
                ${row.personnel_name ? `
                <button class="btn btn-secondary btn-sm btn-icon" style="padding:2px 4px; border:none; background:transparent; color:var(--primary)" title="Kaydı Düzenle" onclick="InvoicesPage.editSimOrPersonnel('${row.phone_no}')">
                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
