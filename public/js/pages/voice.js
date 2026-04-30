@@ -19,7 +19,7 @@ const VoicePage = (() => {
         </div>
         <div id="voiceStats" class="stat-strip"></div>
         <div class="filters">
-          <input type="text" id="voiceSearch" class="form-control search-input" data-i18n="search_sim_placeholder" placeholder="${i18n.t('search_sim_placeholder')}">
+          <input type="text" id="voiceSearch" class="form-control search-input" data-i18n="search_sim_placeholder" placeholder="${i18n.t('search_sim_placeholder')}" autocomplete="off" spellcheck="false">
           <select id="voiceOpFilter" class="form-control filter-select">
             <option value="" data-i18n="all_operators">${i18n.t('all_operators')}</option>
           </select>
@@ -101,7 +101,7 @@ const VoicePage = (() => {
               </div>
               <div class="form-group">
                 <label class="form-label" data-i18n="label_assigned_to">${i18n.t('label_assigned_to')}</label>
-                <input name="assigned_to" class="form-control" list="personnelList" id="voicePersonnelInput" data-i18n="search_placeholder_short" placeholder="${i18n.t('search_placeholder_short')}" autocomplete="off">
+                <input name="assigned_to" class="form-control" list="personnelList" id="voicePersonnelInput" data-i18n="search_placeholder_short" placeholder="${i18n.t('search_placeholder_short')}" autocomplete="off" spellcheck="false">
                 <datalist id="personnelList"></datalist>
               </div>
               <div class="form-group">

@@ -18,7 +18,7 @@ const DataPage = (() => {
         </div>
         <div id="dataStats" class="stat-strip"></div>
         <div class="filters">
-          <input type="text" id="dataSearch" class="form-control search-input" data-i18n="search_sim_placeholder" placeholder="${i18n.t('search_sim_placeholder')}">
+          <input type="text" id="dataSearch" class="form-control search-input" data-i18n="search_sim_placeholder" placeholder="${i18n.t('search_sim_placeholder')}" autocomplete="off" spellcheck="false">
           <select id="dataOpFilter" class="form-control filter-select">
             <option value="" data-i18n="all_operators">${i18n.t('all_operators')}</option>
           </select>

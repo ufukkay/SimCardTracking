@@ -19,7 +19,7 @@ const M2MPage = (() => {
         </div>
         <div id="m2mStats" class="stat-strip"></div>
         <div class="filters">
-          <input type="text" id="m2mSearch" class="form-control search-input" data-i18n="search_sim_placeholder" placeholder="${i18n.t('search_sim_placeholder')}">
+          <input type="text" id="m2mSearch" class="form-control search-input" data-i18n="search_sim_placeholder" placeholder="${i18n.t('search_sim_placeholder')}" autocomplete="off" spellcheck="false">
           <select id="m2mOpFilter" class="form-control" style="width:160px">
             <option value="" data-i18n="all_operators">${i18n.t('all_operators')}</option>
           </select>

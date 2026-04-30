@@ -78,7 +78,7 @@ const InvoicesPage = (() => {
              <h3 class="card-title" id="detailTitle">Fatura İçeriği</h3>
              
              <div style="display:flex; align-items:center; gap:10px;">
-                <input type="text" id="detailSearchInput" class="form-control" style="width:200px; padding:4px 8px;" placeholder="Detaylarda ara..." oninput="InvoicesPage.debounceSearch()">
+                <input type="text" id="detailSearchInput" class="form-control" style="width:200px; padding:4px 8px;" placeholder="Detaylarda ara..." oninput="InvoicesPage.debounceSearch()" autocomplete="off" spellcheck="false">
                 <select id="isMatchedFilter" class="form-control" style="width:160px; padding:4px 8px;" onchange="InvoicesPage.loadDetail(null, null, null, this.value)">
                   <option value="">Tüm Satırlar</option>
                   <option value="1">Eşleşen (Kayıtlı) Hatlar</option>

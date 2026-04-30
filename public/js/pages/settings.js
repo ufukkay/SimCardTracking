@@ -148,7 +148,7 @@ window.SettingsPage = (() => {
 
           <div id="personnel-subpane-list" class="sub-pane active">
             <div class="filters">
-              <input type="text" id="personnelSearch" class="form-control search-input" placeholder="Personel ara (Ad, Soyad, Dept, Masraf)...">
+              <input type="text" id="personnelSearch" class="form-control search-input" placeholder="Personel ara (Ad, Soyad, Dept, Masraf)..." autocomplete="off" spellcheck="false">
               <button class="btn btn-secondary" onclick="SettingsPage.loadPersonnel()">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.26"/></svg>
                 Yenile
