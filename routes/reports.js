@@ -254,4 +254,32 @@ router.post('/financial', (req, res) => {
   }
 });
 
+// GET /api/reports/holder-details/:holder - Get current lines and invoice history for a holder
+router.get('/holder-details/:holder', canView('reports'), (req, res) => {
+  try {
+    const holder = req.params.holder;
+    
+    // Aktif hatlarını bul
+    const activeLines = db.prepare(`
+      SELECT phone_no, operator, status, 'Ses' as type, department, assigned_company as company FROM sim_voice WHERE assigned_to = ?
+      UNION ALL
+      SELECT phone_no, operator, status, 'M2M' as type, '' as department, company FROM sim_m2m WHERE plate_no = ?
+      UNION ALL
+      SELECT phone_no, operator, status, 'Data' as type, '' as department, company FROM sim_data WHERE location = ?
+    `).all(holder, holder, holder);
+
+    // Fatura geçmişini bul
+    const invoiceHistory = db.prepare(`
+      SELECT period, phone_no, operator, total_amount, tariff, cost_center, company_name
+      FROM invoices
+      WHERE personnel_name = ?
+      ORDER BY period DESC, phone_no ASC
+    `).all(holder);
+
+    res.json({ holder, activeLines, invoiceHistory });
+  } catch (error) {
+    res.status(500).json({ message: 'Kişi detayları getirilirken hata oluştu', error: error.message });
+  }
+});
+
 module.exports = router;

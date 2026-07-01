@@ -128,6 +128,18 @@ const ReportsPage = (() => {
 
       <div id="reportFilters"></div>
       <div id="reportContainer">${UI.loading()}</div>
+
+      <!-- Holder Details Modal -->
+      <div class="modal-overlay" id="holderDetailsModal" style="display:none;">
+        <div class="modal" style="max-width: 800px; width: 95%;">
+          <div class="modal-header">
+            <span class="modal-title" id="holderModalTitle">Kişi Detayları</span>
+            <button class="modal-close" onclick="UI.closeModal('holderDetailsModal')">×</button>
+          </div>
+          <div class="modal-body" id="holderModalBody" style="max-height:65vh; overflow-y:auto; padding: 20px;">
+          </div>
+        </div>
+      </div>
     `;
 
     renderFilters();
@@ -464,6 +476,7 @@ const ReportsPage = (() => {
 
       // MoM bütçe kaçaklarını hesapla
       let topIncreases = [];
+      let topDecreases = [];
       if (comparePeriod && comparisonList.length > 0) {
         topIncreases = comparisonList
           .map(c => ({
@@ -472,6 +485,20 @@ const ReportsPage = (() => {
             operator: c.operator,
             diff: c.target_amount - c.compare_amount,
             pct: c.compare_amount > 0 ? ((c.target_amount - c.compare_amount) / c.compare_amount) * 100 : 100,
+            target_amount: c.target_amount,
+            compare_amount: c.compare_amount
+          }))
+          .filter(c => c.diff > 10)
+          .sort((a, b) => b.diff - a.diff)
+          .slice(0, 5);
+          
+        topDecreases = comparisonList
+          .map(c => ({
+            holder: c.holder,
+            phone_no: c.phone_no,
+            operator: c.operator,
+            diff: c.compare_amount - c.target_amount,
+            pct: c.compare_amount > 0 ? ((c.compare_amount - c.target_amount) / c.compare_amount) * 100 : 0,
             target_amount: c.target_amount,
             compare_amount: c.compare_amount
           }))
@@ -603,6 +630,39 @@ const ReportsPage = (() => {
                   `).join('')}
                 </div>
               ` : `<div style="text-align:center; padding:24px; color:var(--success); font-weight:600; font-size:15px;">Önemli bir bütçe artışı tespit edilmedi. 🎉</div>`}
+            </div>
+          </div>
+          
+          <div class="card" style="margin-top:20px; border: 1px solid #d4edda; background: #f8fff9; width: 100%;">
+            <div class="card-header" style="background:#e8f5e9; border-bottom: 1px solid #d4edda;">
+              <span class="card-title" style="color:#1e7e34; display:flex; align-items:center; gap:8px;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/></svg>
+                En Çok Maliyet Düşüşü Gösteren Hatlar
+              </span>
+            </div>
+            <div class="card-body">
+              ${topDecreases.length ? `
+                <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap:20px;">
+                  ${topDecreases.map(dec => `
+                    <div style="display:flex; flex-direction:column; gap:8px; border:1px solid #c3e6cb; border-radius:10px; padding:16px; background:#fff; box-shadow: 0 4px 12px rgba(40, 167, 69, 0.05); transition: transform 0.2s;">
+                      <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                        <div>
+                          <div style="font-weight:700; color:var(--text-primary); font-size:15px; margin-bottom:4px;">${dec.holder}</div>
+                          <div style="font-size:12px; color:var(--text-muted)">${dec.phone_no}</div>
+                        </div>
+                        <div>${UI.operatorBadge(dec.operator)}</div>
+                      </div>
+                      <div style="display:flex; justify-content:space-between; align-items:center; margin-top:12px; padding-top:12px; border-top:1px dashed #c3e6cb">
+                        <span style="font-weight:800; color:#28a745; font-size:16px;">-${dec.diff.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺</span>
+                        <span style="font-size:12px; font-weight:700; color:#fff; background:#28a745; padding:4px 10px; border-radius:20px; display:inline-flex; align-items:center; gap:4px;">
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>
+                          ${dec.pct.toFixed(0)}% Düşüş
+                        </span>
+                      </div>
+                    </div>
+                  `).join('')}
+                </div>
+              ` : `<div style="text-align:center; padding:24px; color:var(--text-muted); font-weight:600; font-size:15px;">Maliyet düşüşü gösteren bir hat bulunamadı.</div>`}
             </div>
           </div>
         ` : ''}
@@ -1090,7 +1150,9 @@ const ReportsPage = (() => {
                 const lineCount = holdersLineCounts[normalizeName(item.holder)] || 0;
                 return `
                   <tr>
-                    <td><strong>${item.holder}</strong></td>
+                    <td>
+                      <strong style="color:var(--text-primary); cursor:pointer; text-decoration:underline;" onclick="ReportsPage.openHolderDetails('${item.holder}')">${item.holder}</strong>
+                    </td>
                     <td>${item.phone_no || '—'}</td>
                     <td>${item.operator || '—'}</td>
                     <td>${item.company_name || item.cost_center || '—'}</td>
@@ -1263,5 +1325,56 @@ const ReportsPage = (() => {
     XLSX.writeFile(wb, `Finansal_Rapor_${targetPeriod}_${new Date().toISOString().slice(0,10)}.xlsx`);
   }
 
-  return { render, load, exportExcel, exportPDF, switchTab };
+  async function openHolderDetails(holderName) {
+    if (!holderName || holderName === 'Atanmamış') return;
+    
+    document.getElementById('holderModalTitle').textContent = holderName + ' - Hat ve Fatura Detayları';
+    const body = document.getElementById('holderModalBody');
+    body.innerHTML = UI.loading();
+    UI.openModal('holderDetailsModal');
+    
+    try {
+      const res = await API.get('/reports/holder-details/' + encodeURIComponent(holderName));
+      
+      let html = '<h4 style="margin-bottom:10px; color:var(--text-primary)">📱 Aktif Hatları</h4>';
+      if (!res.activeLines || res.activeLines.length === 0) {
+        html += '<p style="color:var(--text-muted); font-size:13px; margin-bottom:20px;">Kişiye zimmetli aktif hat bulunamadı.</p>';
+      } else {
+        html += '<div class="table-container" style="margin-bottom:20px;"><table style="width:100%"><thead><tr><th>Telefon No</th><th>Tip</th><th>Operatör</th><th>Şirket</th><th>Durum</th></tr></thead><tbody>';
+        res.activeLines.forEach(l => {
+          html += `<tr>
+            <td style="font-weight:600">${l.phone_no}</td>
+            <td><span class="badge badge-secondary">${l.type}</span></td>
+            <td>${UI.operatorBadge(l.operator)}</td>
+            <td style="font-size:12px">${l.company || '—'}</td>
+            <td>${l.status === 'Aktif' ? '<span class="badge badge-success">Aktif</span>' : '<span class="badge badge-warning">' + l.status + '</span>'}</td>
+          </tr>`;
+        });
+        html += '</tbody></table></div>';
+      }
+      
+      html += '<h4 style="margin-bottom:10px; color:var(--text-primary)">📄 Fatura Geçmişi (Tüm Dönemler)</h4>';
+      if (!res.invoiceHistory || res.invoiceHistory.length === 0) {
+        html += '<p style="color:var(--text-muted); font-size:13px;">Fatura geçmişi bulunamadı.</p>';
+      } else {
+        html += '<div class="table-container"><table style="width:100%"><thead><tr><th>Dönem</th><th>Telefon No</th><th>Operatör</th><th>Tarife</th><th>Tutar</th></tr></thead><tbody>';
+        res.invoiceHistory.forEach(i => {
+          html += `<tr>
+            <td><strong>${i.period}</strong></td>
+            <td style="font-size:13px">${i.phone_no}</td>
+            <td>${UI.operatorBadge(i.operator)}</td>
+            <td style="font-size:12px; color:var(--text-muted)">${i.tariff || '—'}</td>
+            <td style="font-weight:700; text-align:right">${i.total_amount.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺</td>
+          </tr>`;
+        });
+        html += '</tbody></table></div>';
+      }
+      
+      body.innerHTML = html;
+    } catch (error) {
+      body.innerHTML = '<div style="color:var(--danger)">Detaylar yüklenirken hata oluştu: ' + error.message + '</div>';
+    }
+  }
+
+  return { render, load, exportExcel, exportPDF, switchTab, openHolderDetails };
 })();
