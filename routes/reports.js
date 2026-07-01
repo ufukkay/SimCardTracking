@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../database/db');
-const { authMiddleware } = require('../middleware/auth');
+const { authMiddleware, canView } = require('../middleware/auth');
 const { findPersonnelByPhone } = require('../services/invoiceMatcher');
 
 router.use(authMiddleware);
