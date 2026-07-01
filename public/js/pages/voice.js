@@ -101,8 +101,9 @@ const VoicePage = (() => {
               </div>
               <div class="form-group">
                 <label class="form-label" data-i18n="label_assigned_to">${i18n.t('label_assigned_to')}</label>
-                <input name="assigned_to" class="form-control" list="personnelList" id="voicePersonnelInput" data-i18n="search_placeholder_short" placeholder="${i18n.t('search_placeholder_short')}" autocomplete="off" spellcheck="false">
-                <datalist id="personnelList"></datalist>
+                <select name="assigned_to" class="form-control" id="voicePersonnelInput">
+                  <option value="">Personel Seçin (İsteğe Bağlı)</option>
+                </select>
               </div>
               <div class="form-group">
                 <label class="form-label" data-i18n="label_department">${i18n.t('label_department')}</label>
@@ -157,7 +158,7 @@ const VoicePage = (() => {
               </div>
               <div class="form-group col-span-2">
                 <label class="form-label">Personel</label>
-                <input name="assigned_to" class="form-control" list="personnelList" placeholder="Tüm seçilenlere bu personeli ata...">
+                <select name="assigned_to" class="form-control" id="voiceBulkPersonnelInput"></select>
               </div>
               <div class="form-group">
                 <label class="form-label">Departman</label>
@@ -187,15 +188,31 @@ const VoicePage = (() => {
       UI.fillOperatorSelect(document.getElementById('voiceOperatorSel'));
       UI.fillOperatorSelect(document.getElementById('voiceBulkOperatorSel'));
       personnelCache = personnel;
-      const dl = document.getElementById('personnelList');
-      if (dl) dl.innerHTML = personnel.map(p => `<option value="${p.first_name} ${p.last_name}" data-dept="${p.department||''}" data-company="${p.company||''}">${p.first_name} ${p.last_name}${p.department ? ' – ' + p.department : ''}${p.company ? ' (' + p.company + ')' : ''}</option>`).join('');
+      
+      const pOptions = '<option value="">Personel Seçin (İsteğe Bağlı)</option>' + personnel.map(p => {
+        const name = `${p.first_name} ${p.last_name}`;
+        const suffix = [p.department, p.company].filter(Boolean).join(' - ');
+        return `<option value="${name}">${name}${suffix ? ` (${suffix})` : ''}</option>`;
+      }).join('');
+      
+      const vpi = document.getElementById('voicePersonnelInput');
+      if (vpi) vpi.innerHTML = pOptions;
+      
+      const bulkOptions = '<option value="">Değiştirme...</option><option value="__CLEAR__">— Personeli Kaldır —</option>' + personnel.map(p => {
+        const name = `${p.first_name} ${p.last_name}`;
+        const suffix = [p.department, p.company].filter(Boolean).join(' - ');
+        return `<option value="${name}">${name}${suffix ? ` (${suffix})` : ''}</option>`;
+      }).join('');
+      
+      const vbp = document.getElementById('voiceBulkPersonnelInput');
+      if (vbp) vbp.innerHTML = bulkOptions;
     });
 
     // Auto-fill department/company when personnel is selected
-    document.addEventListener('input', (e) => {
+    document.addEventListener('change', (e) => {
       if (e.target.id !== 'voicePersonnelInput') return;
       const val = e.target.value.trim();
-      const match = personnelCache.find(p => `${p.first_name} ${p.last_name}`.toLowerCase() === val.toLowerCase());
+      const match = personnelCache.find(p => `${p.first_name} ${p.last_name}` === val);
       if (match) {
         const dept = document.getElementById('voiceDeptInput');
         const comp = document.getElementById('voiceCompanyInput');
