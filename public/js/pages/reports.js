@@ -237,6 +237,14 @@ const ReportsPage = (() => {
     if (activeTab === 'lines') {
       await loadLineReports(container);
     } else {
+      financialColFilters = {};
+      ownershipColFilters = {};
+      threeMonthsColFilters = {};
+      financialFilterText = '';
+      
+      const finSearch = document.getElementById('finSearch');
+      if (finSearch) finSearch.value = '';
+
       await loadFinancialReports(container);
     }
   }
