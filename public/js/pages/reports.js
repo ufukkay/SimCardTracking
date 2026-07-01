@@ -683,7 +683,17 @@ const ReportsPage = (() => {
           <td>${UI.operatorBadge(item.operator)}</td>
           <td style="font-size:12px; font-weight: 500">${item.cost_center || '—'}</td>
           <td class="td-muted" style="font-size:12px">${item.company_name || '—'}</td>
-          <td style="text-align:center; font-weight: 600"><span style="font-size:11px; padding:2px 6px; background:var(--accent-light); color:var(--accent); border-radius:4px">${lineCount} Hat</span></td>
+          <td style="text-align:center; font-weight: 600">
+            <span style="font-size:11px; padding:2px 6px; background:var(--accent-light); color:var(--accent); border-radius:4px">${lineCount} Hat</span>
+            <div style="margin-top:4px;">
+              <span style="font-size:9px; padding:2px 6px; border-radius:4px; ${
+                item.line_type === 'Ses' ? 'background:var(--accent-light); color:var(--accent);' :
+                item.line_type === 'M2M' ? 'background:#fef7e0; color:#b06000;' :
+                item.line_type === 'Data' ? 'background:#e6f4ea; color:#137333;' :
+                'background:#f1f3f4; color:#5f6368;'
+              }">${item.line_type || 'Bilinmiyor'}</span>
+            </div>
+          </td>
           <td style="text-align:right; font-weight:700">${item.total_payable.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺</td>
           <td style="text-align:center">
             ${item.is_matched 
@@ -1040,7 +1050,17 @@ const ReportsPage = (() => {
                     <td>${item.phone_no || '—'}</td>
                     <td>${item.operator || '—'}</td>
                     <td>${item.company_name || item.cost_center || '—'}</td>
-                    <td class="text-center" style="font-weight:bold">${lineCount} Hat</td>
+                    <td class="text-center" style="font-weight:bold">
+                      ${lineCount} Hat<br>
+                      <div style="margin-top:3px;">
+                        <span style="display:inline-block; font-size:9px; padding:2px 6px; border-radius:4px; font-weight:normal; ${
+                          item.line_type === 'Ses' ? 'background:#e8f0fe; color:#1a73e8;' :
+                          item.line_type === 'M2M' ? 'background:#fef7e0; color:#b06000;' :
+                          item.line_type === 'Data' ? 'background:#e6f4ea; color:#137333;' :
+                          'background:#f1f3f4; color:#5f6368;'
+                        }">${item.line_type || 'Bilinmiyor'}</span>
+                      </div>
+                    </td>
                     <td class="text-right">${item.total_payable.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺</td>
                     <td>${item.is_matched ? '<span class="badge badge-success">Eşleşti</span>' : '<span class="badge badge-danger">Eşleşmedi</span>'}</td>
                   </tr>
@@ -1159,6 +1179,7 @@ const ReportsPage = (() => {
         'Tarife': r.tariff || '',
         'Masraf Kalemi': r.cost_center || '—',
         'Şirket': r.company_name || '—',
+        'Hat Tipi': r.line_type || 'Bilinmiyor',
         'Tutar (TL)': r.total_payable || 0,
         'Sistem Eşleşme Durumu': r.is_matched ? 'Eşleşti' : 'Kayıt Yok'
       }));

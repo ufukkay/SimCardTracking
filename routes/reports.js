@@ -146,7 +146,13 @@ router.post('/financial', (req, res) => {
              cost_center,
              company_name,
              SUM(total_amount) as total_payable,
-             is_matched
+             is_matched,
+             COALESCE(
+                 (SELECT 'Ses' FROM sim_voice v WHERE v.phone_no = invoices.phone_no AND v.phone_no != '' LIMIT 1),
+                 (SELECT 'M2M' FROM sim_m2m m WHERE m.phone_no = invoices.phone_no AND m.phone_no != '' LIMIT 1),
+                 (SELECT 'Data' FROM sim_data d WHERE d.phone_no = invoices.phone_no AND d.phone_no != '' LIMIT 1),
+                 'Bilinmiyor'
+             ) as line_type
       FROM invoices
       WHERE period = ?
       GROUP BY holder, phone_no, operator, tariff, cost_center, company_name
