@@ -206,105 +206,108 @@ const UI = (() => {
 
       // ── Filter logic ──
       const isActive = filterStateObj && filterStateObj[colKey] && filterStateObj[colKey].length > 0;
-      filterBtn.className = `th-filter-btn ${isActive ? 'active' : ''}`;
-      filterBtn.onclick = (e) => {
-        e.stopPropagation();
-        document.querySelectorAll('.col-filter-menu').forEach(m => m !== menu && m.classList.remove('open'));
-        menu.classList.toggle('open');
-      };
-
-      // Calculate available unique values for THIS column, by applying all OTHER active filters
-      let rowsForThisCol = unfilteredRows;
-      if (filterStateObj) {
-        Object.keys(filterStateObj).forEach(otherColKey => {
-          if (otherColKey !== colKey && otherColKey !== '_sort') {
-            const activeFilters = filterStateObj[otherColKey];
-            if (activeFilters && activeFilters.length > 0 && colDefs[otherColKey]) {
-              rowsForThisCol = rowsForThisCol.filter(r => {
-                const val = colDefs[otherColKey].getVal(r);
-                return activeFilters.includes(val);
-              });
-            }
-          }
-        });
-      }
-
-      const EMPTY_VAL = '__EMPTY__';
-      const isEmpty = v => !v || String(v).trim() === '' || /^[\s\u2013\u2014\u2015-]*$/.test(String(v).trim());
       
-      let rawValues = rowsForThisCol.map(r => colDef.getVal(r));
-      let uniqueVals = [...new Set(rawValues)].filter(v => !isEmpty(v));
-      uniqueVals.sort();
+      if (colDef.filterable !== false) {
+        filterBtn.className = `th-filter-btn ${isActive ? 'active' : ''}`;
+        filterBtn.onclick = (e) => {
+          e.stopPropagation();
+          document.querySelectorAll('.col-filter-menu').forEach(m => m !== menu && m.classList.remove('open'));
+          menu.classList.toggle('open');
+        };
 
-      const emptyLabel = i18n.t('filter_empty') || '(Bo\u015f)';
-      const emptyChecked = isActive && filterStateObj[colKey].includes(EMPTY_VAL);
+        // Calculate available unique values for THIS column, by applying all OTHER active filters
+        let rowsForThisCol = unfilteredRows;
+        if (filterStateObj) {
+          Object.keys(filterStateObj).forEach(otherColKey => {
+            if (otherColKey !== colKey && otherColKey !== '_sort') {
+              const activeFilters = filterStateObj[otherColKey];
+              if (activeFilters && activeFilters.length > 0 && colDefs[otherColKey]) {
+                rowsForThisCol = rowsForThisCol.filter(r => {
+                  const val = colDefs[otherColKey].getVal(r);
+                  return activeFilters.includes(val);
+                });
+              }
+            }
+          });
+        }
 
-      menu.innerHTML = `
-        <div class="col-filter-search">
-          <input type="text" class="form-control" placeholder="${i18n.t('search_placeholder_short')}" onclick="event.stopPropagation()">
-        </div>
-        <div class="col-filter-bulk">
-          <button type="button" class="btn-link btn-select-all">${i18n.t('select_all')}</button>
-          <button type="button" class="btn-link btn-clear-selection">${i18n.t('clear_selection')}</button>
-        </div>
-        <div class="col-filter-list">
-          <label class="col-filter-item col-filter-empty" onclick="event.stopPropagation()">
-            <input type="checkbox" value="${EMPTY_VAL}" ${emptyChecked ? 'checked' : ''}>
-            <span style="color:var(--text-muted);font-style:italic">${emptyLabel}</span>
-          </label>
-          ${uniqueVals.map(val => {
-            const isChecked = isActive && filterStateObj[colKey].includes(val);
-            return `
-              <label class="col-filter-item" onclick="event.stopPropagation()">
-                <input type="checkbox" value="${val}" ${isChecked ? 'checked' : ''}>
-                <span title="${val}">${val}</span>
-              </label>
-            `;
-          }).join('')}
-        </div>
-        <div class="col-filter-actions">
-          <button class="btn btn-ghost btn-sm btn-reset">${i18n.t('reset')}</button>
-          <button class="btn btn-primary btn-sm btn-apply">${i18n.t('apply')}</button>
-        </div>
-      `;
+        const EMPTY_VAL = '__EMPTY__';
+        const isEmpty = v => !v || String(v).trim() === '' || /^[\s\u2013\u2014\u2015-]*$/.test(String(v).trim());
+        
+        let rawValues = rowsForThisCol.map(r => colDef.getVal(r));
+        let uniqueVals = [...new Set(rawValues)].filter(v => !isEmpty(v));
+        uniqueVals.sort();
 
-      // Search logic
-      const searchInput = menu.querySelector('.col-filter-search input');
-      searchInput.onkeyup = (e) => {
-        const q = e.target.value.toLowerCase();
-        menu.querySelectorAll('.col-filter-item').forEach(item => {
-          const txt = item.querySelector('span').innerText.toLowerCase();
-          item.style.display = txt.includes(q) ? 'flex' : 'none';
-        });
-      };
+        const emptyLabel = i18n.t('filter_empty') || '(Bo\u015f)';
+        const emptyChecked = isActive && filterStateObj[colKey].includes(EMPTY_VAL);
 
-      // Select All / Clear Selection
-      menu.querySelector('.btn-select-all').onclick = (e) => {
-        e.stopPropagation();
-        menu.querySelectorAll('.col-filter-item:not([style*="display: none"]) input[type="checkbox"]').forEach(cb => cb.checked = true);
-      };
+        menu.innerHTML = `
+          <div class="col-filter-search">
+            <input type="text" class="form-control" placeholder="${i18n.t('search_placeholder_short')}" onclick="event.stopPropagation()">
+          </div>
+          <div class="col-filter-bulk">
+            <button type="button" class="btn-link btn-select-all">${i18n.t('select_all')}</button>
+            <button type="button" class="btn-link btn-clear-selection">${i18n.t('clear_selection')}</button>
+          </div>
+          <div class="col-filter-list">
+            <label class="col-filter-item col-filter-empty" onclick="event.stopPropagation()">
+              <input type="checkbox" value="${EMPTY_VAL}" ${emptyChecked ? 'checked' : ''}>
+              <span style="color:var(--text-muted);font-style:italic">${emptyLabel}</span>
+            </label>
+            ${uniqueVals.map(val => {
+              const isChecked = isActive && filterStateObj[colKey].includes(val);
+              return `
+                <label class="col-filter-item" onclick="event.stopPropagation()">
+                  <input type="checkbox" value="${val}" ${isChecked ? 'checked' : ''}>
+                  <span title="${val}">${val}</span>
+                </label>
+              `;
+            }).join('')}
+          </div>
+          <div class="col-filter-actions">
+            <button class="btn btn-ghost btn-sm btn-reset">${i18n.t('reset')}</button>
+            <button class="btn btn-primary btn-sm btn-apply">${i18n.t('apply')}</button>
+          </div>
+        `;
 
-      menu.querySelector('.btn-clear-selection').onclick = (e) => {
-        e.stopPropagation();
-        menu.querySelectorAll('.col-filter-item:not([style*="display: none"]) input[type="checkbox"]').forEach(cb => cb.checked = false);
-      };
+        // Search logic
+        const searchInput = menu.querySelector('.col-filter-search input');
+        searchInput.onkeyup = (e) => {
+          const q = e.target.value.toLowerCase();
+          menu.querySelectorAll('.col-filter-item').forEach(item => {
+            const txt = item.querySelector('span').innerText.toLowerCase();
+            item.style.display = txt.includes(q) ? 'flex' : 'none';
+          });
+        };
 
-      // Reset Filter
-      menu.querySelector('.btn-reset').onclick = (e) => {
-        e.stopPropagation();
-        filterStateObj[colKey] = [];
-        menu.classList.remove('open');
-        onApply();
-      };
+        // Select All / Clear Selection
+        menu.querySelector('.btn-select-all').onclick = (e) => {
+          e.stopPropagation();
+          menu.querySelectorAll('.col-filter-item:not([style*="display: none"]) input[type="checkbox"]').forEach(cb => cb.checked = true);
+        };
 
-      // Apply Filter
-      menu.querySelector('.btn-apply').onclick = (e) => {
-        e.stopPropagation();
-        const checked = Array.from(menu.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value);
-        filterStateObj[colKey] = checked;
-        menu.classList.remove('open');
-        onApply();
-      };
+        menu.querySelector('.btn-clear-selection').onclick = (e) => {
+          e.stopPropagation();
+          menu.querySelectorAll('.col-filter-item:not([style*="display: none"]) input[type="checkbox"]').forEach(cb => cb.checked = false);
+        };
+
+        // Reset Filter
+        menu.querySelector('.btn-reset').onclick = (e) => {
+          e.stopPropagation();
+          filterStateObj[colKey] = [];
+          menu.classList.remove('open');
+          onApply();
+        };
+
+        // Apply Filter
+        menu.querySelector('.btn-apply').onclick = (e) => {
+          e.stopPropagation();
+          const checked = Array.from(menu.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value);
+          filterStateObj[colKey] = checked;
+          menu.classList.remove('open');
+          onApply();
+        };
+      }
     });
     
     // Close menus on outside click - using a more robust way
