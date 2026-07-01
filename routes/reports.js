@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../database/db');
 const { authMiddleware } = require('../middleware/auth');
+const { findPersonnelByPhone } = require('../services/invoiceMatcher');
 
 router.use(authMiddleware);
 
@@ -108,9 +109,34 @@ router.post('/financial', (req, res) => {
     // Get 3 consecutive periods (the target and the 2 preceding periods in database)
     const allPeriods = db.prepare(`SELECT DISTINCT period FROM invoices ORDER BY period DESC`).all().map(p => p.period);
     const targetIdx = allPeriods.indexOf(period);
-    const period1 = period;
-    const period2 = (targetIdx + 1 < allPeriods.length) ? allPeriods[targetIdx + 1] : null;
-    const period3 = (targetIdx + 2 < allPeriods.length) ? allPeriods[targetIdx + 2] : null;
+    let period1 = period;
+    let period2 = null;
+    let period3 = null;
+    if (targetIdx >= 0) {
+      if (targetIdx + 1 < allPeriods.length) period2 = allPeriods[targetIdx + 1];
+      if (targetIdx + 2 < allPeriods.length) period3 = allPeriods[targetIdx + 2];
+    }
+
+    // --- GERÇEK ZAMANLI EŞLEŞTİRME (Canlı Veri İçin) ---
+    // Rapor üretilmeden hemen önce, ilgili dönemlerin faturalarını güncel hat durumlarıyla yeniden eşleştir
+    const periodsToMatch = [period, comparePeriod, period2, period3].filter(Boolean);
+    const uniquePeriods = [...new Set(periodsToMatch)];
+    
+    if (uniquePeriods.length > 0) {
+      const invoicesToRematch = db.prepare(`SELECT id, phone_no FROM invoices WHERE period IN (${uniquePeriods.map(() => '?').join(',')})`).all(...uniquePeriods);
+      const updateStmt = db.prepare('UPDATE invoices SET personnel_name = ?, cost_center = ?, company_name = ?, tariff = ?, is_matched = ? WHERE id = ?');
+      
+      db.transaction(() => {
+        for (const inv of invoicesToRematch) {
+          if (!inv.phone_no) continue;
+          const match = findPersonnelByPhone(inv.phone_no);
+          if (match.isMatched) {
+            updateStmt.run(match.name, match.costCenter, match.company, match.tariff, 1, inv.id);
+          }
+        }
+      })();
+    }
+    // ---------------------------------------------------
 
     // 1. Target period stats
     const targetStats = db.prepare(`
