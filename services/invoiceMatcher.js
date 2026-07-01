@@ -1,5 +1,18 @@
 const db = require('../database/db');
 
+const normalizeText = (str) => {
+  if (!str) return '';
+  return str.toLocaleLowerCase('tr-TR')
+    .replace(/ğ/g, 'g')
+    .replace(/ü/g, 'u')
+    .replace(/ş/g, 's')
+    .replace(/ı/g, 'i')
+    .replace(/ö/g, 'o')
+    .replace(/ç/g, 'c')
+    .trim();
+};
+
+
 const normalizePhone = (value) => {
   if (!value) return '';
   let digits = String(value).replace(/\D/g, '').slice(-10);
@@ -28,14 +41,12 @@ function findPersonnelByPhone(phoneNo) {
       // Bulunan isme göre masraf kalemini personellerden bulmaya çalış
       let p = null;
       if (res.name) {
-        p = db.prepare(`
-          SELECT cost_center, company 
-          FROM personnel 
-          WHERE LOWER(TRIM(first_name || ' ' || last_name)) = LOWER(TRIM(?)) 
-             OR LOWER(TRIM(first_name)) = LOWER(TRIM(?)) 
-             OR LOWER(TRIM(last_name)) = LOWER(TRIM(?)) 
-          LIMIT 1
-        `).get(res.name, res.name, res.name);
+        const personnelList = db.prepare('SELECT first_name, last_name, cost_center, company FROM personnel').all();
+        const target = normalizeText(res.name);
+        p = personnelList.find(x => {
+            const fullName = normalizeText(`${x.first_name} ${x.last_name}`);
+            return fullName === target || normalizeText(x.first_name) === target || normalizeText(x.last_name) === target;
+        });
       }
       
       return {
