@@ -12,6 +12,19 @@ const ReportsPage = (() => {
   let ownershipColFilters = {};
   let threeMonthsColFilters = {};
 
+  const normalizeName = (name) => (name || '').trim().toLocaleLowerCase('tr-TR');
+
+  function buildHoldersLineCounts(lineOwnership) {
+    const counts = {};
+    if (lineOwnership) {
+      lineOwnership.forEach(o => {
+        const key = normalizeName(o.holder);
+        counts[key] = (counts[key] || 0) + o.count;
+      });
+    }
+    return counts;
+  }
+
   function render() {
     document.getElementById('pageTitle').textContent = i18n.t('nav_reports') || 'Raporlar';
     
@@ -642,13 +655,8 @@ const ReportsPage = (() => {
 
     let list = [...financialData.invoicesList];
 
-    // Hat sayılarını eşleştirmek için bellek içi harita
-    const holdersLineCounts = {};
-    if (financialData.lineOwnership) {
-      financialData.lineOwnership.forEach(o => {
-        holdersLineCounts[o.holder] = (holdersLineCounts[o.holder] || 0) + o.count;
-      });
-    }
+    // Hat sayılarını eşleştirmek için bellek içi harita (Büyük/küçük harf duyarsız)
+    const holdersLineCounts = buildHoldersLineCounts(financialData.lineOwnership);
 
     const colDefs = {
       'holder': { label: 'Kişi / Araç / Plaka', getVal: r => r.holder || '—' },
@@ -656,7 +664,7 @@ const ReportsPage = (() => {
       'operator': { label: 'Operatör', getVal: r => r.operator || '—' },
       'cost_center': { label: 'Masraf Kalemi', getVal: r => r.cost_center || '—' },
       'company_name': { label: 'Şirket', getVal: r => r.company_name || '—' },
-      'line_count': { label: 'Zimmetli Hat', getVal: r => holdersLineCounts[r.holder] || 0 },
+      'line_count': { label: 'Zimmetli Hat', getVal: r => holdersLineCounts[normalizeName(r.holder)] || 0 },
       'total_payable': { label: 'Tutar (TL)', getVal: r => r.total_payable || 0 },
       'is_matched': { label: 'Eşleşme', getVal: r => r.is_matched ? 'Eşleşti' : 'Eşleşmedi' }
     };
@@ -689,7 +697,7 @@ const ReportsPage = (() => {
     }
 
     tbody.innerHTML = list.map(item => {
-      const lineCount = holdersLineCounts[item.holder] || 0;
+      const lineCount = holdersLineCounts[normalizeName(item.holder)] || 0;
       return `
         <tr>
           <td><strong>${item.holder}</strong></td>
@@ -794,13 +802,8 @@ const ReportsPage = (() => {
 
     let list = [...financialData.threeMonthsReport.list];
 
-    // Hat sayılarını eşleştirmek için bellek içi harita
-    const holdersLineCounts = {};
-    if (financialData.lineOwnership) {
-      financialData.lineOwnership.forEach(o => {
-        holdersLineCounts[o.holder] = (holdersLineCounts[o.holder] || 0) + o.count;
-      });
-    }
+    // Hat sayılarını eşleştirmek için bellek içi harita (Büyük/küçük harf duyarsız)
+    const holdersLineCounts = buildHoldersLineCounts(financialData.lineOwnership);
 
     // Canlı filtrele
     if (financialFilterText) {
@@ -818,7 +821,7 @@ const ReportsPage = (() => {
       'phone_no': { label: 'Telefon No', getVal: r => r.phone_no || '—' },
       'cost_center': { label: 'Masraf Kalemi', getVal: r => r.cost_center || '—' },
       'company_name': { label: 'Şirket', getVal: r => r.company_name || '—' },
-      'line_count': { label: 'Zimmetli Hat', getVal: r => holdersLineCounts[r.holder] || 0 },
+      'line_count': { label: 'Zimmetli Hat', getVal: r => holdersLineCounts[normalizeName(r.holder)] || 0 },
       'amount_p3': { label: financialData.threeMonthsReport.periods[2] || 'Dönem 3', getVal: r => r.amount_p3 || 0 },
       'amount_p2': { label: financialData.threeMonthsReport.periods[1] || 'Dönem 2', getVal: r => r.amount_p2 || 0 },
       'amount_p1': { label: financialData.threeMonthsReport.periods[0] || 'Dönem 1', getVal: r => r.amount_p1 || 0 },
@@ -853,7 +856,7 @@ const ReportsPage = (() => {
         }
       }
 
-      const lineCount = holdersLineCounts[item.holder] || 0;
+      const lineCount = holdersLineCounts[normalizeName(item.holder)] || 0;
 
       return `
         <tr>
@@ -960,13 +963,8 @@ const ReportsPage = (() => {
     const { targetStats, compareStats, invoicesList, lineOwnership } = financialData;
     const printWindow = window.open('', '_blank');
 
-    // Bellekte hat sahipliklerini eşleştir
-    const holdersLineCounts = {};
-    if (lineOwnership) {
-      lineOwnership.forEach(o => {
-        holdersLineCounts[o.holder] = (holdersLineCounts[o.holder] || 0) + o.count;
-      });
-    }
+    // Bellekte hat sahipliklerini eşleştir (Büyük/küçük harf duyarsız)
+    const holdersLineCounts = buildHoldersLineCounts(lineOwnership);
 
     let list = [...invoicesList];
 
@@ -976,7 +974,7 @@ const ReportsPage = (() => {
       'operator': { label: 'Operatör', getVal: r => r.operator || '—' },
       'cost_center': { label: 'Masraf Kalemi', getVal: r => r.cost_center || '—' },
       'company_name': { label: 'Şirket', getVal: r => r.company_name || '—' },
-      'line_count': { label: 'Zimmetli Hat', getVal: r => holdersLineCounts[r.holder] || 0 },
+      'line_count': { label: 'Zimmetli Hat', getVal: r => holdersLineCounts[normalizeName(r.holder)] || 0 },
       'total_payable': { label: 'Tutar (TL)', getVal: r => r.total_payable || 0 },
       'is_matched': { label: 'Eşleşme', getVal: r => r.is_matched ? 'Eşleşti' : 'Eşleşmedi' }
     };
@@ -1081,7 +1079,7 @@ const ReportsPage = (() => {
             </thead>
             <tbody>
               ${list.map(item => {
-                const lineCount = holdersLineCounts[item.holder] || 0;
+                const lineCount = holdersLineCounts[normalizeName(item.holder)] || 0;
                 return `
                   <tr>
                     <td><strong>${item.holder}</strong></td>
