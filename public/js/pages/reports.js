@@ -10,6 +10,7 @@ const ReportsPage = (() => {
   let financialFilterText = '';
   let financialColFilters = {};
   let ownershipColFilters = {};
+  let threeMonthsColFilters = {};
 
   function render() {
     document.getElementById('pageTitle').textContent = i18n.t('nav_reports') || 'Raporlar';
@@ -546,31 +547,44 @@ const ReportsPage = (() => {
               </div>
             </div>
 
-            <!-- MoM Bütçe Kaçakları -->
-            ${comparePeriod ? `
-              <div class="card" style="border: 1px solid var(--danger-light); background: #fffcfc">
-                <div class="card-header" style="background:#feebe9"><span class="card-title" style="color:var(--danger)">⚠️ En Çok Maliyet Artışı Gösteren Hatlar</span></div>
-                <div class="card-body">
-                  ${topIncreases.length ? `
-                    <div style="display:flex; flex-direction:column; gap:12px;">
-                      ${topIncreases.map(inc => `
-                        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #fce8e6; padding-bottom:8px">
-                          <div>
-                            <div style="font-weight:600; color:var(--text-primary)">${inc.holder}</div>
-                            <div style="font-size:11px; color:var(--text-muted)">${inc.phone_no} | ${UI.operatorBadge(inc.operator)}</div>
-                          </div>
-                          <div style="text-align:right">
-                            <span class="badge badge-danger">+${inc.diff.toLocaleString('tr-TR', { maximumFractionDigits: 1 })} ₺</span>
-                            <div style="font-size:11px; font-weight:600; color:var(--danger); margin-top:2px">+${inc.pct.toFixed(0)}% Artış</div>
-                          </div>
-                        </div>
-                      `).join('')}
-                    </div>
-                  ` : `<div style="text-align:center; padding:16px; color:var(--success)">Önemli bir bütçe artışı tespit edilmedi. 👍</div>`}
-                </div>
-              </div>
-            ` : ''}
           </div>
+        </div>
+
+        <!-- MoM Bütçe Kaçakları (Tam Genişlikte) -->
+        ${comparePeriod ? `
+          <div class="card" style="margin-top:20px; border: 1px solid var(--danger-light); background: #fffcfc; width: 100%;">
+            <div class="card-header" style="background:#feebe9; border-bottom: 1px solid var(--danger-light);">
+              <span class="card-title" style="color:var(--danger); display:flex; align-items:center; gap:8px;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                En Çok Maliyet Artışı Gösteren Hatlar
+              </span>
+            </div>
+            <div class="card-body">
+              ${topIncreases.length ? `
+                <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap:20px;">
+                  ${topIncreases.map(inc => `
+                    <div style="display:flex; flex-direction:column; gap:8px; border:1px solid #fce8e6; border-radius:10px; padding:16px; background:#fff; box-shadow: 0 4px 12px rgba(220, 53, 69, 0.05); transition: transform 0.2s;">
+                      <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                        <div>
+                          <div style="font-weight:700; color:var(--text-primary); font-size:15px; margin-bottom:4px;">${inc.holder}</div>
+                          <div style="font-size:12px; color:var(--text-muted)">${inc.phone_no}</div>
+                        </div>
+                        <div>${UI.operatorBadge(inc.operator)}</div>
+                      </div>
+                      <div style="display:flex; justify-content:space-between; align-items:center; margin-top:12px; padding-top:12px; border-top:1px dashed #fce8e6">
+                        <span style="font-weight:800; color:var(--danger); font-size:16px;">+${inc.diff.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺</span>
+                        <span style="font-size:12px; font-weight:700; color:#fff; background:var(--danger); padding:4px 10px; border-radius:20px; display:inline-flex; align-items:center; gap:4px;">
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
+                          ${inc.pct.toFixed(0)}% Artış
+                        </span>
+                      </div>
+                    </div>
+                  `).join('')}
+                </div>
+              ` : `<div style="text-align:center; padding:24px; color:var(--success); font-weight:600; font-size:15px;">Önemli bir bütçe artışı tespit edilmedi. 🎉</div>`}
+            </div>
+          </div>
+        ` : ''}
         </div>
 
         <!-- Son 3 Dönem Karşılaştırmalı Fatura Tablosu -->
@@ -582,15 +596,15 @@ const ReportsPage = (() => {
             <table style="width: 100%">
               <thead>
                 <tr>
-                  <th>Kişi / Araç / Plaka</th>
-                  <th>Telefon No</th>
-                  <th>Masraf Kalemi</th>
-                  <th>Şirket</th>
-                  <th style="text-align:center; width: 10%">Zimmetli Hat</th>
-                  <th style="text-align:right; width: 12%">${threeMonthsReport.periods[2] || 'Dönem 3'}</th>
-                  <th style="text-align:right; width: 12%">${threeMonthsReport.periods[1] || 'Dönem 2'}</th>
-                  <th style="text-align:right; width: 12%">${threeMonthsReport.periods[0] || 'Dönem 1'}</th>
-                  <th style="text-align:right; width: 10%">Değişim (%)</th>
+                  <th data-col-key="holder">Kişi / Araç / Plaka</th>
+                  <th data-col-key="phone_no">Telefon No</th>
+                  <th data-col-key="cost_center">Masraf Kalemi</th>
+                  <th data-col-key="company_name">Şirket</th>
+                  <th data-col-key="line_count" style="text-align:center; width: 10%">Zimmetli Hat</th>
+                  <th data-col-key="amount_p3" style="text-align:right; width: 12%">${threeMonthsReport.periods[2] || 'Dönem 3'}</th>
+                  <th data-col-key="amount_p2" style="text-align:right; width: 12%">${threeMonthsReport.periods[1] || 'Dönem 2'}</th>
+                  <th data-col-key="amount_p1" style="text-align:right; width: 12%">${threeMonthsReport.periods[0] || 'Dönem 1'}</th>
+                  <th data-col-key="pct_change" style="text-align:right; width: 10%">Değişim (%)</th>
                 </tr>
               </thead>
               <tbody id="threeMonthsTableBody">
@@ -799,6 +813,26 @@ const ReportsPage = (() => {
       );
     }
 
+    const colDefs = {
+      'holder': { label: 'Kişi / Araç / Plaka', getVal: r => r.holder || '—' },
+      'phone_no': { label: 'Telefon No', getVal: r => r.phone_no || '—' },
+      'cost_center': { label: 'Masraf Kalemi', getVal: r => r.cost_center || '—' },
+      'company_name': { label: 'Şirket', getVal: r => r.company_name || '—' },
+      'line_count': { label: 'Zimmetli Hat', getVal: r => holdersLineCounts[r.holder] || 0 },
+      'amount_p3': { label: financialData.threeMonthsReport.periods[2] || 'Dönem 3', getVal: r => r.amount_p3 || 0 },
+      'amount_p2': { label: financialData.threeMonthsReport.periods[1] || 'Dönem 2', getVal: r => r.amount_p2 || 0 },
+      'amount_p1': { label: financialData.threeMonthsReport.periods[0] || 'Dönem 1', getVal: r => r.amount_p1 || 0 },
+      'pct_change': { label: 'Değişim (%)', getVal: r => r.amount_p2 > 0 ? ((r.amount_p1 - r.amount_p2) / r.amount_p2) * 100 : 0, filterable: false }
+    };
+
+    if (!threeMonthsColFilters) threeMonthsColFilters = {};
+
+    const unfilteredRows = list;
+
+    // Excel tarzı filtre ve sıralama uygula
+    list = UI.filterRows(list, threeMonthsColFilters, colDefs);
+    list = UI.sortRows(list, threeMonthsColFilters._sort, colDefs);
+
     if (list.length === 0) {
       tbody.innerHTML = `<tr><td colspan="9" style="text-align:center">${UI.emptyState('🔍', 'Kriterlere uygun karşılaştırmalı fatura bulunamadı.')}</td></tr>`;
       return;
@@ -835,6 +869,10 @@ const ReportsPage = (() => {
         </tr>
       `;
     }).join('');
+
+    UI.setupTableFilters('threeMonthsTableBody', unfilteredRows, threeMonthsColFilters, colDefs, () => {
+      renderThreeMonthsTableOnly();
+    });
   }
 
   function exportExcel() {
