@@ -86,4 +86,140 @@ router.post('/advanced', (req, res) => {
   });
 });
 
+// GET /api/reports/periods - Get all unique invoice periods
+router.get('/periods', (req, res) => {
+  try {
+    const periods = db.prepare(`SELECT DISTINCT period FROM invoices ORDER BY period DESC`).all();
+    res.json(periods.map(p => p.period));
+  } catch (error) {
+    res.status(500).json({ message: 'Dönemler listelenirken hata oluştu', error: error.message });
+  }
+});
+
+// POST /api/reports/financial - Get advanced financial reports
+router.post('/financial', (req, res) => {
+  try {
+    const { period, comparePeriod } = req.body;
+    
+    if (!period) {
+      return res.status(400).json({ message: 'Dönem (period) parametresi zorunludur.' });
+    }
+
+    // Get 3 consecutive periods (the target and the 2 preceding periods in database)
+    const allPeriods = db.prepare(`SELECT DISTINCT period FROM invoices ORDER BY period DESC`).all().map(p => p.period);
+    const targetIdx = allPeriods.indexOf(period);
+    const period1 = period;
+    const period2 = (targetIdx + 1 < allPeriods.length) ? allPeriods[targetIdx + 1] : null;
+    const period3 = (targetIdx + 2 < allPeriods.length) ? allPeriods[targetIdx + 2] : null;
+
+    // 1. Target period stats
+    const targetStats = db.prepare(`
+      SELECT SUM(total_amount) as total_payable, 
+             SUM(amount) as amount, 
+             SUM(tax_kdv) as kdv, 
+             SUM(tax_oiv) as oiv, 
+             COUNT(DISTINCT phone_no) as phone_count 
+      FROM invoices 
+      WHERE period = ?
+    `).get(period) || { total_payable: 0, amount: 0, kdv: 0, oiv: 0, phone_count: 0 };
+
+    // 2. Compare period stats
+    let compareStats = null;
+    if (comparePeriod) {
+      compareStats = db.prepare(`
+        SELECT SUM(total_amount) as total_payable, 
+               SUM(amount) as amount, 
+               SUM(tax_kdv) as kdv, 
+               SUM(tax_oiv) as oiv, 
+               COUNT(DISTINCT phone_no) as phone_count 
+        FROM invoices 
+        WHERE period = ?
+      `).get(comparePeriod) || { total_payable: 0, amount: 0, kdv: 0, oiv: 0, phone_count: 0 };
+    }
+
+    // 3. Personnel / Holder Invoice list
+    const invoicesList = db.prepare(`
+      SELECT COALESCE(NULLIF(personnel_name, ''), 'Atanmamış / Bilinmeyen') as holder,
+             phone_no,
+             operator,
+             tariff,
+             cost_center,
+             company_name,
+             SUM(total_amount) as total_payable,
+             is_matched
+      FROM invoices
+      WHERE period = ?
+      GROUP BY holder, phone_no, operator, tariff, cost_center, company_name
+      ORDER BY total_payable DESC
+    `).all(period);
+
+    // 4. MoM comparison list (holder level)
+    let comparisonList = [];
+    if (comparePeriod) {
+      comparisonList = db.prepare(`
+        SELECT COALESCE(NULLIF(personnel_name, ''), 'Atanmamış / Bilinmeyen') as holder,
+               phone_no,
+               operator,
+               SUM(CASE WHEN period = ? THEN total_amount ELSE 0 END) as target_amount,
+               SUM(CASE WHEN period = ? THEN total_amount ELSE 0 END) as compare_amount
+        FROM invoices
+        WHERE period IN (?, ?)
+        GROUP BY holder, phone_no, operator
+        ORDER BY target_amount DESC
+      `).all(period, comparePeriod, period, comparePeriod);
+    }
+
+    // 5. Line ownership list (Active lines distribution)
+    const lineOwnership = db.prepare(`
+      SELECT holder, type, status, COUNT(*) as count
+      FROM (
+        SELECT COALESCE(NULLIF(assigned_to, ''), 'Atanmamış') as holder, 'voice' as type, status FROM sim_voice
+        UNION ALL
+        SELECT COALESCE(NULLIF(plate_no, ''), 'Atanmamış') as holder, 'm2m' as type, status FROM sim_m2m
+        UNION ALL
+        SELECT COALESCE(NULLIF(location, ''), 'Atanmamış') as holder, 'data' as type, status FROM sim_data
+      )
+      GROUP BY holder, type, status
+      ORDER BY count DESC
+    `).all();
+
+    // 6. Son 3 Aylık Karşılaştırmalı Rapor Verisi
+    const threeMonthsList = db.prepare(`
+      SELECT COALESCE(NULLIF(personnel_name, ''), 'Atanmamış / Bilinmeyen') as holder,
+             phone_no,
+             operator,
+             cost_center,
+             company_name,
+             SUM(CASE WHEN period = ? THEN total_amount ELSE 0 END) as amount_p1,
+             SUM(CASE WHEN period = ? THEN total_amount ELSE 0 END) as amount_p2,
+             SUM(CASE WHEN period = ? THEN total_amount ELSE 0 END) as amount_p3
+      FROM invoices
+      WHERE period IN (?, ?, ?)
+      GROUP BY holder, phone_no, operator, cost_center, company_name
+      ORDER BY amount_p1 DESC
+    `).all(
+      period1, 
+      period2 || '', 
+      period3 || '', 
+      period1, 
+      period2 || '', 
+      period3 || ''
+    );
+
+    res.json({
+      targetStats,
+      compareStats,
+      invoicesList,
+      comparisonList,
+      lineOwnership,
+      threeMonthsReport: {
+        periods: [period1, period2, period3].filter(Boolean),
+        list: threeMonthsList
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Finansal rapor üretilirken hata oluştu', error: error.message });
+  }
+});
+
 module.exports = router;
