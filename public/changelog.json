@@ -1,5 +1,20 @@
 [
   {
+    "version": "v1.0.4",
+    "date": "27.07.2026",
+    "status": "completed",
+    "title": "Profesyonel Canlı Güncelleme Sistemi",
+    "changes": [
+      "Güncelleme motoru tamamen yeniden yazıldı: execSync (senkron) yerine async spawn kullanılıyor, IIS HTTP zaman aşımı sorunu ortadan kalktı.",
+      "deploy/update.ps1 scripti eklendi: SQLite DB otomatik ZIP yedeği, git fetch + reset, npm install ve iisnode AppPool recycle adımlarını çalıştırır.",
+      "Güncelleme Ayarlar sekmesine her zaman görünür 'Güncellemeyi Uygula' butonu eklendi.",
+      "Canlı log kutusu eklendi: Güncelleme ilerledikçe terminal çıktısı anlık olarak ekrana yansır.",
+      "Güncelleme geçmişi tablosu eklendi: Tarih, durum (başarılı/hatalı) ve commit hash'leri görüntülenir.",
+      "Yeni API endpoint'leri: /check (GitHub fark kontrolü), /status (anlık durum polling), /history (geçmiş).",
+      "Sunucuda çakışma koruması: Aynı anda iki güncelleme başlatılamaz."
+    ]
+  },
+  {
     "version": "v1.9.0",
     "date": "08.04.2026",
     "status": "completed",
