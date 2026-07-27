@@ -250,31 +250,51 @@ window.SettingsPage = (() => {
 
       <!-- GÜNCELLEME (admin only) -->
       <div class="tab-pane" id="tab-update">
-        <div class="card" style="max-width:560px">
-          <div class="card-header"><span class="card-title">🔄 Uygulama Güncellemesi</span></div>
-          <div style="padding:6px 0 20px;display:flex;flex-direction:column;gap:18px">
-            <div id="updateStatusBox" style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:16px 18px;font-size:13px">
-              <div style="color:var(--text-muted)">GitHub bağlantısı kontrol ediliyor...</div>
-            </div>
-            <div style="display:flex;gap:10px;flex-wrap:wrap">
-              <button class="btn btn-secondary" id="checkUpdateBtn" onclick="SettingsPage.checkUpdate()">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.26"/></svg>
-                Güncelleme Kontrol Et
+
+        <!-- Durum Kartı -->
+        <div class="card" style="max-width:680px">
+          <div class="card-header" style="display:flex;align-items:center;justify-content:space-between">
+            <span class="card-title">🔄 Uygulama Güncellemesi</span>
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-secondary" id="checkUpdateBtn" onclick="SettingsPage.checkUpdate()" style="font-size:12px;padding:5px 12px">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.26"/></svg>
+                Kontrol Et
               </button>
-              <button class="btn btn-primary" id="applyUpdateBtn" onclick="SettingsPage.applyUpdate()" style="display:none">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="8 17 12 21 16 17"/><line x1="12" y1="3" x2="12" y2="21"/></svg>
+              <button class="btn btn-primary" id="applyUpdateBtn" onclick="SettingsPage.applyUpdate()">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="8 17 12 21 16 17"/><line x1="12" y1="3" x2="12" y2="21"/></svg>
                 Güncellemeyi Uygula
               </button>
             </div>
-            <div style="font-size:11px;color:var(--text-muted);line-height:1.6">
-              ℹ️ Güncelleme uygulandığında uygulama otomatik olarak yeniden başlatılır.<br>
-              Veritabanı dosyaları <strong>korunur</strong> — hiçbir veri kaybolmaz.
+          </div>
+          <div style="padding:0 0 4px">
+            <!-- Durum Bilgi Kutusu -->
+            <div id="updateStatusBox" style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px 16px;font-size:13px;margin-bottom:12px">
+              <div style="color:var(--text-muted)">GitHub bağlantısı kontrol ediliyor...</div>
+            </div>
+
+            <!-- Canlı Log Kutusu (sadece güncelleme sırasında görünür) -->
+            <div id="updateLiveLog" style="display:none;background:#0d1117;border:1px solid #30363d;border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:12px">
+              <div style="font-size:11px;color:#58a6ff;margin-bottom:6px;font-weight:600;letter-spacing:.5px">📡 CANLI LOG</div>
+              <pre id="updateLogContent" style="margin:0;font-size:11px;color:#c9d1d9;font-family:monospace;white-space:pre-wrap;max-height:220px;overflow-y:auto;line-height:1.6"></pre>
+            </div>
+
+            <div style="font-size:11px;color:var(--text-muted);line-height:1.6;padding-bottom:8px">
+              ℹ️ Güncelleme arka planda çalışır — IIS zaman aşımı olmaz. Veritabanı yedeği otomatik alınır.
             </div>
           </div>
         </div>
 
-        <div class="card" style="max-width:560px">
-          <div class="card-header"><span class="card-title">📜 Güncelleme Geçmişi & Planlar</span></div>
+        <!-- Güncelleme Geçmişi -->
+        <div class="card" style="max-width:680px">
+          <div class="card-header"><span class="card-title">📋 Son Güncellemeler</span></div>
+          <div id="updateHistoryContainer" style="padding:8px 0">
+            <div style="color:var(--text-muted);font-size:13px;padding:12px">Yükleniyor...</div>
+          </div>
+        </div>
+
+        <!-- Changelog -->
+        <div class="card" style="max-width:680px">
+          <div class="card-header"><span class="card-title">📜 Sürüm Notları</span></div>
           <div id="changelogContainer" class="changelog-container" style="padding:10px 0">
             <div class="loading-overlay" style="position:static;height:100px"><div class="spinner"></div></div>
           </div>
@@ -573,6 +593,7 @@ window.SettingsPage = (() => {
     }
     else if (tab === 'update') {
       loadChangelog();
+      loadUpdateHistory();
       SettingsPage.checkUpdate();
     }
   }
@@ -1230,9 +1251,11 @@ window.SettingsPage = (() => {
   }
 
   /* ════════════ UPDATE ════════════ */
+  let _updatePollTimer = null;
+
   async function checkUpdate() {
-    const box = document.getElementById('updateStatusBox');
-    const btn = document.getElementById('checkUpdateBtn');
+    const box    = document.getElementById('updateStatusBox');
+    const btn    = document.getElementById('checkUpdateBtn');
     const applyBtn = document.getElementById('applyUpdateBtn');
     if (!box) return;
     btn.disabled = true;
@@ -1272,38 +1295,137 @@ window.SettingsPage = (() => {
   }
 
   async function applyUpdate() {
-    const box = document.getElementById('updateStatusBox');
+    const box      = document.getElementById('updateStatusBox');
     const applyBtn = document.getElementById('applyUpdateBtn');
     const checkBtn = document.getElementById('checkUpdateBtn');
+    const liveLog  = document.getElementById('updateLiveLog');
+    const logPre   = document.getElementById('updateLogContent');
     if (!box) return;
-    if (!confirm('Güncelleme uygulanacak ve uygulama otomatik yeniden başlatılacak. Önce veritabanı yedeği indirilecek. Devam edilsin mi?')) return;
-    
-    // Uygulama güncellenmeden önce otomatik yedek al
-    await handleBackup();
+    if (!confirm('Güncelleme arka planda başlatılacak.\n\n• Veritabanı otomatik yedeklenir\n• git pull + npm install çalışır\n• Uygulama otomatik yeniden başlar\n\nDevam edilsin mi?')) return;
 
     applyBtn.disabled = true;
     checkBtn.disabled = true;
-    box.innerHTML = `<div style="color:var(--text-muted)">⏳ Güncelleme indiriliyor (git pull)...</div>`;
-    try {
-      const r = await API.applyUpdate();
-      box.innerHTML = `
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
-          <span style="font-size:22px">🎉</span>
-          <div><strong>${r.message}</strong></div>
+    if (liveLog) liveLog.style.display = 'block';
+    if (logPre)  logPre.textContent = 'Güncelleme başlatılıyor...';
+
+    box.innerHTML = `
+      <div style="display:flex;align-items:center;gap:10px">
+        <div class="spinner" style="width:18px;height:18px;border-width:2px"></div>
+        <div>
+          <strong>Güncelleme başlatılıyor...</strong><br>
+          <span style="color:var(--text-muted);font-size:12px">Canlı log aşağıda gösterilecek</span>
         </div>
-        <div style="background:var(--bg-primary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 14px;font-size:11px;color:var(--text-muted);white-space:pre-wrap;font-family:monospace">${r.detail}</div>
-        <div id="reloadCountdown" style="margin-top:10px;font-size:12px;color:var(--text-muted)">Sayfa 10 saniye içinde yenileniyor...</div>`;
-      let t = 10;
-      const iv = setInterval(() => {
-        t--;
-        const el = document.getElementById('reloadCountdown');
-        if (el) el.textContent = `Sayfa ${t} saniye içinde yenileniyor...`;
-        if (t <= 0) { clearInterval(iv); window.location.reload(); }
-      }, 1000);
+      </div>`;
+
+    try {
+      // Güncellemeyi arka planda başlat — hemen 200 döner
+      await API.applyUpdate();
+
+      // 1.5s polling ile durumu takip et
+      _pollUpdateStatus(applyBtn, checkBtn);
+
     } catch (err) {
-      box.innerHTML = `<div style="color:var(--danger)">❌ Güncelleme başarısız: ${err.message}</div>`;
+      box.innerHTML = `<div style="color:var(--danger)">❌ Güncelleme başlatılamadı: ${err.message}</div>`;
       applyBtn.disabled = false;
       checkBtn.disabled = false;
+    }
+  }
+
+  function _pollUpdateStatus(applyBtn, checkBtn) {
+    if (_updatePollTimer) clearInterval(_updatePollTimer);
+
+    _updatePollTimer = setInterval(async () => {
+      try {
+        const s    = await API.getUpdateStatus();
+        const box  = document.getElementById('updateStatusBox');
+        const logPre = document.getElementById('updateLogContent');
+
+        // Log güncelle
+        if (logPre && s.log) {
+          logPre.textContent = s.log;
+          logPre.scrollTop   = logPre.scrollHeight;
+        }
+
+        if (s.state === 'running') {
+          if (box) box.innerHTML = `
+            <div style="display:flex;align-items:center;gap:10px">
+              <div class="spinner" style="width:18px;height:18px;border-width:2px"></div>
+              <div>
+                <strong>${s.step} — ${s.message}</strong><br>
+                <span style="color:var(--text-muted);font-size:12px">${s.timestamp}</span>
+              </div>
+            </div>`;
+
+        } else if (s.state === 'success') {
+          clearInterval(_updatePollTimer);
+          _updatePollTimer = null;
+          if (box) box.innerHTML = `
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+              <span style="font-size:24px">🎉</span>
+              <div><strong style="color:var(--success,#22c55e)">${s.message}</strong></div>
+            </div>
+            <div id="reloadCountdown" style="font-size:12px;color:var(--text-muted)">Sayfa 8 saniye içinde yenileniyor...</div>`;
+          // Geçmişi yenile
+          loadUpdateHistory();
+          // Geri sayım
+          let t = 8;
+          const iv = setInterval(() => {
+            t--;
+            const el = document.getElementById('reloadCountdown');
+            if (el) el.textContent = `Sayfa ${t} saniye içinde yenileniyor...`;
+            if (t <= 0) { clearInterval(iv); window.location.reload(); }
+          }, 1000);
+
+        } else if (s.state === 'error') {
+          clearInterval(_updatePollTimer);
+          _updatePollTimer = null;
+          if (box) box.innerHTML = `
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+              <span style="font-size:22px">❌</span>
+              <div>
+                <strong style="color:var(--danger)">Güncelleme başarısız!</strong><br>
+                <span style="font-size:12px;color:var(--text-muted)">${s.error || s.message}</span>
+              </div>
+            </div>`;
+          if (applyBtn) applyBtn.disabled = false;
+          if (checkBtn) checkBtn.disabled = false;
+        }
+      } catch (_) { /* polling sırasında geçici hata — devam */ }
+    }, 1500);
+  }
+
+  async function loadUpdateHistory() {
+    const container = document.getElementById('updateHistoryContainer');
+    if (!container) return;
+    try {
+      const history = await API.getUpdateHistory();
+      if (!history || history.length === 0) {
+        container.innerHTML = `<div style="color:var(--text-muted);font-size:13px;padding:12px">Henüz güncelleme yapılmamış.</div>`;
+        return;
+      }
+      container.innerHTML = `
+        <table style="width:100%;border-collapse:collapse;font-size:12px">
+          <thead>
+            <tr style="background:var(--bg-secondary);text-align:left">
+              <th style="padding:8px 12px;color:var(--text-muted)">Tarih</th>
+              <th style="padding:8px 12px;color:var(--text-muted)">Durum</th>
+              <th style="padding:8px 12px;color:var(--text-muted)">Commit</th>
+              <th style="padding:8px 12px;color:var(--text-muted)">Mesaj</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${history.map(h => `
+              <tr style="border-top:1px solid var(--border)">
+                <td style="padding:8px 12px;color:var(--text-muted)">${h.date}</td>
+                <td style="padding:8px 12px">${h.success ? '✅ Başarılı' : '❌ Hata'}</td>
+                <td style="padding:8px 12px"><code style="font-size:11px">${h.oldCommit || '—'} → ${h.newCommit || '—'}</code></td>
+                <td style="padding:8px 12px;color:var(--text-muted)">${h.message}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>`;
+    } catch (_) {
+      container.innerHTML = `<div style="color:var(--text-muted);font-size:13px;padding:12px">Geçmiş yüklenemedi.</div>`;
     }
   }
 
@@ -1534,7 +1656,7 @@ window.SettingsPage = (() => {
     exportExcelPackages, openCombinedPackageModal,
     
     openPackageModal, deletePackage, savePackage,
-    checkUpdate, applyUpdate,
+    checkUpdate, applyUpdate, loadUpdateHistory,
     handleBackup, handleRestore,
     changePassword
   };

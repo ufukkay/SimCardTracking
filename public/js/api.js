@@ -90,8 +90,10 @@ const API = (() => {
     changeMyPassword: (d) => request('PUT', '/users/me/password', d),
 
     // Admin Update
-    checkUpdate:  () => request('GET',  '/admin/update/status'),
-    applyUpdate:  () => request('POST', '/admin/update/apply'),
+    checkUpdate:       () => request('GET',  '/admin/update/check'),
+    applyUpdate:       () => request('POST', '/admin/update/apply'),
+    getUpdateStatus:   () => request('GET',  '/admin/update/status'),
+    getUpdateHistory:  () => request('GET',  '/admin/update/history'),
 
     // Operators
     getOperators:  ()    => request('GET',    '/operators'),
